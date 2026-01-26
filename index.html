@@ -1,92 +1,100 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mood Map</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mood Map</title>
 
-<link rel="stylesheet" href="./maplibre-gl.css">
+  <link rel="stylesheet" href="./maplibre-gl.css">
 
-<style>
-html, body { margin:0; height:100%; font:16px system-ui; }
-#map { position:fixed; inset:0; }
+  <style>
+    html, body { margin:0; height:100%; font:16px system-ui; }
+    #map { position:fixed; inset:0; }
 
-#panel{
-  position: fixed; z-index: 10;
-  background: rgba(255,255,255,0.96);
-  border-radius: 16px;
-  box-shadow: 0 14px 36px rgba(0,0,0,.25);
-  padding: 16px;
-  transition: all .35s ease;
-}
+    #panel{
+      position: fixed;
+      z-index: 10;
+      background: rgba(255,255,255,0.96);
+      border-radius: 16px;
+      box-shadow: 0 14px 36px rgba(0,0,0,.25);
+      padding: 16px;
+      transition: all .35s ease;
+    }
 
-.panel-welcome{
-  left:50%; top:50%;
-  transform:translate(-50%,-50%);
-  width: min(440px, calc(100vw - 24px));
-}
+    .panel-welcome{
+      left:50%; top:50%;
+      transform:translate(-50%,-50%);
+      width: min(440px, calc(100vw - 24px));
+    }
 
-.panel-app{
-  left:12px; top:12px;
-  transform:none;
-  width: 320px;
-}
+    .panel-app{
+      left:12px; top:12px;
+      transform:none;
+      width: 320px;
+    }
 
-h3 { margin:0 0 10px; font-size:18px; }
-.row { display:grid; gap:10px; margin:10px 0; }
+    /* Ultra compact after a successful save (mobile-friendly) */
+    .panel-compact{
+      left:12px; top:12px;
+      transform:none;
+      width: auto;
+      padding: 10px 12px;
+      border-radius: 14px;
+    }
 
-input, button{
-  font:inherit;
-  padding:12px;
-  border-radius:12px;
-  border:1px solid rgba(0,0,0,.15);
-}
-button{ background:#111; color:#fff; border:0; cursor:pointer; }
-button.secondary{ background:#eee; color:#111; }
+    h3 { margin:0 0 10px; font-size:18px; }
+    .row { display:grid; gap:10px; margin:10px 0; }
 
-#welcomeBox{
-  background: linear-gradient(135deg,#ffecd2,#fcb69f);
-  border-radius:14px;
-  padding:14px;
-}
+    input, button{
+      font:inherit;
+      padding:12px;
+      border-radius:12px;
+      border:1px solid rgba(0,0,0,.15);
+    }
+    button{ background:#111; color:#fff; border:0; cursor:pointer; }
+    button.secondary{ background:#eee; color:#111; }
 
-.small{ font-size:13px; opacity:.75; }
-.msg{ white-space:pre-wrap; font-size:13px; }
+    button.link{
+      background: transparent;
+      color: #111;
+      border: 0;
+      padding: 0;
+      text-align: left;
+      text-decoration: underline;
+      cursor: pointer;
+      font-size: 14px;
+      opacity: .85;
+    }
 
-#authView,#appView{ display:none; }
-</style>
+    #welcomeBox{
+      background: linear-gradient(135deg,#ffecd2,#fcb69f);
+      border-radius:14px;
+      padding:14px;
+    }
+
+    .small{ font-size:13px; opacity:.75; }
+    .msg{ white-space:pre-wrap; font-size:13px; }
+
+    #authView,#appView,#compactView{ display:none; }
+
+    /* Mobile tweaks */
+    @media (max-width: 520px) {
+      .panel-welcome{ width: calc(100vw - 24px); }
+      .panel-app{ width: calc(100vw - 24px); left: 12px; right: 12px; }
+      button, input { padding: 14px; font-size: 16px; } /* prevents iOS zoom on inputs */
+      .panel-compact{ left: 12px; right: 12px; }
+    }
+
+    /* iPhone safe areas */
+    #panel{
+      padding-bottom: calc(16px + env(safe-area-inset-bottom));
+      padding-top: calc(16px + env(safe-area-inset-top));
+    }
+
+    :root { --vh: 1vh; }
+    #map { height: calc(var(--vh) * 100); }
+  </style>
 </head>
-
-
-
-/* Mobile tweaks */
-@media (max-width: 520px) {
-  .panel-welcome{
-    width: calc(100vw - 24px);
-  }
-  .panel-app{
-    width: calc(100vw - 24px);
-    left: 12px;
-    right: 12px;
-  }
-  button, input { padding: 14px; font-size: 16px; } /* prevents iOS zoom on inputs */
-}
-
-/* iPhone safe areas */
-#panel{
-  padding-bottom: calc(16px + env(safe-area-inset-bottom));
-  padding-top: calc(16px + env(safe-area-inset-top));
-}
-
-
-:root { --vh: 1vh; }
-#map { height: calc(var(--vh) * 100); }
-
-
-
-
-
-
 
 <body>
 <div id="map"></div>
@@ -103,11 +111,9 @@ button.secondary{ background:#eee; color:#111; }
       how happy people are across different places.
     </div>
 
-
-
     <div class="row">
-      <input id="email" type="email" placeholder="Email">
-      <input id="password" type="password" placeholder="Password">
+      <input id="email" type="email" placeholder="Email" autocomplete="email">
+      <input id="password" type="password" placeholder="Password" autocomplete="current-password">
     </div>
 
     <div class="row" style="grid-template-columns:1fr 1fr">
@@ -115,10 +121,16 @@ button.secondary{ background:#eee; color:#111; }
       <button id="btnSignup" class="secondary">Create account</button>
     </div>
 
+    <!-- Forgot password -->
+    <div class="row">
+      <button id="btnForgot" class="link" type="button">Forgot your password?</button>
+      <div class="small">We will email you a reset link.</div>
+    </div>
+
     <div id="authMsg" class="msg"></div>
   </div>
 
-  <!-- APP -->
+  <!-- APP (full panel) -->
   <div id="appView">
     <div class="row">
       <label>Your mood: <b><span id="moodValue">5</span>/10</b></label>
@@ -126,15 +138,22 @@ button.secondary{ background:#eee; color:#111; }
     </div>
 
     <div class="row">
-      <button id="btnSaveAll">Locate + Save + Refresh</button>
+      <button id="btnSaveAll">Locate + Save + Show map</button>
     </div>
 
-    <div class="small">Markers appear after your first save.</div>
+    <div class="small">Markers will appear after your first save.</div>
     <div id="appMsg" class="msg"></div>
 
-    <div class="row" style="grid-template-columns:1fr 1fr">
-      <button id="btnRefresh" class="secondary">Refresh</button>
+    <div class="row">
       <button id="btnLogout" class="secondary">Sign out</button>
+    </div>
+  </div>
+
+  <!-- COMPACT panel (after save) -->
+  <div id="compactView">
+    <div class="small" id="compactMsg">✅ Saved.</div>
+    <div class="row" style="margin-top:8px;">
+      <button id="btnLogout2" class="secondary">Sign out</button>
     </div>
   </div>
 </div>
@@ -143,18 +162,14 @@ button.secondary{ background:#eee; color:#111; }
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-
-// --- Fix mobile viewport height (iOS) ---
+/* =========================
+   Mobile viewport fix (iOS)
+========================= */
 function setVh() {
-  document.documentElement.style.setProperty(
-    '--vh',
-    `${window.innerHeight * 0.01}px`
-  );
+  document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
 }
 window.addEventListener('resize', setVh);
 setVh();
-
-
 
 /* ================= MAP ================= */
 const map = new maplibregl.Map({
@@ -249,7 +264,40 @@ function ensureMoodImages(){
 }
 
 /* ================= POINTS SOURCE + LAYERS ================= */
-let pointsEnabled = false;
+let pointsEnabled = false;      // gate: no markers until first save (for new users)
+let markersVisible = false;     // animation state
+
+function clearPoints(){
+  const source = map.getSource("points");
+  if(!source) return;
+  source.setData({ type:"FeatureCollection", features: [] });
+}
+
+function setMarkersOpacity(op){
+  // Safe calls: only if layers exist
+  if(map.getLayer("clusters-mood")){
+    map.setPaintProperty("clusters-mood", "icon-opacity", op);
+    map.setPaintProperty("clusters-mood", "text-opacity", op);
+  }
+  if(map.getLayer("points-mood")){
+    map.setPaintProperty("points-mood", "icon-opacity", op);
+  }
+}
+
+function revealMarkersAnimated(){
+  if(markersVisible) return;
+  markersVisible = true;
+
+  // Fade-in (via transition configured on layers)
+  setMarkersOpacity(1);
+
+  // Small "pop" effect: tiny zoom-in then back
+  const z = map.getZoom();
+  map.easeTo({ zoom: z + 0.18, duration: 350 });
+  setTimeout(() => {
+    map.easeTo({ zoom: z, duration: 450 });
+  }, 360);
+}
 
 function initPointsSourceAndLayers(){
   if(map.getSource("points")) return;
@@ -273,6 +321,7 @@ function initPointsSourceAndLayers(){
     ["round", ["/", ["get","sum"], ["get","count"]]]
   ];
 
+  // Clusters layer (symbols)
   map.addLayer({
     id: "clusters-mood",
     type: "symbol",
@@ -280,10 +329,7 @@ function initPointsSourceAndLayers(){
     filter: ["has", "point_count"],
     layout: {
       "icon-image": ["concat","mood-", ["to-string", avgRoundedClamped]],
-      "icon-size": [
-        "step", ["get","point_count"],
-        0.65, 10, 0.75, 50, 0.9, 200, 1.05, 1000, 1.2
-      ],
+      "icon-size": ["step", ["get","point_count"], 0.65, 10, 0.75, 50, 0.9, 200, 1.05, 1000, 1.2],
       "icon-allow-overlap": true,
       "text-field": ["to-string", ["get","point_count"]],
       "text-size": 12,
@@ -294,10 +340,17 @@ function initPointsSourceAndLayers(){
     paint: {
       "text-color": "rgba(0,0,0,0.75)",
       "text-halo-color": "rgba(255,255,255,0.9)",
-      "text-halo-width": 1
+      "text-halo-width": 1,
+
+      /* Animation support */
+      "icon-opacity": 0,
+      "text-opacity": 0,
+      "icon-opacity-transition": { "duration": 700, "delay": 0 },
+      "text-opacity-transition": { "duration": 700, "delay": 0 }
     }
   });
 
+  // Single points layer (symbols)
   map.addLayer({
     id: "points-mood",
     type: "symbol",
@@ -316,6 +369,11 @@ function initPointsSourceAndLayers(){
       ],
       "icon-size": 0.55,
       "icon-allow-overlap": true
+    },
+    paint: {
+      /* Animation support */
+      "icon-opacity": 0,
+      "icon-opacity-transition": { "duration": 700, "delay": 0 }
     }
   });
 
@@ -337,7 +395,14 @@ function initPointsSourceAndLayers(){
 async function refreshPoints(){
   const source = map.getSource("points");
   if(!source) return;
-  if(!pointsEnabled) return; // show nothing until first save
+
+  // Hard gate: nothing before the user has saved (new users)
+  if(!pointsEnabled){
+    clearPoints();
+    setMarkersOpacity(0);
+    markersVisible = false;
+    return;
+  }
 
   const { data, error } = await sb
     .from("mood_entries")
@@ -360,6 +425,9 @@ async function refreshPoints(){
 
   source.setData({ type:"FeatureCollection", features });
   setAppMessage(`Loaded markers: ${features.length}`);
+
+  // Reveal animated once, right after the first successful load while enabled
+  revealMarkersAnimated();
 }
 
 /* ================= UI HELPERS ================= */
@@ -379,10 +447,8 @@ let chordTimer = null;
 function stopLoopTimers() {
   if (chordTimer) { clearTimeout(chordTimer); chordTimer = null; }
 }
-
 function fadeOutMusic(seconds = 2.5) {
   if (!audioCtx || !masterGain) return;
-
   const now = audioCtx.currentTime;
   masterGain.gain.cancelScheduledValues(now);
   masterGain.gain.setValueAtTime(masterGain.gain.value, now);
@@ -395,11 +461,8 @@ function fadeOutMusic(seconds = 2.5) {
       try { n.disconnect && n.disconnect(); } catch {}
     }
     musicNodes = [];
-    // We keep musicStarted = true so it won't restart again.
-    // (If you DO want it restartable after logout, set false here.)
   }, (seconds + 0.3) * 1000);
 }
-
 function playAmbientMusic() {
   if (musicStarted) return;
   musicStarted = true;
@@ -414,12 +477,11 @@ function playAmbientMusic() {
   lp.frequency.value = 1200;
   lp.connect(masterGain);
 
-  // 30s-ish loop progression
   const chords = [
-    [261.63, 329.63, 392.00], // C E G
-    [220.00, 261.63, 329.63], // A C E
-    [174.61, 220.00, 261.63], // F A C
-    [196.00, 293.66, 392.00]  // G D G-ish
+    [261.63, 329.63, 392.00],
+    [220.00, 261.63, 329.63],
+    [174.61, 220.00, 261.63],
+    [196.00, 293.66, 392.00]
   ];
 
   function padChord(freqs, start, dur) {
@@ -436,7 +498,6 @@ function playAmbientMusic() {
       o.connect(g).connect(lp);
       o.start(start);
       o.stop(start + dur + 0.05);
-
       musicNodes.push(o, g);
     }
   }
@@ -458,7 +519,6 @@ function playAmbientMusic() {
       o.connect(g).connect(lp);
       o.start(t);
       o.stop(t + 0.5);
-
       musicNodes.push(o, g);
     }
   }
@@ -467,58 +527,92 @@ function playAmbientMusic() {
   function schedule() {
     const now = audioCtx.currentTime;
     const start = now + 0.02;
-
     const dur = 7.5;
     const freqs = chords[idx % chords.length];
     padChord(freqs, start, dur);
     arpeggio(freqs, start);
-
     idx++;
     chordTimer = setTimeout(schedule, dur * 1000);
   }
-
   schedule();
 }
-
-// --- Auto-start music on first user interaction (no button) ---
 function autoStartMusicOnce() {
-  // Optional: start only on the welcome screen
-  // if (panel.className !== "panel-welcome") return;
-
   playAmbientMusic();
   document.removeEventListener("pointerdown", autoStartMusicOnce);
   document.removeEventListener("keydown", autoStartMusicOnce);
 }
-
 document.addEventListener("pointerdown", autoStartMusicOnce, { once: true });
 document.addEventListener("keydown", autoStartMusicOnce, { once: true });
-
 
 /* =======================
    SUPABASE
 ======================= */
 const SUPABASE_URL = "https://ugrmxzdhevqrgftlxfnp.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVncm14emRoZXZxcmdmdGx4Zm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyODQ3OTQsImV4cCI6MjA4NDg2MDc5NH0.WgTj-6ADFEMrCgPNxeQZvknBBJI1c9uDY9_8Qlkqu4w"; // <-- remplace
-
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVncm14emRoZXZxcmdmdGx4Zm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyODQ3OTQsImV4cCI6MjA4NDg2MDc5NH0.WgTj-6ADFEMrCgPNxeQZvknBBJI1c9uDY9_8Qlkqu4w"; // <-- remplace;
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-function setConnected(user){
+/* ========= Views / modes ========= */
+function showAuth(){
+  panel.className = "panel-welcome";
+  el("authView").style.display="block";
+  el("appView").style.display="none";
+  el("compactView").style.display="none";
+}
+function showApp(){
+  panel.className = "panel-app";
+  el("authView").style.display="none";
+  el("appView").style.display="block";
+  el("compactView").style.display="none";
+}
+function showCompact(msg="✅ Saved."){
+  panel.className = "panel-compact";
+  el("compactMsg").textContent = msg;
+  el("authView").style.display="none";
+  el("appView").style.display="none";
+  el("compactView").style.display="block";
+}
+
+/* If the user already has an entry from a previous session, show markers after login */
+async function checkIfUserHasMoodEntry(userId){
+  const { data, error } = await sb
+    .from("mood_entries")
+    .select("user_id")
+    .eq("user_id", userId)
+    .limit(1);
+
+  if (error) return false;
+  return (data && data.length > 0);
+}
+
+async function setConnected(user){
   if(user){
-    panel.className="panel-app";
-    el("authView").style.display="none";
-    el("appView").style.display="block";
-    // Fade music out on login
+    // Ensure nothing appears before we decide
+    pointsEnabled = false;
+    markersVisible = false;
+    clearPoints();
+    setMarkersOpacity(0);
+
+    showApp();
     fadeOutMusic(2.8);
+
+    const hasEntry = await checkIfUserHasMoodEntry(user.id);
+    if (hasEntry){
+      pointsEnabled = true;
+      await refreshPoints(); // this will animate once
+    }
   }else{
-    panel.className="panel-welcome";
-    el("authView").style.display="block";
-    el("appView").style.display="none";
+    pointsEnabled = false;
+    markersVisible = false;
+    clearPoints();
+    setMarkersOpacity(0);
+    showAuth();
   }
 }
 
 sb.auth.getSession().then(r=>setConnected(r.data.session?.user || null));
 sb.auth.onAuthStateChange((_e,s)=>setConnected(s?.user || null));
 
+/* ========= Auth buttons ========= */
 el("btnSignup").onclick=async()=>{
   const email=el("email").value.trim();
   const password=el("password").value;
@@ -538,9 +632,34 @@ el("btnLogin").onclick=async()=>{
   setAuthMessage(error ? ("Error:\n"+error.message) : "");
 };
 
-el("btnLogout").onclick=()=>sb.auth.signOut();
+async function doLogout(){
+  await sb.auth.signOut();
+  setAppMessage("");
+  showAuth();
+}
+el("btnLogout").onclick = doLogout;
+el("btnLogout2").onclick = doLogout;
 
-/* ================= ONE BUTTON: Locate + Save + Refresh ================= */
+/* ========= Forgot password ========= */
+el("btnForgot").onclick = async () => {
+  const email = el("email").value.trim();
+  if (!email) { setAuthMessage("Please enter your email first."); return; }
+
+  setAuthMessage("Sending reset email…");
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    // If you prefer hardcode:
+    redirectTo: "https://www.mood2know.com"
+    //redirectTo: window.location.origin
+  });
+
+  if (error) {
+    setAuthMessage("Error:\n" + error.message);
+  } else {
+    setAuthMessage("✅ Reset email sent. Check your inbox (and spam).");
+  }
+};
+
+/* ================= ONE BUTTON: Locate + Save + Show map ================= */
 el("btnSaveAll").onclick = async () => {
   setAppMessage("Locating…");
 
@@ -574,26 +693,29 @@ el("btnSaveAll").onclick = async () => {
 
     map.easeTo({ center: [coords.lon, coords.lat], zoom: Math.max(map.getZoom(), 8) });
 
+    // Enable markers ONLY after the user saved successfully
     pointsEnabled = true;
+    markersVisible = false; // allow animation
+    setMarkersOpacity(0);
     setAppMessage("✅ Saved. Loading markers…");
-    await refreshPoints();
+    await refreshPoints();  // will animate reveal
+
+    // After successful save -> ultra-compact panel (better on iPhone)
+    showCompact("✅ Saved. Thank you!");
 
   }, (err) => {
     setAppMessage("Geolocation error: " + err.message);
   }, { enableHighAccuracy: true, timeout: 10000 });
 };
 
-el("btnRefresh").onclick = async () => {
-  pointsEnabled = true;
-  setAppMessage("Refreshing…");
-  await refreshPoints();
-};
-
 /* ================= MAP init ================= */
 map.on("load", async () => {
   ensureMoodImages();
   initPointsSourceAndLayers();
-  // Do NOT auto-load points. Markers appear after first save.
+
+  // Keep markers hidden until user has saved (or already has an entry)
+  setMarkersOpacity(0);
+  clearPoints();
 });
 </script>
 </body>
