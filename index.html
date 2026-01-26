@@ -261,8 +261,6 @@ function ensureMoodImages(){
 }
 
 /* ================= POINTS SOURCE + LAYERS ================= */
-let pointsEnabled = false;
-
 function initPointsSourceAndLayers(){
   if(map.getSource("points")) return;
 
@@ -343,10 +341,15 @@ function initPointsSourceAndLayers(){
   map.on("mouseleave", "clusters-mood", () => map.getCanvas().style.cursor = "");
 }
 
+function clearMarkers(){
+  const source = map.getSource("points");
+  if(!source) return;
+  source.setData({ type:"FeatureCollection", features: [] });
+}
+
 async function refreshPoints(){
   const source = map.getSource("points");
   if(!source) return;
-  if(!pointsEnabled) return; // show nothing until first save (ever)
 
   const { data, error } = await sb
     .from("mood_entries")
@@ -404,7 +407,6 @@ function fadeOutMusic(seconds = 2.5) {
       try { n.disconnect && n.disconnect(); } catch {}
     }
     musicNodes = [];
-    // keep musicStarted=true so it won't restart again
   }, (seconds + 0.3) * 1000);
 }
 
@@ -499,7 +501,7 @@ document.addEventListener("keydown", autoStartMusicOnce, { once: true });
    SUPABASE
 ======================= */
 const SUPABASE_URL = "https://ugrmxzdhevqrgftlxfnp.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVncm14emRoZXZxcmdmdGx4Zm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyODQ3OTQsImV4cCI6MjA4NDg2MDc5NH0.WgTj-6ADFEMrCgPNxeQZvknBBJI1c9uDY9_8Qlkqu4w"; // <-- remplace
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVncm14emRoZXZxcmdmdGx4Zm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyODQ3OTQsImV4cCI6MjA4NDg2MDc5NH0.WgTj-6ADFEMrCgPNxeQZvknBBJI1c9uDY9_8Qlkqu4w";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /* ========= Views / modes ========= */
@@ -523,34 +525,18 @@ function showCompact(msg="✅ Saved."){
   el("compactView").style.display="block";
 }
 
-async function checkIfUserHasMoodEntry(userId){
-  const { data, error } = await sb
-    .from("mood_entries")
-    .select("user_id")
-    .eq("user_id", userId)
-    .limit(1);
-
-  if (error) return false;
-  return (data && data.length > 0);
-}
-
 async function setConnected(user){
   if(user){
     showApp();
-    // Fade music out on login
     fadeOutMusic(2.8);
 
-    // If the user already saved once in the past, enable markers immediately.
-   /* const hasEntry = await checkIfUserHasMoodEntry(user.id);
-    if (hasEntry){
-      pointsEnabled = true;
-      await refreshPoints();
-    }*/
+    // KEY: hide markers on login
+    clearMarkers();
   }else{
-    pointsEnabled = false;
+    // hide markers on logout too
+    clearMarkers();
     showAuth();
   }
-
 }
 
 sb.auth.getSession().then(r=>setConnected(r.data.session?.user || null));
@@ -635,11 +621,9 @@ el("btnSaveAll").onclick = async () => {
 
     map.easeTo({ center: [coords.lon, coords.lat], zoom: Math.max(map.getZoom(), 8) });
 
-    pointsEnabled = true;
     setAppMessage("✅ Saved. Loading markers…");
     await refreshPoints();
 
-    // After a successful save, switch to ultra-compact panel (better on iPhone)
     showCompact("✅ Saved. Thank you!");
 
   }, (err) => {
@@ -651,7 +635,8 @@ el("btnSaveAll").onclick = async () => {
 map.on("load", async () => {
   ensureMoodImages();
   initPointsSourceAndLayers();
-  // Markers appear after first save (or if user already has an entry).
+  // Important: start with empty markers
+  clearMarkers();
 });
 </script>
 </body>
