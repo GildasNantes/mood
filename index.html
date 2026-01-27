@@ -221,7 +221,6 @@
       You should receive a confirmation email.
       Your account becomes active after you confirm.
       <br><br>
-
     </div>
 
     <div class="row">
@@ -301,18 +300,15 @@ function moodImageData(level, size=96){
 
   const cx = size/2, cy = size/2, r = size*0.42;
 
-  // shadow
   ctx.beginPath(); ctx.arc(cx, cy+3, r, 0, Math.PI*2);
   ctx.fillStyle="rgba(0,0,0,0.18)"; ctx.fill();
 
-  // head
   ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
   ctx.fillStyle = fill; ctx.fill();
   ctx.lineWidth = Math.max(3, size*0.04);
   ctx.strokeStyle = "rgba(0,0,0,0.25)";
   ctx.stroke();
 
-  // eyes
   const eyeY = cy - size*0.10, eyeDX=size*0.14, eyeR=size*0.04;
   ctx.beginPath();
   ctx.arc(cx-eyeDX, eyeY, eyeR, 0, Math.PI*2);
@@ -320,7 +316,6 @@ function moodImageData(level, size=96){
   ctx.fillStyle="rgba(0,0,0,0.75)";
   ctx.fill();
 
-  // eyebrows
   const browY = eyeY - size*0.08;
   const browTilt = lerp(0.20, -0.20, t);
   ctx.lineWidth = Math.max(3, size*0.035);
@@ -337,7 +332,6 @@ function moodImageData(level, size=96){
   ctx.lineTo(cx+eyeDX+size*0.06, browY + browTilt*size*0.08);
   ctx.stroke();
 
-  // mouth
   const mouthY = cy + size*0.12, mouthW=size*0.26;
   const curvature = lerp(-1, 1, t);
   ctx.beginPath();
@@ -644,7 +638,7 @@ function showCompact(msg="✅ Saved."){
 const overlay = el("overlay");
 function openSignupModal(){
   el("suMsg").textContent = "";
-  el("suEmail").value = el("email").value.trim(); // prefill from login field
+  el("suEmail").value = el("email").value.trim();
   el("suPass1").value = "";
   el("suPass2").value = "";
   overlay.style.display = "flex";
@@ -661,35 +655,55 @@ el("btnOpenSignup").onclick = openSignupModal;
 el("btnCloseSignup").onclick = closeSignupModal;
 
 /* =============================================================================
-   9) URL ROUTING FOR PASSWORD RESET
-   IMPROVEMENT #1:
-   - When user clicks reset email, we want to show resetView.
-   - We force redirectTo = https://www.mood2know.com/#reset
-   - On load, if hash indicates reset/recovery, show reset screen immediately.
+   9) URL ROUTING FOR PASSWORD RESET (and expired link handling)
    ============================================================================= */
 function urlHasRecoveryOrReset() {
   const h = window.location.hash || "";
   const s = window.location.search || "";
 
-  // Our explicit marker
   if (h.includes("#reset")) return true;
-
-  // Supabase recovery marker
   if (h.includes("type=recovery")) return true;
   if (s.includes("type=recovery")) return true;
 
+  // ✅ PKCE flow often returns with ?code=... (no type=recovery in hash)
+  if (getUrlParam("code")) return true;
+
   return false;
 }
-
 function urlHasOtpExpiredError(){
   const h = window.location.hash || "";
   return h.includes("otp_expired") || h.includes("error=access_denied");
 }
 
 /* =============================================================================
-   10) setConnected(user)
-   - Markers stay hidden until user presses "Locate+Save+Refresh"
-   - Markers are cleared on login AND logout.
+   10) PKCE / Recovery helpers (FIX for "Auth session missing!")
+   - If Supabase returns ?code=..., we MUST exchange it for a session.
+   ============================================================================= */
+function getUrlParam(name){
+  return new URLSearchParams(window.location.search).get(name);
+}
+
+/**
+ * If Supabase sent us back with a PKCE `code=...`,
+ * exchange it for a real session BEFORE calling updateUser().
+ */
+async function bootstrapAuthFromUrlIfNeeded(){
+  const code = getUrlParam("code"); // PKCE flow uses ?code=...
+  if (!code) return;
+
+  const { error } = await sb.auth.exchangeCodeForSession(code);
+  if (error) {
+    console.warn("exchangeCodeForSession error:", error.message);
+  }
+
+  // Clean query params (prevents re-processing on refresh)
+  const cleanUrl = window.location.origin + window.location.pathname + window.location.hash;
+  window.history.replaceState({}, document.title, cleanUrl);
+}
+
+/* =============================================================================
+   11) setConnected(user)
+   - markers stay hidden until user presses "Locate+Save+Refresh"
    ============================================================================= */
 async function setConnected(user){
   if(user){
@@ -703,9 +717,8 @@ async function setConnected(user){
 }
 
 /* =============================================================================
-   11) AUTH STATE CHANGE
-   - Supabase emits PASSWORD_RECOVERY when the user arrives from reset email.
-   - We show reset screen in that case.
+   12) AUTH STATE CHANGE
+   - PASSWORD_RECOVERY event (old flow) => show reset screen
    ============================================================================= */
 sb.auth.onAuthStateChange((event, session) => {
   if (event === "PASSWORD_RECOVERY") {
@@ -717,9 +730,16 @@ sb.auth.onAuthStateChange((event, session) => {
   setConnected(session?.user || null);
 });
 
-/* Initial session on page load */
-sb.auth.getSession().then(({ data }) => {
-  // If URL indicates reset/recovery, show reset view even before event
+/* =============================================================================
+   13) INITIAL BOOTSTRAP (IMPORTANT)
+   - First: exchange PKCE code (if any) => creates session
+   - Then: getSession() and decide which view to show
+   ============================================================================= */
+(async () => {
+  await bootstrapAuthFromUrlIfNeeded();
+
+  const { data } = await sb.auth.getSession();
+
   if (urlHasRecoveryOrReset()) {
     showReset();
     if (urlHasOtpExpiredError()) {
@@ -727,17 +747,17 @@ sb.auth.getSession().then(({ data }) => {
     } else {
       setResetMessage("Please choose a new password.");
     }
+    clearMarkers();
   } else if (urlHasOtpExpiredError()) {
-    // Expired link but not a recovery session; show auth with a helpful message
     showAuth();
     setAuthMessage("This email link is invalid or has expired.\nPlease request a new reset email.");
   } else {
     setConnected(data.session?.user || null);
   }
-});
+})();
 
 /* =============================================================================
-   12) LOGIN
+   14) LOGIN
    ============================================================================= */
 el("btnLogin").onclick = async () => {
   const email = el("email").value.trim();
@@ -754,15 +774,13 @@ el("btnLogin").onclick = async () => {
     setAuthMessage("Error:\n" + error.message);
   } else {
     setAuthMessage("");
-    // setConnected is called by onAuthStateChange
   }
 };
 
 /* =============================================================================
-   13) SIGN UP (MODAL)
-   IMPROVEMENT #2 + #3:
-   - Ensure email confirmation redirect is set
-   - Close modal after success + return to login view with a message
+   15) SIGN UP (MODAL)
+   - email confirmation redirect
+   - close modal on success
    ============================================================================= */
 let signupBusy = false;
 el("btnSignup").onclick = async () => {
@@ -786,8 +804,6 @@ el("btnSignup").onclick = async () => {
     email,
     password: p1,
     options: {
-      // IMPORTANT: must be allowed in Supabase Redirect URLs
-      // Add: https://www.mood2know.com and https://www.mood2know.com/*
       emailRedirectTo: "https://www.mood2know.com"
     }
   });
@@ -799,17 +815,13 @@ el("btnSignup").onclick = async () => {
     return;
   }
 
-  // Success UX: close modal + show a clear message on login view
   closeSignupModal();
   showAuth();
-
-  // Prefill the login email
   el("email").value = email;
 
   setAuthMessage(
     "✅ Account created.\n" +
-    "Please check your email to confirm your account.\n" +
-    ""
+    "Please check your email to confirm your account."
   );
 
   btn.disabled = false;
@@ -817,9 +829,8 @@ el("btnSignup").onclick = async () => {
 };
 
 /* =============================================================================
-   14) FORGOT PASSWORD
-   IMPROVEMENT #1:
-   - redirectTo points to #reset so the app shows reset screen
+   16) FORGOT PASSWORD
+   - redirectTo points to #reset so our UI shows reset screen
    ============================================================================= */
 let forgotBusy = false;
 el("btnForgot").onclick = async () => {
@@ -840,8 +851,6 @@ el("btnForgot").onclick = async () => {
   setAuthMessage("Sending reset email…");
 
   const { error } = await sb.auth.resetPasswordForEmail(email, {
-    // Must be allowed in Supabase Redirect URLs
-    // The #reset part helps OUR UI route to resetView.
     redirectTo: "https://www.mood2know.com/#reset"
   });
 
@@ -851,7 +860,6 @@ el("btnForgot").onclick = async () => {
     setAuthMessage("✅ Reset email sent. Check your inbox (and spam).");
   }
 
-  // Re-enable after 15s to avoid accidental spamming
   setTimeout(() => {
     btn.disabled = false;
     forgotBusy = false;
@@ -859,9 +867,8 @@ el("btnForgot").onclick = async () => {
 };
 
 /* =============================================================================
-   15) RESET PASSWORD SCREEN
-   - Works when user arrives via recovery link (PASSWORD_RECOVERY session)
-   - Also works when URL has #reset (we show the view)
+   17) RESET PASSWORD SCREEN
+   ✅ FIX: Ensure there is a session BEFORE updateUser()
    ============================================================================= */
 el("btnDoReset").onclick = async () => {
   const p1 = el("newPassword1").value;
@@ -869,6 +876,19 @@ el("btnDoReset").onclick = async () => {
 
   if(!p1 || p1.length < 6) { setResetMessage("Password must be at least 6 characters."); return; }
   if(p1 !== p2) { setResetMessage("Passwords do not match."); return; }
+
+  setResetMessage("Checking session…");
+
+  // Must be present in recovery flow
+  const { data: sessData } = await sb.auth.getSession();
+  if (!sessData?.session) {
+    setResetMessage(
+      "Auth session missing!\n\n" +
+      "Please re-open the reset link from your email (the latest one).\n" +
+      "If it still fails, request a new reset email."
+    );
+    return;
+  }
 
   setResetMessage("Updating password…");
 
@@ -881,20 +901,18 @@ el("btnDoReset").onclick = async () => {
 
   setResetMessage("✅ Password updated.\nYou can now use the app.");
 
-  // Optional: clean the URL hash so you don't stay in reset mode
-  // (doesn't reload)
+  // Clean URL (keep user on the site)
   history.replaceState(null, "", "https://www.mood2know.com/");
 };
 
 el("btnResetCancel").onclick = () => {
   showAuth();
   setResetMessage("");
-  // Optional: clean URL
   history.replaceState(null, "", "https://www.mood2know.com/");
 };
 
 /* =============================================================================
-   16) LOGOUT
+   18) LOGOUT
    ============================================================================= */
 async function doLogout(){
   await sb.auth.signOut();
@@ -905,8 +923,7 @@ el("btnLogout").onclick = doLogout;
 el("btnLogout2").onclick = doLogout;
 
 /* =============================================================================
-   17) ONE BUTTON: Locate + Save + Refresh
-   - Markers appear only AFTER this action (your chosen behavior)
+   19) ONE BUTTON: Locate + Save + Refresh
    ============================================================================= */
 el("btnSaveAll").onclick = async () => {
   setAppMessage("Locating…");
@@ -951,7 +968,7 @@ el("btnSaveAll").onclick = async () => {
 };
 
 /* =============================================================================
-   18) MAP INIT
+   20) MAP INIT
    ============================================================================= */
 map.on("load", async () => {
   ensureMoodImages();
