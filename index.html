@@ -64,6 +64,7 @@
     font-size: 14px;
     opacity: .85;
   }
+  button:disabled { opacity: .55; cursor: not-allowed; }
 
   #welcomeBox{
     background: linear-gradient(135deg,#ffecd2,#fcb69f);
@@ -144,7 +145,7 @@
 
     <div class="row" style="grid-template-columns:1fr 1fr">
       <button id="btnLogin">Sign in</button>
-      <!-- IMPORTANT: this now opens a signup modal -->
+      <!-- Opens signup modal -->
       <button id="btnOpenSignup" class="secondary">Create account</button>
     </div>
 
@@ -159,8 +160,6 @@
 
   <!-- =========================
        RESET PASSWORD VIEW
-       Visible when user returns
-       from the reset email link
        ========================= -->
   <div id="resetView">
     <div id="welcomeBox">
@@ -219,7 +218,11 @@
     <h4>Create your account</h4>
 
     <div class="small">
-      You will receive a confirmation email. Your account becomes active after you confirm.
+      You should receive a confirmation email.
+      Your account becomes active after you confirm.
+      <br><br>
+      <b>Important:</b> In Supabase, enable <i>Email confirmations</i> (Auth → Providers → Email),
+      otherwise you may not receive any email.
     </div>
 
     <div class="row">
@@ -243,7 +246,6 @@
 <script>
 /* =============================================================================
    0) MOBILE VIEWPORT FIX (iOS)
-   - iOS Safari can report a dynamic viewport height; we store it in --vh.
    ============================================================================= */
 function setVh() {
   document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
@@ -278,9 +280,7 @@ const map = new maplibregl.Map({
 map.addControl(new maplibregl.NavigationControl(), "top-right");
 
 /* =============================================================================
-   2) MOOD ICONS
-   - We generate 11 "smiley" images (0..10) on the fly using a canvas.
-   - Then MapLibre can use them in a symbol layer.
+   2) MOOD ICONS (0..10)
    ============================================================================= */
 function lerp(a,b,t){ return a + (b - a) * t; }
 function lerpColor(c1,c2,t){
@@ -321,7 +321,7 @@ function moodImageData(level, size=96){
   ctx.fillStyle="rgba(0,0,0,0.75)";
   ctx.fill();
 
-  // eyebrows (tilt changes with mood)
+  // eyebrows
   const browY = eyeY - size*0.08;
   const browTilt = lerp(0.20, -0.20, t);
   ctx.lineWidth = Math.max(3, size*0.035);
@@ -338,7 +338,7 @@ function moodImageData(level, size=96){
   ctx.lineTo(cx+eyeDX+size*0.06, browY + browTilt*size*0.08);
   ctx.stroke();
 
-  // mouth curvature changes with mood
+  // mouth
   const mouthY = cy + size*0.12, mouthW=size*0.26;
   const curvature = lerp(-1, 1, t);
   ctx.beginPath();
@@ -427,7 +427,6 @@ function initPointsSourceAndLayers(){
     }
   });
 
-  // Click on cluster => zoom in
   map.on("click", "clusters-mood", (e) => {
     const f = e.features[0];
     map.getSource("points").getClusterExpansionZoom(
@@ -601,9 +600,9 @@ document.addEventListener("keydown", autoStartMusicOnce, { once: true });
 
 /* =============================================================================
    6) SUPABASE CONFIG
-   - anon key is OK in browser, but rotate it if it was posted publicly.
    ============================================================================= */
 const SUPABASE_URL = "https://ugrmxzdhevqrgftlxfnp.supabase.co";
+/* ⚠️ Put your real anon key here (Settings → API → anon public key) */
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVncm14emRoZXZxcmdmdGx4Zm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyODQ3OTQsImV4cCI6MjA4NDg2MDc5NH0.WgTj-6ADFEMrCgPNxeQZvknBBJI1c9uDY9_8Qlkqu4w";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -657,56 +656,47 @@ function closeSignupModal(){
   overlay.setAttribute("aria-hidden", "true");
 }
 overlay.addEventListener("click", (e) => {
-  // Click outside modal closes it
   if (e.target === overlay) closeSignupModal();
 });
 el("btnOpenSignup").onclick = openSignupModal;
 el("btnCloseSignup").onclick = closeSignupModal;
 
 /* =============================================================================
-   9) AUTH STATE + PASSWORD RECOVERY FLOW
-   - Supabase uses special flows:
-     - Email confirmation: user must click link
-     - Password recovery: link opens your site with tokens; user is considered
-       "in a recovery session" and you can call updateUser({password})
+   9) URL ROUTING FOR PASSWORD RESET
+   IMPROVEMENT #1:
+   - When user clicks reset email, we want to show resetView.
+   - We force redirectTo = https://www.mood2know.com/#reset
+   - On load, if hash indicates reset/recovery, show reset screen immediately.
    ============================================================================= */
+function urlHasRecoveryOrReset() {
+  const h = window.location.hash || "";
+  const s = window.location.search || "";
 
-/**
- * Detect if the current page load is a password recovery session.
- * Supabase v2 emits event "PASSWORD_RECOVERY" and/or "SIGNED_IN" with a
- * session that can update password.
- *
- * We show the reset screen when we detect it.
- */
-sb.auth.onAuthStateChange((event, session) => {
-  // If user arrived from "reset password" email
-  if (event === "PASSWORD_RECOVERY") {
-    showReset();
-    setResetMessage("Please choose a new password.");
-    clearMarkers(); // keep map clean until user saves mood
-    return;
-  }
+  // Our explicit marker
+  if (h.includes("#reset")) return true;
 
-  // Normal sign in/out changes
-  const user = session?.user || null;
-  setConnected(user);
-});
+  // Supabase recovery marker
+  if (h.includes("type=recovery")) return true;
+  if (s.includes("type=recovery")) return true;
 
-// Also handle initial page load session (if already logged in)
-sb.auth.getSession().then(({ data }) => {
-  setConnected(data.session?.user || null);
-});
+  return false;
+}
+
+function urlHasOtpExpiredError(){
+  const h = window.location.hash || "";
+  return h.includes("otp_expired") || h.includes("error=access_denied");
+}
 
 /* =============================================================================
    10) setConnected(user)
-   - We do NOT auto-load markers here (your chosen behavior).
-   - We hide markers on login + logout.
+   - Markers stay hidden until user presses "Locate+Save+Refresh"
+   - Markers are cleared on login AND logout.
    ============================================================================= */
 async function setConnected(user){
   if(user){
     showApp();
     fadeOutMusic(2.8);
-    clearMarkers(); // smileys appear only after Locate+Save+Refresh
+    clearMarkers();
   }else{
     clearMarkers();
     showAuth();
@@ -714,45 +704,42 @@ async function setConnected(user){
 }
 
 /* =============================================================================
-   11) BUTTONS: SIGN UP / SIGN IN / SIGN OUT
+   11) AUTH STATE CHANGE
+   - Supabase emits PASSWORD_RECOVERY when the user arrives from reset email.
+   - We show reset screen in that case.
    ============================================================================= */
-
-// SIGN UP (with email confirmation + 2 password fields)
-el("btnSignup").onclick = async () => {
-  const email = el("suEmail").value.trim();
-  const p1 = el("suPass1").value;
-  const p2 = el("suPass2").value;
-
-  if(!email) { el("suMsg").textContent = "Please enter an email."; return; }
-  if(!p1 || p1.length < 6) { el("suMsg").textContent = "Password must be at least 6 characters."; return; }
-  if(p1 !== p2) { el("suMsg").textContent = "Passwords do not match."; return; }
-
-  el("suMsg").textContent = "Creating account…";
-
-  // IMPORTANT:
-  // - For email confirmation to work, enable "Confirm email" in Supabase.
-  // - emailRedirectTo must be allowed in Supabase "Redirect URLs".
-  const { error } = await sb.auth.signUp({
-    email,
-    password: p1,
-    options: {
-      emailRedirectTo: "https://www.mood2know.com"  // where the confirmation link returns
-    }
-  });
-
-  if(error){
-    el("suMsg").textContent = "Error:\n" + error.message;
+sb.auth.onAuthStateChange((event, session) => {
+  if (event === "PASSWORD_RECOVERY") {
+    showReset();
+    setResetMessage("Please choose a new password.");
+    clearMarkers();
     return;
   }
+  setConnected(session?.user || null);
+});
 
-  // Do not auto sign-in (depends on Supabase settings).
-  // Usually user must confirm email first.
-  el("suMsg").textContent = "✅ Account created.\nPlease check your email to confirm your account.";
-  // Keep the modal open so they can read the message, or close it:
-  // closeSignupModal();
-};
+/* Initial session on page load */
+sb.auth.getSession().then(({ data }) => {
+  // If URL indicates reset/recovery, show reset view even before event
+  if (urlHasRecoveryOrReset()) {
+    showReset();
+    if (urlHasOtpExpiredError()) {
+      setResetMessage("This email link is invalid or has expired.\nPlease request a new reset email.");
+    } else {
+      setResetMessage("Please choose a new password.");
+    }
+  } else if (urlHasOtpExpiredError()) {
+    // Expired link but not a recovery session; show auth with a helpful message
+    showAuth();
+    setAuthMessage("This email link is invalid or has expired.\nPlease request a new reset email.");
+  } else {
+    setConnected(data.session?.user || null);
+  }
+});
 
-// SIGN IN
+/* =============================================================================
+   12) LOGIN
+   ============================================================================= */
 el("btnLogin").onclick = async () => {
   const email = el("email").value.trim();
   const password = el("password").value;
@@ -765,52 +752,117 @@ el("btnLogin").onclick = async () => {
   const { error } = await sb.auth.signInWithPassword({ email, password });
 
   if(error){
-    // Common errors you might see:
-    // - "Email not confirmed"
-    // - "Invalid login credentials"
     setAuthMessage("Error:\n" + error.message);
   } else {
     setAuthMessage("");
-    // setConnected will be called by onAuthStateChange
+    // setConnected is called by onAuthStateChange
   }
 };
 
-// SIGN OUT
-async function doLogout(){
-  await sb.auth.signOut();
-  setAppMessage("");
+/* =============================================================================
+   13) SIGN UP (MODAL)
+   IMPROVEMENT #2 + #3:
+   - Ensure email confirmation redirect is set
+   - Close modal after success + return to login view with a message
+   ============================================================================= */
+let signupBusy = false;
+el("btnSignup").onclick = async () => {
+  if (signupBusy) return;
+  signupBusy = true;
+
+  const btn = el("btnSignup");
+  btn.disabled = true;
+
+  const email = el("suEmail").value.trim();
+  const p1 = el("suPass1").value;
+  const p2 = el("suPass2").value;
+
+  if(!email) { el("suMsg").textContent = "Please enter an email."; btn.disabled=false; signupBusy=false; return; }
+  if(!p1 || p1.length < 6) { el("suMsg").textContent = "Password must be at least 6 characters."; btn.disabled=false; signupBusy=false; return; }
+  if(p1 !== p2) { el("suMsg").textContent = "Passwords do not match."; btn.disabled=false; signupBusy=false; return; }
+
+  el("suMsg").textContent = "Creating account…";
+
+  const { error } = await sb.auth.signUp({
+    email,
+    password: p1,
+    options: {
+      // IMPORTANT: must be allowed in Supabase Redirect URLs
+      // Add: https://www.mood2know.com and https://www.mood2know.com/*
+      emailRedirectTo: "https://www.mood2know.com"
+    }
+  });
+
+  if(error){
+    el("suMsg").textContent = "Error:\n" + error.message;
+    btn.disabled = false;
+    signupBusy = false;
+    return;
+  }
+
+  // Success UX: close modal + show a clear message on login view
+  closeSignupModal();
   showAuth();
-}
-el("btnLogout").onclick = doLogout;
-el("btnLogout2").onclick = doLogout;
+
+  // Prefill the login email
+  el("email").value = email;
+
+  setAuthMessage(
+    "✅ Account created.\n" +
+    "Please check your email to confirm your account.\n" +
+    "If you don't receive anything: Supabase Auth → Providers → Email → enable Email confirmations."
+  );
+
+  btn.disabled = false;
+  signupBusy = false;
+};
 
 /* =============================================================================
-   12) FORGOT PASSWORD -> send email
-   - The user receives an email link.
-   - When they click it, Supabase triggers PASSWORD_RECOVERY and we show reset view.
+   14) FORGOT PASSWORD
+   IMPROVEMENT #1:
+   - redirectTo points to #reset so the app shows reset screen
    ============================================================================= */
+let forgotBusy = false;
 el("btnForgot").onclick = async () => {
+  if (forgotBusy) return;
+  forgotBusy = true;
+
+  const btn = el("btnForgot");
+  btn.disabled = true;
+
   const email = el("email").value.trim();
-  if (!email) { setAuthMessage("Please enter your email first."); return; }
+  if (!email) {
+    setAuthMessage("Please enter your email first.");
+    btn.disabled = false;
+    forgotBusy = false;
+    return;
+  }
 
   setAuthMessage("Sending reset email…");
 
   const { error } = await sb.auth.resetPasswordForEmail(email, {
     // Must be allowed in Supabase Redirect URLs
-    redirectTo: "https://www.mood2know.com"
+    // The #reset part helps OUR UI route to resetView.
+    redirectTo: "https://www.mood2know.com/#reset"
   });
 
   if (error) {
-    setAuthMessage("Error:\n" + error.message);
+    setAuthMessage("Error:\n" + error.message + "\n\nTip: if you see 'rate limit exceeded', wait a bit and try once.");
   } else {
     setAuthMessage("✅ Reset email sent. Check your inbox (and spam).");
   }
+
+  // Re-enable after 15s to avoid accidental spamming
+  setTimeout(() => {
+    btn.disabled = false;
+    forgotBusy = false;
+  }, 15000);
 };
 
 /* =============================================================================
-   13) RESET PASSWORD SCREEN
-   - In PASSWORD_RECOVERY session we can call updateUser({password})
-   - We also ask for password twice.
+   15) RESET PASSWORD SCREEN
+   - Works when user arrives via recovery link (PASSWORD_RECOVERY session)
+   - Also works when URL has #reset (we show the view)
    ============================================================================= */
 el("btnDoReset").onclick = async () => {
   const p1 = el("newPassword1").value;
@@ -828,19 +880,34 @@ el("btnDoReset").onclick = async () => {
     return;
   }
 
-  setResetMessage("✅ Password updated. You can now use the app.");
-  // After update, user is signed-in. showApp will be triggered by auth state.
+  setResetMessage("✅ Password updated.\nYou can now use the app.");
+
+  // Optional: clean the URL hash so you don't stay in reset mode
+  // (doesn't reload)
+  history.replaceState(null, "", "https://www.mood2know.com/");
 };
 
 el("btnResetCancel").onclick = () => {
-  // Just go back to auth screen
   showAuth();
   setResetMessage("");
+  // Optional: clean URL
+  history.replaceState(null, "", "https://www.mood2know.com/");
 };
 
 /* =============================================================================
-   14) ONE BUTTON: Locate + Save + Refresh (your desired behavior)
-   - Only after this, markers appear (because refreshPoints is called).
+   16) LOGOUT
+   ============================================================================= */
+async function doLogout(){
+  await sb.auth.signOut();
+  setAppMessage("");
+  showAuth();
+}
+el("btnLogout").onclick = doLogout;
+el("btnLogout2").onclick = doLogout;
+
+/* =============================================================================
+   17) ONE BUTTON: Locate + Save + Refresh
+   - Markers appear only AFTER this action (your chosen behavior)
    ============================================================================= */
 el("btnSaveAll").onclick = async () => {
   setAppMessage("Locating…");
@@ -885,12 +952,11 @@ el("btnSaveAll").onclick = async () => {
 };
 
 /* =============================================================================
-   15) MAP INIT
+   18) MAP INIT
    ============================================================================= */
 map.on("load", async () => {
   ensureMoodImages();
   initPointsSourceAndLayers();
-  // Start with empty markers always
   clearMarkers();
 });
 </script>
