@@ -8,891 +8,208 @@
 <link rel="stylesheet" href="./maplibre-gl.css">
 
 <style>
-  html, body { margin:0; height:100%; font:16px system-ui; }
-  #map { position:fixed; inset:0; }
+html, body { margin:0; height:100%; font:16px system-ui; }
+#map { position:fixed; inset:0; }
 
-  #panel{
-    position: fixed;
-    z-index: 10;
-    background: rgba(255,255,255,0.96);
-    border-radius: 16px;
-    box-shadow: 0 14px 36px rgba(0,0,0,.25);
-    padding: 16px;
-    transition: all .35s ease;
-  }
+#panel{
+  position: fixed;
+  z-index: 10;
+  background: rgba(255,255,255,0.96);
+  border-radius: 16px;
+  box-shadow: 0 14px 36px rgba(0,0,0,.25);
+  padding: 16px;
+  transition: all .35s ease;
+}
 
-  .panel-welcome{
-    left:50%; top:50%;
-    transform:translate(-50%,-50%);
-    width: min(440px, calc(100vw - 24px));
-  }
+.panel-center{
+  left:50%; top:50%;
+  transform:translate(-50%,-50%);
+  width: min(420px, calc(100vw - 24px));
+}
 
-  .panel-app{
-    left:12px; top:12px;
-    transform:none;
-    width: 320px;
-  }
+.panel-app{
+  left:12px; top:12px;
+  transform:none;
+  width: 320px;
+}
 
-  /* Ultra compact after first successful save (mobile-friendly) */
-  .panel-compact{
-    left:12px; top:12px;
-    transform:none;
-    width: auto;
-    padding: 10px 12px;
-    border-radius: 14px;
-  }
+h3 { margin:0 0 10px; font-size:18px; }
+.row { display:grid; gap:10px; margin:10px 0; }
 
-  h3 { margin:0 0 10px; font-size:18px; }
-  .row { display:grid; gap:10px; margin:10px 0; }
+input, button{
+  font:inherit;
+  padding:12px;
+  border-radius:12px;
+  border:1px solid rgba(0,0,0,.15);
+}
+button{ background:#111; color:#fff; border:0; cursor:pointer; }
+button.secondary{ background:#eee; color:#111; }
+button.link{
+  background:none; border:0; padding:0;
+  color:#111; text-decoration:underline;
+  cursor:pointer; font-size:14px;
+}
 
-  input, button{
-    font:inherit;
-    padding:12px;
-    border-radius:12px;
-    border:1px solid rgba(0,0,0,.15);
-  }
-  button{ background:#111; color:#fff; border:0; cursor:pointer; }
-  button.secondary{ background:#eee; color:#111; }
-  button.link{
-    background: transparent;
-    color: #111;
-    border: 0;
-    padding: 0;
-    text-align: left;
-    text-decoration: underline;
-    cursor: pointer;
-    font-size: 14px;
-    opacity: .85;
-  }
+.msg{ font-size:13px; white-space:pre-wrap; }
+.small{ font-size:13px; opacity:.75; }
 
-  #welcomeBox{
-    background: linear-gradient(135deg,#ffecd2,#fcb69f);
-    border-radius:14px;
-    padding:14px;
-  }
-
-  .small{ font-size:13px; opacity:.75; }
-  .msg{ white-space:pre-wrap; font-size:13px; }
-
-  #authView,#appView,#compactView,#resetView{ display:none; }
-
-  /* Mobile tweaks */
-  @media (max-width: 520px) {
-    .panel-welcome{ width: calc(100vw - 24px); }
-    .panel-app{ width: calc(100vw - 24px); left: 12px; right: 12px; }
-    button, input { padding: 14px; font-size: 16px; } /* prevents iOS zoom on inputs */
-    .panel-compact{ left: 12px; right: 12px; }
-  }
-
-  /* iPhone safe areas */
-  #panel{
-    padding-bottom: calc(16px + env(safe-area-inset-bottom));
-    padding-top: calc(16px + env(safe-area-inset-top));
-  }
-
-  :root { --vh: 1vh; }
-  #map { height: calc(var(--vh) * 100); }
-
-  /* ===========================
-     SIMPLE MODAL (for signup)
-     =========================== */
-  #overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.45);
-    z-index: 50;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 12px;
-  }
-  #modal {
-    width: min(520px, 100%);
-    background: rgba(255,255,255,0.98);
-    border-radius: 16px;
-    box-shadow: 0 14px 36px rgba(0,0,0,.25);
-    padding: 16px;
-  }
-  #modal h4 { margin: 0 0 10px; font-size: 17px; }
-  .modal-actions { display:flex; gap:10px; justify-content:flex-end; }
-  .warn { color:#b00020; font-size: 13px; white-space: pre-wrap; }
+.view{ display:none; }
 </style>
 </head>
 
 <body>
 <div id="map"></div>
 
-<div id="panel" class="panel-welcome">
-  <h3>Mood Map</h3>
+<div id="panel" class="panel-center">
 
-  <!-- =========================
-       AUTH VIEW (Login + Forgot)
-       ========================= -->
-  <div id="authView">
-    <div id="welcomeBox">
-      <b>Welcome 🌍</b><br><br>
-      Discover the mood of the world.<br>
-      Create an account to share how you feel and explore
-      how happy people are across different places.
-    </div>
+<h3>Mood Map</h3>
 
-    <!-- LOGIN inputs -->
-    <div class="row">
-      <input id="email" type="email" placeholder="Email" autocomplete="email">
-      <input id="password" type="password" placeholder="Password" autocomplete="current-password">
-    </div>
-
-    <div class="row" style="grid-template-columns:1fr 1fr">
-      <button id="btnLogin">Sign in</button>
-      <!-- IMPORTANT: this now opens a signup modal -->
-      <button id="btnOpenSignup" class="secondary">Create account</button>
-    </div>
-
-    <!-- Forgot password -->
-    <div class="row">
-      <button id="btnForgot" class="link" type="button">Forgot your password?</button>
-      <div class="small">We will email you a reset link.</div>
-    </div>
-
-    <div id="authMsg" class="msg"></div>
+<!-- ================= LOGIN ================= -->
+<div id="view-login" class="view">
+  <div class="row">
+    <input id="loginEmail" type="email" placeholder="Email">
+    <input id="loginPassword" type="password" placeholder="Password">
   </div>
 
-  <!-- =========================
-       RESET PASSWORD VIEW
-       Visible when user returns
-       from the reset email link
-       ========================= -->
-  <div id="resetView">
-    <div id="welcomeBox">
-      <b>Reset your password</b><br><br>
-      Please choose a new password (enter it twice).
-    </div>
-
-    <div class="row">
-      <input id="newPassword1" type="password" placeholder="New password">
-      <input id="newPassword2" type="password" placeholder="Confirm new password">
-    </div>
-
-    <div class="row">
-      <button id="btnDoReset">Update password</button>
-      <button id="btnResetCancel" class="secondary" type="button">Back</button>
-    </div>
-
-    <div id="resetMsg" class="msg"></div>
+  <div class="row" style="grid-template-columns:1fr 1fr">
+    <button id="btnLogin">Sign in</button>
+    <button id="btnGoSignup" class="secondary">Create account</button>
   </div>
 
-  <!-- =========================
-       APP VIEW (mood + save)
-       ========================= -->
-  <div id="appView">
-    <div class="row">
-      <label>Your mood: <b><span id="moodValue">5</span>/10</b></label>
-      <input id="slider" type="range" min="0" max="10" value="5">
-    </div>
-
-    <div class="row">
-      <button id="btnSaveAll">Locate + Save + Refresh</button>
-    </div>
-
-    <div class="small">Markers appear after your first save.</div>
-    <div id="appMsg" class="msg"></div>
-
-    <div class="row">
-      <button id="btnLogout" class="secondary">Sign out</button>
-    </div>
-  </div>
-
-  <!-- COMPACT panel (after save) -->
-  <div id="compactView">
-    <div class="small" id="compactMsg">✅ Saved.</div>
-    <div class="row" style="margin-top:8px;">
-      <button id="btnLogout2" class="secondary">Sign out</button>
-    </div>
-  </div>
+  <button id="btnForgot" class="link">Forgot password?</button>
+  <div id="loginMsg" class="msg"></div>
 </div>
 
-<!-- =========================
-     SIGNUP MODAL
-     ========================= -->
-<div id="overlay" aria-hidden="true">
-  <div id="modal" role="dialog" aria-modal="true">
-    <h4>Create your account</h4>
-
-    <div class="small">
-      You will receive a confirmation email. Your account becomes active after you confirm.
-    </div>
-
-    <div class="row">
-      <input id="suEmail" type="email" placeholder="Email" autocomplete="email">
-      <input id="suPass1" type="password" placeholder="Password (min 6 chars)" autocomplete="new-password">
-      <input id="suPass2" type="password" placeholder="Confirm password" autocomplete="new-password">
-    </div>
-
-    <div id="suMsg" class="warn"></div>
-
-    <div class="modal-actions">
-      <button id="btnCloseSignup" class="secondary" type="button">Cancel</button>
-      <button id="btnSignup" type="button">Create account</button>
-    </div>
+<!-- ================= SIGN UP ================= -->
+<div id="view-signup" class="view">
+  <div class="row">
+    <input id="signupEmail" type="email" placeholder="Email">
+    <input id="signupPass1" type="password" placeholder="Password">
+    <input id="signupPass2" type="password" placeholder="Confirm password">
   </div>
+
+  <button id="btnSignup">Create account</button>
+  <button id="btnBackLogin" class="secondary">Back</button>
+
+  <div class="small">You will receive a confirmation email.</div>
+  <div id="signupMsg" class="msg"></div>
 </div>
 
-<script src="./maplibre-gl.js"></script>
+<!-- ================= RESET PASSWORD ================= -->
+<div id="view-reset" class="view">
+  <div class="row">
+    <input id="resetPass1" type="password" placeholder="New password">
+    <input id="resetPass2" type="password" placeholder="Confirm new password">
+  </div>
+
+  <button id="btnReset">Reset password</button>
+  <div id="resetMsg" class="msg"></div>
+</div>
+
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-/* =============================================================================
-   0) MOBILE VIEWPORT FIX (iOS)
-   - iOS Safari can report a dynamic viewport height; we store it in --vh.
-   ============================================================================= */
-function setVh() {
-  document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
-}
-window.addEventListener('resize', setVh);
-setVh();
+/* ================= SUPABASE CONFIG ================= */
+const sb = supabase.createClient(
+  "https://ugrmxzdhevqrgftlxfnp.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVncm14emRoZXZxcmdmdGx4Zm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyODQ3OTQsImV4cCI6MjA4NDg2MDc5NH0.WgTj-6ADFEMrCgPNxeQZvknBBJI1c9uDY9_8Qlkqu4w"
+);
 
-/* =============================================================================
-   1) MAP SETUP (MapLibre + OSM raster tiles)
-   ============================================================================= */
-const map = new maplibregl.Map({
-  container: "map",
-  style: {
-    version: 8,
-    sources: {
-      osm: {
-        type: "raster",
-        tiles: [
-          "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
-          "https://b.tile.openstreetmap.org/{z}/{x}/{y}.png",
-          "https://c.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        ],
-        tileSize: 256,
-        attribution: "© OpenStreetMap contributors"
-      }
-    },
-    layers: [{ id: "osm", type: "raster", source: "osm" }]
-  },
-  center: [0, 20],
-  zoom: 2
-});
-map.addControl(new maplibregl.NavigationControl(), "top-right");
+/* ================= VIEW HELPERS ================= */
+const views = {
+  login: document.getElementById("view-login"),
+  signup: document.getElementById("view-signup"),
+  reset: document.getElementById("view-reset")
+};
 
-/* =============================================================================
-   2) MOOD ICONS
-   - We generate 11 "smiley" images (0..10) on the fly using a canvas.
-   - Then MapLibre can use them in a symbol layer.
-   ============================================================================= */
-function lerp(a,b,t){ return a + (b - a) * t; }
-function lerpColor(c1,c2,t){
-  const r = Math.round(lerp(c1[0], c2[0], t));
-  const g = Math.round(lerp(c1[1], c2[1], t));
-  const b = Math.round(lerp(c1[2], c2[2], t));
-  return `rgb(${r},${g},${b})`;
-}
-function moodImageData(level, size=96){
-  const t = Math.max(0, Math.min(1, level/10));
-  const red=[215,25,28], yellow=[255,255,191], green=[26,150,65];
-  const fill = (t < 0.5)
-    ? lerpColor(red, yellow, t/0.5)
-    : lerpColor(yellow, green, (t-0.5)/0.5);
-
-  const canvas = document.createElement("canvas");
-  canvas.width = size; canvas.height = size;
-  const ctx = canvas.getContext("2d");
-
-  const cx = size/2, cy = size/2, r = size*0.42;
-
-  // shadow
-  ctx.beginPath(); ctx.arc(cx, cy+3, r, 0, Math.PI*2);
-  ctx.fillStyle="rgba(0,0,0,0.18)"; ctx.fill();
-
-  // head
-  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
-  ctx.fillStyle = fill; ctx.fill();
-  ctx.lineWidth = Math.max(3, size*0.04);
-  ctx.strokeStyle = "rgba(0,0,0,0.25)";
-  ctx.stroke();
-
-  // eyes
-  const eyeY = cy - size*0.10, eyeDX=size*0.14, eyeR=size*0.04;
-  ctx.beginPath();
-  ctx.arc(cx-eyeDX, eyeY, eyeR, 0, Math.PI*2);
-  ctx.arc(cx+eyeDX, eyeY, eyeR, 0, Math.PI*2);
-  ctx.fillStyle="rgba(0,0,0,0.75)";
-  ctx.fill();
-
-  // eyebrows (tilt changes with mood)
-  const browY = eyeY - size*0.08;
-  const browTilt = lerp(0.20, -0.20, t);
-  ctx.lineWidth = Math.max(3, size*0.035);
-  ctx.strokeStyle="rgba(0,0,0,0.55)";
-  ctx.lineCap="round";
-
-  ctx.beginPath();
-  ctx.moveTo(cx-eyeDX-size*0.06, browY + browTilt*size*0.08);
-  ctx.lineTo(cx-eyeDX+size*0.06, browY - browTilt*size*0.08);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.moveTo(cx+eyeDX-size*0.06, browY - browTilt*size*0.08);
-  ctx.lineTo(cx+eyeDX+size*0.06, browY + browTilt*size*0.08);
-  ctx.stroke();
-
-  // mouth curvature changes with mood
-  const mouthY = cy + size*0.12, mouthW=size*0.26;
-  const curvature = lerp(-1, 1, t);
-  ctx.beginPath();
-  ctx.moveTo(cx-mouthW, mouthY);
-  ctx.quadraticCurveTo(cx, mouthY + curvature*size*0.12, cx+mouthW, mouthY);
-  ctx.strokeStyle="rgba(0,0,0,0.70)";
-  ctx.lineWidth=Math.max(4, size*0.05);
-  ctx.lineCap="round";
-  ctx.stroke();
-
-  const img = ctx.getImageData(0,0,size,size);
-  return { width: img.width, height: img.height, data: img.data };
-}
-function ensureMoodImages(){
-  for(let lvl=0; lvl<=10; lvl++){
-    const name = `mood-${lvl}`;
-    if(!map.hasImage(name)) map.addImage(name, moodImageData(lvl,96));
-  }
+function showView(name){
+  Object.values(views).forEach(v => v.style.display="none");
+  views[name].style.display="block";
 }
 
-/* =============================================================================
-   3) POINTS SOURCE + LAYERS (clusters + individual mood icons)
-   ============================================================================= */
-function initPointsSourceAndLayers(){
-  if(map.getSource("points")) return;
+/* ================= INITIAL ROUTING ================= */
 
-  map.addSource("points", {
-    type: "geojson",
-    data: { type:"FeatureCollection", features: [] },
-    cluster: true,
-    clusterRadius: 60,
-    clusterMaxZoom: 14,
-    clusterProperties: {
-      sum: ["+", ["get", "value"]],
-      count: ["+", 1]
-    }
+// If Supabase redirected for password recovery
+if (location.hash.includes("type=recovery")) {
+  showView("reset");
+} else {
+  showView("login");
+}
+
+/* ================= LOGIN ================= */
+btnLogin.onclick = async () => {
+  loginMsg.textContent = "Signing in…";
+  const { error } = await sb.auth.signInWithPassword({
+    email: loginEmail.value.trim(),
+    password: loginPassword.value
   });
+  loginMsg.textContent = error ? error.message : "Signed in!";
+};
 
-  const avgRoundedClamped = [
-    "case",
-    ["<", ["round", ["/", ["get","sum"], ["get","count"]]], 0], 0,
-    [">", ["round", ["/", ["get","sum"], ["get","count"]]], 10], 10,
-    ["round", ["/", ["get","sum"], ["get","count"]]]
-  ];
+/* ================= SIGN UP ================= */
+btnGoSignup.onclick = () => showView("signup");
+btnBackLogin.onclick = () => showView("login");
 
-  map.addLayer({
-    id: "clusters-mood",
-    type: "symbol",
-    source: "points",
-    filter: ["has", "point_count"],
-    layout: {
-      "icon-image": ["concat","mood-", ["to-string", avgRoundedClamped]],
-      "icon-size": ["step", ["get","point_count"], 0.65, 10, 0.75, 50, 0.9, 200, 1.05, 1000, 1.2],
-      "icon-allow-overlap": true,
-      "text-field": ["to-string", ["get","point_count"]],
-      "text-size": 12,
-      "text-offset": [0, 1.55],
-      "text-allow-overlap": true,
-      "text-anchor": "top"
-    },
-    paint: {
-      "text-color": "rgba(0,0,0,0.75)",
-      "text-halo-color": "rgba(255,255,255,0.9)",
-      "text-halo-width": 1
-    }
-  });
-
-  map.addLayer({
-    id: "points-mood",
-    type: "symbol",
-    source: "points",
-    filter: ["!", ["has", "point_count"]],
-    layout: {
-      "icon-image": [
-        "concat","mood-",
-        ["to-string",
-          ["case",
-            ["<", ["round", ["get","value"]], 0], 0,
-            [">", ["round", ["get","value"]], 10], 10,
-            ["round", ["get","value"]]
-          ]
-        ]
-      ],
-      "icon-size": 0.55,
-      "icon-allow-overlap": true
-    }
-  });
-
-  // Click on cluster => zoom in
-  map.on("click", "clusters-mood", (e) => {
-    const f = e.features[0];
-    map.getSource("points").getClusterExpansionZoom(
-      f.properties.cluster_id,
-      (err, zoom) => {
-        if (err) return;
-        map.easeTo({ center: f.geometry.coordinates, zoom });
-      }
-    );
-  });
-
-  map.on("mouseenter", "clusters-mood", () => map.getCanvas().style.cursor = "pointer");
-  map.on("mouseleave", "clusters-mood", () => map.getCanvas().style.cursor = "");
-}
-
-function clearMarkers(){
-  const source = map.getSource("points");
-  if(!source) return;
-  source.setData({ type:"FeatureCollection", features: [] });
-}
-
-async function refreshPoints(){
-  const source = map.getSource("points");
-  if(!source) return;
-
-  const { data, error } = await sb
-    .from("mood_entries")
-    .select("mood, lon, lat")
-    .order("created_at", { ascending:false })
-    .limit(20000);
-
-  if(error){
-    setAppMessage("Load error:\n" + error.message);
+btnSignup.onclick = async () => {
+  if (signupPass1.value !== signupPass2.value) {
+    signupMsg.textContent = "Passwords do not match";
     return;
   }
 
-  const features = (data || [])
-    .filter(r => typeof r.lon==="number" && typeof r.lat==="number")
-    .map(r => ({
-      type: "Feature",
-      properties: { value: r.mood },
-      geometry: { type:"Point", coordinates:[r.lon, r.lat] }
-    }));
+  signupMsg.textContent = "Creating account…";
 
-  source.setData({ type:"FeatureCollection", features });
-  setAppMessage(`Loaded markers: ${features.length}`);
-}
-
-/* =============================================================================
-   4) UI HELPERS
-   ============================================================================= */
-const el = id => document.getElementById(id);
-const panel = el("panel");
-
-function setAuthMessage(msg){ el("authMsg").textContent = msg || ""; }
-function setResetMessage(msg){ el("resetMsg").textContent = msg || ""; }
-function setAppMessage(msg){ el("appMsg").textContent = msg || ""; }
-
-const slider = el("slider");
-slider.oninput = ()=> el("moodValue").textContent = slider.value;
-
-/* =============================================================================
-   5) MUSIC (fade out on login)
-   ============================================================================= */
-let audioCtx, masterGain, musicStarted = false;
-let musicNodes = [];
-let chordTimer = null;
-
-function stopLoopTimers() {
-  if (chordTimer) { clearTimeout(chordTimer); chordTimer = null; }
-}
-function fadeOutMusic(seconds = 2.5) {
-  if (!audioCtx || !masterGain) return;
-
-  const now = audioCtx.currentTime;
-  masterGain.gain.cancelScheduledValues(now);
-  masterGain.gain.setValueAtTime(masterGain.gain.value, now);
-  masterGain.gain.linearRampToValueAtTime(0.0001, now + seconds);
-
-  setTimeout(() => {
-    try { stopLoopTimers(); } catch {}
-    for (const n of musicNodes) {
-      try { n.stop && n.stop(); } catch {}
-      try { n.disconnect && n.disconnect(); } catch {}
-    }
-    musicNodes = [];
-  }, (seconds + 0.3) * 1000);
-}
-function playAmbientMusic() {
-  if (musicStarted) return;
-  musicStarted = true;
-
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  masterGain = audioCtx.createGain();
-  masterGain.gain.value = 0.22;
-  masterGain.connect(audioCtx.destination);
-
-  const lp = audioCtx.createBiquadFilter();
-  lp.type = "lowpass";
-  lp.frequency.value = 1200;
-  lp.connect(masterGain);
-
-  const chords = [
-    [261.63, 329.63, 392.00],
-    [220.00, 261.63, 329.63],
-    [174.61, 220.00, 261.63],
-    [196.00, 293.66, 392.00]
-  ];
-
-  function padChord(freqs, start, dur) {
-    for (const f of freqs) {
-      const o = audioCtx.createOscillator();
-      o.type = "sine";
-      o.frequency.value = f;
-
-      const g = audioCtx.createGain();
-      g.gain.setValueAtTime(0, start);
-      g.gain.linearRampToValueAtTime(0.12, start + 1.2);
-      g.gain.linearRampToValueAtTime(0.0, start + dur);
-
-      o.connect(g).connect(lp);
-      o.start(start);
-      o.stop(start + dur + 0.05);
-      musicNodes.push(o, g);
-    }
-  }
-
-  function arpeggio(freqs, start) {
-    const pattern = [0, 1, 2, 1];
-    for (let i = 0; i < 8; i++) {
-      const f = freqs[pattern[i % pattern.length]] * (i % 2 === 0 ? 2 : 1);
-      const o = audioCtx.createOscillator();
-      o.type = "triangle";
-      o.frequency.value = f;
-
-      const g = audioCtx.createGain();
-      const t = start + i * 0.5;
-      g.gain.setValueAtTime(0, t);
-      g.gain.linearRampToValueAtTime(0.05, t + 0.03);
-      g.gain.linearRampToValueAtTime(0, t + 0.45);
-
-      o.connect(g).connect(lp);
-      o.start(t);
-      o.stop(t + 0.5);
-      musicNodes.push(o, g);
-    }
-  }
-
-  let idx = 0;
-  function schedule() {
-    const now = audioCtx.currentTime;
-    const start = now + 0.02;
-    const dur = 7.5;
-    const freqs = chords[idx % chords.length];
-    padChord(freqs, start, dur);
-    arpeggio(freqs, start);
-    idx++;
-    chordTimer = setTimeout(schedule, dur * 1000);
-  }
-  schedule();
-}
-
-// Auto-start music on first user interaction (browser policy)
-function autoStartMusicOnce() {
-  playAmbientMusic();
-  document.removeEventListener("pointerdown", autoStartMusicOnce);
-  document.removeEventListener("keydown", autoStartMusicOnce);
-}
-document.addEventListener("pointerdown", autoStartMusicOnce, { once: true });
-document.addEventListener("keydown", autoStartMusicOnce, { once: true });
-
-/* =============================================================================
-   6) SUPABASE CONFIG
-   - anon key is OK in browser, but rotate it if it was posted publicly.
-   ============================================================================= */
-const SUPABASE_URL = "https://ugrmxzdhevqrgftlxfnp.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVncm14emRoZXZxcmdmdGx4Zm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyODQ3OTQsImV4cCI6MjA4NDg2MDc5NH0.WgTj-6ADFEMrCgPNxeQZvknBBJI1c9uDY9_8Qlkqu4w";
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-/* =============================================================================
-   7) VIEWS (welcome / app / compact / reset)
-   ============================================================================= */
-function showAuth(){
-  panel.className = "panel-welcome";
-  el("authView").style.display="block";
-  el("appView").style.display="none";
-  el("compactView").style.display="none";
-  el("resetView").style.display="none";
-}
-function showReset(){
-  panel.className = "panel-welcome";
-  el("authView").style.display="none";
-  el("appView").style.display="none";
-  el("compactView").style.display="none";
-  el("resetView").style.display="block";
-}
-function showApp(){
-  panel.className = "panel-app";
-  el("authView").style.display="none";
-  el("appView").style.display="block";
-  el("compactView").style.display="none";
-  el("resetView").style.display="none";
-}
-function showCompact(msg="✅ Saved."){
-  panel.className = "panel-compact";
-  el("compactMsg").textContent = msg;
-  el("authView").style.display="none";
-  el("appView").style.display="none";
-  el("compactView").style.display="block";
-  el("resetView").style.display="none";
-}
-
-/* =============================================================================
-   8) SIGNUP MODAL (open/close)
-   ============================================================================= */
-const overlay = el("overlay");
-function openSignupModal(){
-  el("suMsg").textContent = "";
-  el("suEmail").value = el("email").value.trim(); // prefill from login field
-  el("suPass1").value = "";
-  el("suPass2").value = "";
-  overlay.style.display = "flex";
-  overlay.setAttribute("aria-hidden", "false");
-}
-function closeSignupModal(){
-  overlay.style.display = "none";
-  overlay.setAttribute("aria-hidden", "true");
-}
-overlay.addEventListener("click", (e) => {
-  // Click outside modal closes it
-  if (e.target === overlay) closeSignupModal();
-});
-el("btnOpenSignup").onclick = openSignupModal;
-el("btnCloseSignup").onclick = closeSignupModal;
-
-/* =============================================================================
-   9) AUTH STATE + PASSWORD RECOVERY FLOW
-   - Supabase uses special flows:
-     - Email confirmation: user must click link
-     - Password recovery: link opens your site with tokens; user is considered
-       "in a recovery session" and you can call updateUser({password})
-   ============================================================================= */
-
-/**
- * Detect if the current page load is a password recovery session.
- * Supabase v2 emits event "PASSWORD_RECOVERY" and/or "SIGNED_IN" with a
- * session that can update password.
- *
- * We show the reset screen when we detect it.
- */
-sb.auth.onAuthStateChange((event, session) => {
-  // If user arrived from "reset password" email
-  if (event === "PASSWORD_RECOVERY") {
-    showReset();
-    setResetMessage("Please choose a new password.");
-    clearMarkers(); // keep map clean until user saves mood
-    return;
-  }
-
-  // Normal sign in/out changes
-  const user = session?.user || null;
-  setConnected(user);
-});
-
-// Also handle initial page load session (if already logged in)
-sb.auth.getSession().then(({ data }) => {
-  setConnected(data.session?.user || null);
-});
-
-/* =============================================================================
-   10) setConnected(user)
-   - We do NOT auto-load markers here (your chosen behavior).
-   - We hide markers on login + logout.
-   ============================================================================= */
-async function setConnected(user){
-  if(user){
-    showApp();
-    fadeOutMusic(2.8);
-    clearMarkers(); // smileys appear only after Locate+Save+Refresh
-  }else{
-    clearMarkers();
-    showAuth();
-  }
-}
-
-/* =============================================================================
-   11) BUTTONS: SIGN UP / SIGN IN / SIGN OUT
-   ============================================================================= */
-
-// SIGN UP (with email confirmation + 2 password fields)
-el("btnSignup").onclick = async () => {
-  const email = el("suEmail").value.trim();
-  const p1 = el("suPass1").value;
-  const p2 = el("suPass2").value;
-
-  if(!email) { el("suMsg").textContent = "Please enter an email."; return; }
-  if(!p1 || p1.length < 6) { el("suMsg").textContent = "Password must be at least 6 characters."; return; }
-  if(p1 !== p2) { el("suMsg").textContent = "Passwords do not match."; return; }
-
-  el("suMsg").textContent = "Creating account…";
-
-  // IMPORTANT:
-  // - For email confirmation to work, enable "Confirm email" in Supabase.
-  // - emailRedirectTo must be allowed in Supabase "Redirect URLs".
   const { error } = await sb.auth.signUp({
-    email,
-    password: p1,
+    email: signupEmail.value.trim(),
+    password: signupPass1.value,
     options: {
-      emailRedirectTo: "https://www.mood2know.com"  // where the confirmation link returns
+      emailRedirectTo: "https://www.mood2know.com"
     }
   });
 
-  if(error){
-    el("suMsg").textContent = "Error:\n" + error.message;
+  signupMsg.textContent = error
+    ? error.message
+    : "✅ Check your email to confirm your account.";
+};
+
+/* ================= FORGOT PASSWORD ================= */
+btnForgot.onclick = async () => {
+  if (!loginEmail.value) {
+    loginMsg.textContent = "Enter your email first.";
     return;
   }
 
-  // Do not auto sign-in (depends on Supabase settings).
-  // Usually user must confirm email first.
-  el("suMsg").textContent = "✅ Account created.\nPlease check your email to confirm your account.";
-  // Keep the modal open so they can read the message, or close it:
-  // closeSignupModal();
+  loginMsg.textContent = "Sending reset email…";
+
+  const { error } = await sb.auth.resetPasswordForEmail(
+    loginEmail.value.trim(),
+    { redirectTo: "https://www.mood2know.com" }
+  );
+
+  loginMsg.textContent = error
+    ? error.message
+    : "✅ Reset email sent.";
 };
 
-// SIGN IN
-el("btnLogin").onclick = async () => {
-  const email = el("email").value.trim();
-  const password = el("password").value;
-
-  if(!email) return setAuthMessage("Error: empty email");
-  if(!password) return setAuthMessage("Error: empty password");
-
-  setAuthMessage("Signing in…");
-
-  const { error } = await sb.auth.signInWithPassword({ email, password });
-
-  if(error){
-    // Common errors you might see:
-    // - "Email not confirmed"
-    // - "Invalid login credentials"
-    setAuthMessage("Error:\n" + error.message);
-  } else {
-    setAuthMessage("");
-    // setConnected will be called by onAuthStateChange
+/* ================= RESET PASSWORD ================= */
+btnReset.onclick = async () => {
+  if (resetPass1.value !== resetPass2.value) {
+    resetMsg.textContent = "Passwords do not match";
+    return;
   }
-};
 
-// SIGN OUT
-async function doLogout(){
-  await sb.auth.signOut();
-  setAppMessage("");
-  showAuth();
-}
-el("btnLogout").onclick = doLogout;
-el("btnLogout2").onclick = doLogout;
+  resetMsg.textContent = "Updating password…";
 
-/* =============================================================================
-   12) FORGOT PASSWORD -> send email
-   - The user receives an email link.
-   - When they click it, Supabase triggers PASSWORD_RECOVERY and we show reset view.
-   ============================================================================= */
-el("btnForgot").onclick = async () => {
-  const email = el("email").value.trim();
-  if (!email) { setAuthMessage("Please enter your email first."); return; }
-
-  setAuthMessage("Sending reset email…");
-
-  const { error } = await sb.auth.resetPasswordForEmail(email, {
-    // Must be allowed in Supabase Redirect URLs
-    redirectTo: "https://www.mood2know.com"
+  const { error } = await sb.auth.updateUser({
+    password: resetPass1.value
   });
 
-  if (error) {
-    setAuthMessage("Error:\n" + error.message);
-  } else {
-    setAuthMessage("✅ Reset email sent. Check your inbox (and spam).");
-  }
+  resetMsg.textContent = error
+    ? error.message
+    : "✅ Password updated. You can sign in.";
 };
-
-/* =============================================================================
-   13) RESET PASSWORD SCREEN
-   - In PASSWORD_RECOVERY session we can call updateUser({password})
-   - We also ask for password twice.
-   ============================================================================= */
-el("btnDoReset").onclick = async () => {
-  const p1 = el("newPassword1").value;
-  const p2 = el("newPassword2").value;
-
-  if(!p1 || p1.length < 6) { setResetMessage("Password must be at least 6 characters."); return; }
-  if(p1 !== p2) { setResetMessage("Passwords do not match."); return; }
-
-  setResetMessage("Updating password…");
-
-  const { error } = await sb.auth.updateUser({ password: p1 });
-
-  if (error) {
-    setResetMessage("Error:\n" + error.message);
-    return;
-  }
-
-  setResetMessage("✅ Password updated. You can now use the app.");
-  // After update, user is signed-in. showApp will be triggered by auth state.
-};
-
-el("btnResetCancel").onclick = () => {
-  // Just go back to auth screen
-  showAuth();
-  setResetMessage("");
-};
-
-/* =============================================================================
-   14) ONE BUTTON: Locate + Save + Refresh (your desired behavior)
-   - Only after this, markers appear (because refreshPoints is called).
-   ============================================================================= */
-el("btnSaveAll").onclick = async () => {
-  setAppMessage("Locating…");
-
-  const { data: { user } } = await sb.auth.getUser();
-  if (!user) { setAppMessage("You must be signed in."); return; }
-
-  if (!navigator.geolocation) {
-    setAppMessage("Geolocation not supported.");
-    return;
-  }
-
-  navigator.geolocation.getCurrentPosition(async (pos) => {
-    const coords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-    const mood = parseInt(slider.value, 10);
-
-    setAppMessage("Saving…");
-
-    const row = {
-      user_id: user.id,
-      mood,
-      lon: coords.lon,
-      lat: coords.lat,
-      location: `POINT(${coords.lon} ${coords.lat})`
-    };
-
-    const { error } = await sb
-      .from("mood_entries")
-      .upsert(row, { onConflict: "user_id" });
-
-    if (error) { setAppMessage("Save error:\n" + error.message); return; }
-
-    map.easeTo({ center: [coords.lon, coords.lat], zoom: Math.max(map.getZoom(), 8) });
-
-    setAppMessage("✅ Saved. Loading markers…");
-    await refreshPoints();
-
-    showCompact("✅ Saved. Thank you!");
-  }, (err) => {
-    setAppMessage("Geolocation error: " + err.message);
-  }, { enableHighAccuracy: true, timeout: 10000 });
-};
-
-/* =============================================================================
-   15) MAP INIT
-   ============================================================================= */
-map.on("load", async () => {
-  ensureMoodImages();
-  initPointsSourceAndLayers();
-  // Start with empty markers always
-  clearMarkers();
-});
 </script>
+
 </body>
 </html>
