@@ -145,11 +145,9 @@
 
     <div class="row" style="grid-template-columns:1fr 1fr">
       <button id="btnLogin">Sign in</button>
-      <!-- Opens signup modal -->
       <button id="btnOpenSignup" class="secondary">Create account</button>
     </div>
 
-    <!-- Forgot password -->
     <div class="row">
       <button id="btnForgot" class="link" type="button">Forgot your password?</button>
       <div class="small">We will email you a reset link.</div>
@@ -353,7 +351,7 @@ function ensureMoodImages(){
 }
 
 /* =============================================================================
-   3) POINTS SOURCE + LAYERS (clusters + individual mood icons)
+   3) POINTS SOURCE + LAYERS
    ============================================================================= */
 function initPointsSourceAndLayers(){
   if(map.getSource("points")) return;
@@ -595,12 +593,11 @@ document.addEventListener("keydown", autoStartMusicOnce, { once: true });
    6) SUPABASE CONFIG
    ============================================================================= */
 const SUPABASE_URL = "https://ugrmxzdhevqrgftlxfnp.supabase.co";
-/* ⚠️ Put your real anon key here (Settings → API → anon public key) */
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVncm14emRoZXZxcmdmdGx4Zm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyODQ3OTQsImV4cCI6MjA4NDg2MDc5NH0.WgTj-6ADFEMrCgPNxeQZvknBBJI1c9uDY9_8Qlkqu4w";
+const SUPABASE_ANON_KEY = "PUT_YOUR_ANON_KEY_HERE";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /* =============================================================================
-   7) VIEWS (welcome / app / compact / reset)
+   7) VIEWS
    ============================================================================= */
 function showAuth(){
   panel.className = "panel-welcome";
@@ -633,7 +630,7 @@ function showCompact(msg="✅ Saved."){
 }
 
 /* =============================================================================
-   8) SIGNUP MODAL (open/close)
+   8) SIGNUP MODAL
    ============================================================================= */
 const overlay = el("overlay");
 function openSignupModal(){
@@ -655,55 +652,54 @@ el("btnOpenSignup").onclick = openSignupModal;
 el("btnCloseSignup").onclick = closeSignupModal;
 
 /* =============================================================================
-   9) URL ROUTING FOR PASSWORD RESET (and expired link handling)
+   9) URL + PKCE helpers (NO DUPLICATES)
    ============================================================================= */
-function urlHasRecoveryOrReset() {
-  const h = window.location.hash || "";
-  const s = window.location.search || "";
-
-  if (h.includes("#reset")) return true;
-  if (h.includes("type=recovery")) return true;
-  if (s.includes("type=recovery")) return true;
-
-  // ✅ PKCE flow often returns with ?code=... (no type=recovery in hash)
-  if (getUrlParam("code")) return true;
-
-  return false;
+function getUrlParam(name) {
+  return new URLSearchParams(window.location.search).get(name);
 }
+
 function urlHasOtpExpiredError(){
   const h = window.location.hash || "";
   return h.includes("otp_expired") || h.includes("error=access_denied");
 }
 
-/* =============================================================================
-   10) PKCE / Recovery helpers (FIX for "Auth session missing!")
-   - If Supabase returns ?code=..., we MUST exchange it for a session.
-   ============================================================================= */
-function getUrlParam(name){
-  return new URLSearchParams(window.location.search).get(name);
+/**
+ * We show reset view when:
+ * - our UI flag ?reset=1 is present
+ * - OR Supabase indicates recovery (type=recovery)
+ * - OR PKCE code is present (?code=...)
+ * - OR implicit hash token is present (#access_token=...)
+ */
+function urlHasRecoveryOrReset() {
+  const h = window.location.hash || "";
+  const s = window.location.search || "";
+
+  if (getUrlParam("reset") === "1") return true;
+  if (h.includes("type=recovery") || s.includes("type=recovery")) return true;
+  if (getUrlParam("code")) return true;
+  if (h.includes("access_token=")) return true;
+
+  return false;
 }
 
 /**
- * If Supabase sent us back with a PKCE `code=...`,
- * exchange it for a real session BEFORE calling updateUser().
+ * PKCE: if Supabase returns ?code=..., exchange it for a session
+ * BEFORE calling getSession() / updateUser().
  */
-async function bootstrapAuthFromUrlIfNeeded(){
-  const code = getUrlParam("code"); // PKCE flow uses ?code=...
+async function bootstrapAuthFromUrlIfNeeded() {
+  const code = getUrlParam("code");
   if (!code) return;
 
   const { error } = await sb.auth.exchangeCodeForSession(code);
-  if (error) {
-    console.warn("exchangeCodeForSession error:", error.message);
-  }
+  if (error) console.warn("exchangeCodeForSession error:", error.message);
 
-  // Clean query params (prevents re-processing on refresh)
+  // Clean URL (remove ?code=... but keep path)
   const cleanUrl = window.location.origin + window.location.pathname + window.location.hash;
   window.history.replaceState({}, document.title, cleanUrl);
 }
 
 /* =============================================================================
-   11) setConnected(user)
-   - markers stay hidden until user presses "Locate+Save+Refresh"
+   10) setConnected(user)
    ============================================================================= */
 async function setConnected(user){
   if(user){
@@ -717,10 +713,10 @@ async function setConnected(user){
 }
 
 /* =============================================================================
-   12) AUTH STATE CHANGE
-   - PASSWORD_RECOVERY event (old flow) => show reset screen
+   11) AUTH STATE CHANGE
    ============================================================================= */
 sb.auth.onAuthStateChange((event, session) => {
+  // Old flow still sometimes emits PASSWORD_RECOVERY
   if (event === "PASSWORD_RECOVERY") {
     showReset();
     setResetMessage("Please choose a new password.");
@@ -731,75 +727,18 @@ sb.auth.onAuthStateChange((event, session) => {
 });
 
 /* =============================================================================
-   HELPERS: URL params + robust reset/recovery detection
-   ============================================================================= */
-function getUrlParam(name) {
-  return new URLSearchParams(window.location.search).get(name);
-}
-
-function urlHasRecoveryOrReset() {
-  const h = window.location.hash || "";
-  const s = window.location.search || "";
-
-  // ✅ Our UI marker (does NOT break Supabase tokens)
-  if (getUrlParam("reset") === "1") return true;
-
-  // Supabase "recovery" marker (can appear in hash or search depending on flow)
-  if (h.includes("type=recovery") || s.includes("type=recovery")) return true;
-
-  // PKCE flow: Supabase returns ?code=...
-  if (getUrlParam("code")) return true;
-
-  // Implicit flow: Supabase returns #access_token=...
-  if (h.includes("access_token=")) return true;
-
-  return false;
-}
-
-function urlHasOtpExpiredError(){
-  const h = window.location.hash || "";
-  return h.includes("otp_expired") || h.includes("error=access_denied");
-}
-
-/**
- * IMPORTANT (PKCE): If Supabase returns ?code=..., we must exchange it
- * to create a session BEFORE we call getSession() or updateUser().
- */
-async function bootstrapAuthFromUrlIfNeeded() {
-  try {
-    const code = getUrlParam("code");
-    if (!code) return;
-    const { error } = await sb.auth.exchangeCodeForSession(code);
-    if (error) {
-      // Not fatal for UI; we'll show a friendly message later if needed
-      console.warn("exchangeCodeForSession error:", error.message);
-    }
-  } catch (e) {
-    console.warn("bootstrapAuthFromUrlIfNeeded exception:", e);
-  }
-}
-
-/* =============================================================================
-   13) INITIAL BOOTSTRAP (IMPORTANT)
-   - First: exchange PKCE code (if any) => creates session
-   - Then: getSession() and decide which view to show
+   12) INITIAL BOOTSTRAP
    ============================================================================= */
 (async () => {
-  // 1) Create session if URL contains PKCE code
   await bootstrapAuthFromUrlIfNeeded();
 
-  // 2) Read session AFTER exchange
   const { data } = await sb.auth.getSession();
 
-  // 3) Route UI
   if (urlHasRecoveryOrReset()) {
     showReset();
 
     if (urlHasOtpExpiredError()) {
-      setResetMessage(
-        "This email link is invalid or has expired.\n" +
-        "Please request a new reset email."
-      );
+      setResetMessage("This email link is invalid or has expired.\nPlease request a new reset email.");
     } else {
       setResetMessage("Please choose a new password.");
     }
@@ -807,17 +746,14 @@ async function bootstrapAuthFromUrlIfNeeded() {
     clearMarkers();
   } else if (urlHasOtpExpiredError()) {
     showAuth();
-    setAuthMessage(
-      "This email link is invalid or has expired.\n" +
-      "Please request a new reset email."
-    );
+    setAuthMessage("This email link is invalid or has expired.\nPlease request a new reset email.");
   } else {
     setConnected(data.session?.user || null);
   }
 })();
 
 /* =============================================================================
-   14) LOGIN
+   13) LOGIN
    ============================================================================= */
 el("btnLogin").onclick = async () => {
   const email = el("email").value.trim();
@@ -838,9 +774,7 @@ el("btnLogin").onclick = async () => {
 };
 
 /* =============================================================================
-   15) SIGN UP (MODAL)
-   - email confirmation redirect
-   - close modal on success
+   14) SIGN UP (MODAL)
    ============================================================================= */
 let signupBusy = false;
 el("btnSignup").onclick = async () => {
@@ -864,7 +798,7 @@ el("btnSignup").onclick = async () => {
     email,
     password: p1,
     options: {
-      emailRedirectTo: "https://www.mood2know.com"
+      emailRedirectTo: window.location.origin
     }
   });
 
@@ -878,19 +812,15 @@ el("btnSignup").onclick = async () => {
   closeSignupModal();
   showAuth();
   el("email").value = email;
-
-  setAuthMessage(
-    "✅ Account created.\n" +
-    "Please check your email to confirm your account."
-  );
+  setAuthMessage("✅ Account created.\nPlease check your email to confirm your account.");
 
   btn.disabled = false;
   signupBusy = false;
 };
 
 /* =============================================================================
-   16) FORGOT PASSWORD
-   ✅ FIX: use ?reset=1 instead of #reset (hash would overwrite Supabase tokens)
+   15) FORGOT PASSWORD
+   ✅ Use ?reset=1 (NOT #reset) because the hash may be used by Supabase tokens.
    ============================================================================= */
 let forgotBusy = false;
 el("btnForgot").onclick = async () => {
@@ -911,20 +841,15 @@ el("btnForgot").onclick = async () => {
   setAuthMessage("Sending reset email…");
 
   const { error } = await sb.auth.resetPasswordForEmail(email, {
-    // ✅ IMPORTANT: query param, does NOT destroy Supabase hash tokens
     redirectTo: `${window.location.origin}/?reset=1`
   });
 
   if (error) {
-    setAuthMessage(
-      "Error:\n" + error.message +
-      "\n\nTip: if you see 'rate limit exceeded', wait a bit and try once."
-    );
+    setAuthMessage("Error:\n" + error.message + "\n\nTip: if you see 'rate limit exceeded', wait a bit and try once.");
   } else {
     setAuthMessage("✅ Reset email sent. Check your inbox (and spam).");
   }
 
-  // Re-enable after 15s to avoid accidental spam
   setTimeout(() => {
     btn.disabled = false;
     forgotBusy = false;
@@ -932,9 +857,7 @@ el("btnForgot").onclick = async () => {
 };
 
 /* =============================================================================
-   17) RESET PASSWORD SCREEN
-   ✅ FIX: ensure we have a session; if not, try bootstrap again (PKCE),
-   then refuse with a clear message.
+   16) RESET PASSWORD SCREEN
    ============================================================================= */
 el("btnDoReset").onclick = async () => {
   const p1 = el("newPassword1").value;
@@ -945,11 +868,9 @@ el("btnDoReset").onclick = async () => {
 
   setResetMessage("Checking session…");
 
-  // 1) Try to ensure session exists (PKCE exchange if code present)
   await bootstrapAuthFromUrlIfNeeded();
-
-  // 2) Check session
   const { data: sessData } = await sb.auth.getSession();
+
   if (!sessData?.session) {
     setResetMessage(
       "Auth session missing!\n\n" +
@@ -962,7 +883,6 @@ el("btnDoReset").onclick = async () => {
   setResetMessage("Updating password…");
 
   const { error } = await sb.auth.updateUser({ password: p1 });
-
   if (error) {
     setResetMessage("Error:\n" + error.message);
     return;
@@ -970,7 +890,7 @@ el("btnDoReset").onclick = async () => {
 
   setResetMessage("✅ Password updated.\nYou can now use the app.");
 
-  // ✅ Clean URL without hardcoding domain (keeps you on the same site)
+  // Clean URL
   const cleanUrl = window.location.origin + window.location.pathname;
   history.replaceState(null, "", cleanUrl);
 };
@@ -978,13 +898,12 @@ el("btnDoReset").onclick = async () => {
 el("btnResetCancel").onclick = () => {
   showAuth();
   setResetMessage("");
-
-  // ✅ Clean URL without hardcoding domain
   const cleanUrl = window.location.origin + window.location.pathname;
   history.replaceState(null, "", cleanUrl);
 };
+
 /* =============================================================================
-   18) LOGOUT
+   17) LOGOUT
    ============================================================================= */
 async function doLogout(){
   await sb.auth.signOut();
@@ -995,7 +914,7 @@ el("btnLogout").onclick = doLogout;
 el("btnLogout2").onclick = doLogout;
 
 /* =============================================================================
-   19) ONE BUTTON: Locate + Save + Refresh
+   18) ONE BUTTON: Locate + Save + Refresh
    ============================================================================= */
 el("btnSaveAll").onclick = async () => {
   setAppMessage("Locating…");
@@ -1036,11 +955,11 @@ el("btnSaveAll").onclick = async () => {
     showCompact("✅ Saved. Thank you!");
   }, (err) => {
     setAppMessage("Geolocation error: " + err.message);
-  }, { enableHighAccuracy: true, timeout: 10000 });
+  }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
 };
 
 /* =============================================================================
-   20) MAP INIT
+   19) MAP INIT
    ============================================================================= */
 map.on("load", async () => {
   ensureMoodImages();
