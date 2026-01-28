@@ -913,7 +913,8 @@ el("btnSignup").onclick = async () => {
     email,
     password: p1,
 options: {
-  emailRedirectTo: `${window.location.origin}/callback.html`
+  emailRedirectTo: `${window.location.origin}/callback.html?next=/`
+
 }
 
   });
@@ -956,7 +957,8 @@ el("btnForgot").onclick = async () => {
   setAuthMessage("Sending reset email…");
 
 const { error } = await sb.auth.resetPasswordForEmail(email, {
-  redirectTo: `${window.location.origin}/callback.html`
+redirectTo: `${window.location.origin}/callback-reset.html`
+
 });
 
 
