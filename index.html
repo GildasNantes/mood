@@ -220,6 +220,7 @@
     <div class="small">
       You should receive a confirmation email.
       Your account becomes active after you confirm.
+      You may close this windows now.
       <br><br>
     </div>
 
@@ -814,7 +815,7 @@ el("btnSignup").onclick = async () => {
   closeSignupModal();
   showAuth();
   el("email").value = email;
-  setAuthMessage("✅ Account created.\nPlease check your email to confirm your account.");
+  setAuthMessage("✅ Account created.\nPlease close this window and check your email to confirm your account.");
 
   btn.disabled = false;
   signupBusy = false;
