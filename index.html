@@ -850,7 +850,7 @@ el("btnForgot").onclick = async () => {
   if (error) {
     setAuthMessage("Error:\n" + error.message + "\n\nTip: if you see 'rate limit exceeded', wait a bit and try once.");
   } else {
-    setAuthMessage("✅ Reset email sent. \n Close this windows Check your inbox (and spam).");
+    setAuthMessage("✅ Reset email sent. \n Please close this windows and check your inbox (and spam).");
   }
 
   setTimeout(() => {
