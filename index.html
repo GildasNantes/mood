@@ -11,6 +11,9 @@
   html, body { margin:0; height:100%; font:16px system-ui; }
   #map { position:fixed; inset:0; }
 
+  /* Hide map entirely on dedicated auth routes */
+  body.route-auth #map { display:none; }
+
   #panel{
     position: fixed;
     z-index: 10;
@@ -33,7 +36,6 @@
     width: 320px;
   }
 
-  /* Ultra compact after first successful save (mobile-friendly) */
   .panel-compact{
     left:12px; top:12px;
     transform:none;
@@ -75,17 +77,15 @@
   .small{ font-size:13px; opacity:.75; }
   .msg{ white-space:pre-wrap; font-size:13px; }
 
-  #authView,#appView,#compactView,#resetView{ display:none; }
+  #authView,#appView,#compactView,#resetView,#confirmView{ display:none; }
 
-  /* Mobile tweaks */
   @media (max-width: 520px) {
     .panel-welcome{ width: calc(100vw - 24px); }
     .panel-app{ width: calc(100vw - 24px); left: 12px; right: 12px; }
-    button, input { padding: 14px; font-size: 16px; } /* prevents iOS zoom on inputs */
+    button, input { padding: 14px; font-size: 16px; }
     .panel-compact{ left: 12px; right: 12px; }
   }
 
-  /* iPhone safe areas */
   #panel{
     padding-bottom: calc(16px + env(safe-area-inset-bottom));
     padding-top: calc(16px + env(safe-area-inset-top));
@@ -94,9 +94,7 @@
   :root { --vh: 1vh; }
   #map { height: calc(var(--vh) * 100); }
 
-  /* ===========================
-     SIMPLE MODAL (for signup)
-     =========================== */
+  /* Modal */
   #overlay {
     position: fixed;
     inset: 0;
@@ -126,9 +124,7 @@
 <div id="panel" class="panel-welcome">
   <h3>Mood Map</h3>
 
-  <!-- =========================
-       AUTH VIEW (Login + Forgot)
-       ========================= -->
+  <!-- AUTH VIEW -->
   <div id="authView">
     <div id="welcomeBox">
       <b>Welcome 🌍</b><br><br>
@@ -137,7 +133,6 @@
       how happy people are across different places.
     </div>
 
-    <!-- LOGIN inputs -->
     <div class="row">
       <input id="email" type="email" placeholder="Email" autocomplete="email">
       <input id="password" type="password" placeholder="Password" autocomplete="current-password">
@@ -156,9 +151,7 @@
     <div id="authMsg" class="msg"></div>
   </div>
 
-  <!-- =========================
-       RESET PASSWORD VIEW
-       ========================= -->
+  <!-- RESET VIEW -->
   <div id="resetView">
     <div id="welcomeBox">
       <b>Reset your password</b><br><br>
@@ -178,9 +171,24 @@
     <div id="resetMsg" class="msg"></div>
   </div>
 
-  <!-- =========================
-       APP VIEW (mood + save)
-       ========================= -->
+  <!-- CONFIRM VIEW -->
+  <div id="confirmView">
+    <div id="welcomeBox">
+      <b id="confirmTitle">Email confirmed ✅</b><br><br>
+      <span id="confirmBody" class="small">
+        Your email has been confirmed. You can close this tab, or open Mood Map.
+      </span>
+    </div>
+
+    <div class="row" style="margin-top:12px;">
+      <button id="btnOpenApp">Open Mood Map</button>
+      <button id="btnConfirmBack" class="secondary" type="button">Back to sign in</button>
+    </div>
+
+    <div id="confirmMsg" class="msg"></div>
+  </div>
+
+  <!-- APP VIEW -->
   <div id="appView">
     <div class="row">
       <label>Your mood: <b><span id="moodValue">5</span>/10</b></label>
@@ -199,7 +207,7 @@
     </div>
   </div>
 
-  <!-- COMPACT panel (after save) -->
+  <!-- COMPACT VIEW -->
   <div id="compactView">
     <div class="small" id="compactMsg">✅ Saved.</div>
     <div class="row" style="margin-top:8px;">
@@ -208,9 +216,7 @@
   </div>
 </div>
 
-<!-- =========================
-     SIGNUP MODAL
-     ========================= -->
+<!-- SIGNUP MODAL -->
 <div id="overlay" aria-hidden="true">
   <div id="modal" role="dialog" aria-modal="true">
     <h4>Create your account</h4>
@@ -241,7 +247,7 @@
 
 <script>
 /* =============================================================================
-   0) MOBILE VIEWPORT FIX (iOS)
+   0) MOBILE VIEWPORT FIX
    ============================================================================= */
 function setVh() {
   document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
@@ -250,34 +256,135 @@ window.addEventListener('resize', setVh);
 setVh();
 
 /* =============================================================================
-   1) MAP SETUP (MapLibre + OSM raster tiles)
+   1) ROUTES + CANONICAL
    ============================================================================= */
-const map = new maplibregl.Map({
-  container: "map",
-  style: {
-    version: 8,
-    sources: {
-      osm: {
-        type: "raster",
-        tiles: [
-          "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
-          "https://b.tile.openstreetmap.org/{z}/{x}/{y}.png",
-          "https://c.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        ],
-        tileSize: 256,
-        attribution: "© OpenStreetMap contributors"
-      }
-    },
-    layers: [{ id: "osm", type: "raster", source: "osm" }]
-  },
-  center: [0, 20],
-  zoom: 2
-});
-map.addControl(new maplibregl.NavigationControl(), "top-right");
+const CANONICAL = "https://www.mood2know.com";
+function isResetPath(){ return window.location.pathname === "/reset"; }
+function isConfirmPath(){ return window.location.pathname === "/confirm"; }
+function isAuthRoute(){ return isResetPath() || isConfirmPath(); }
+if (isAuthRoute()) document.body.classList.add("route-auth");
 
 /* =============================================================================
-   2) MOOD ICONS (0..10)
+   2) SUPABASE
    ============================================================================= */
+const SUPABASE_URL = "https://ugrmxzdhevqrgftlxfnp.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVncm14emRoZXZxcmdmdGx4Zm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyODQ3OTQsImV4cCI6MjA4NDg2MDc5NH0.WgTj-6ADFEMrCgPNxeQZvknBBJI1c9uDY9_8Qlkqu4w"; // <-- PUT YOUR KEY
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* =============================================================================
+   3) UI
+   ============================================================================= */
+const el = id => document.getElementById(id);
+const panel = el("panel");
+
+function setAuthMessage(msg){ el("authMsg").textContent = msg || ""; }
+function setResetMessage(msg){ el("resetMsg").textContent = msg || ""; }
+function setConfirmMessage(msg){ el("confirmMsg").textContent = msg || ""; }
+function setAppMessage(msg){ el("appMsg").textContent = msg || ""; }
+
+function showAuth(){
+  panel.className = "panel-welcome";
+  el("authView").style.display="block";
+  el("resetView").style.display="none";
+  el("confirmView").style.display="none";
+  el("appView").style.display="none";
+  el("compactView").style.display="none";
+}
+function showReset(){
+  panel.className = "panel-welcome";
+  el("authView").style.display="none";
+  el("resetView").style.display="block";
+  el("confirmView").style.display="none";
+  el("appView").style.display="none";
+  el("compactView").style.display="none";
+}
+function showConfirm(){
+  panel.className = "panel-welcome";
+  el("authView").style.display="none";
+  el("resetView").style.display="none";
+  el("confirmView").style.display="block";
+  el("appView").style.display="none";
+  el("compactView").style.display="none";
+}
+function showApp(){
+  panel.className = "panel-app";
+  el("authView").style.display="none";
+  el("resetView").style.display="none";
+  el("confirmView").style.display="none";
+  el("appView").style.display="block";
+  el("compactView").style.display="none";
+}
+function showCompact(msg="✅ Saved."){
+  panel.className = "panel-compact";
+  el("compactMsg").textContent = msg;
+  el("authView").style.display="none";
+  el("resetView").style.display="none";
+  el("confirmView").style.display="none";
+  el("appView").style.display="none";
+  el("compactView").style.display="block";
+}
+
+/* =============================================================================
+   4) SLIDER
+   ============================================================================= */
+const slider = el("slider");
+slider.oninput = ()=> el("moodValue").textContent = slider.value;
+
+/* =============================================================================
+   5) SIGNUP MODAL
+   ============================================================================= */
+const overlay = el("overlay");
+function openSignupModal(){
+  el("suMsg").textContent = "";
+  el("suEmail").value = el("email").value.trim();
+  el("suPass1").value = "";
+  el("suPass2").value = "";
+  overlay.style.display = "flex";
+  overlay.setAttribute("aria-hidden", "false");
+}
+function closeSignupModal(){
+  overlay.style.display = "none";
+  overlay.setAttribute("aria-hidden", "true");
+}
+overlay.addEventListener("click", (e) => { if (e.target === overlay) closeSignupModal(); });
+el("btnOpenSignup").onclick = openSignupModal;
+el("btnCloseSignup").onclick = closeSignupModal;
+
+/* =============================================================================
+   6) URL + PKCE
+   ============================================================================= */
+function getUrlParam(name) {
+  return new URLSearchParams(window.location.search).get(name);
+}
+function urlHasOtpExpiredError(){
+  const h = window.location.hash || "";
+  return h.includes("otp_expired") || h.includes("error=access_denied");
+}
+function urlHasRecovery() {
+  const h = window.location.hash || "";
+  const s = window.location.search || "";
+  if (h.includes("type=recovery") || s.includes("type=recovery")) return true;
+  if (getUrlParam("code")) return true;
+  if (h.includes("access_token=")) return true;
+  return false;
+}
+async function bootstrapAuthFromUrlIfNeeded() {
+  const code = getUrlParam("code");
+  if (!code) return;
+
+  const { error } = await sb.auth.exchangeCodeForSession(code);
+  if (error) console.warn("exchangeCodeForSession error:", error.message);
+
+  // Clean URL query (remove ?code=...)
+  const cleanUrl = window.location.origin + window.location.pathname + window.location.hash;
+  window.history.replaceState({}, document.title, cleanUrl);
+}
+
+/* =============================================================================
+   7) MAP (init only on normal app)
+   ============================================================================= */
+let map = null;
+
 function lerp(a,b,t){ return a + (b - a) * t; }
 function lerpColor(c1,c2,t){
   const r = Math.round(lerp(c1[0], c2[0], t));
@@ -288,9 +395,7 @@ function lerpColor(c1,c2,t){
 function moodImageData(level, size=96){
   const t = Math.max(0, Math.min(1, level/10));
   const red=[215,25,28], yellow=[255,255,191], green=[26,150,65];
-  const fill = (t < 0.5)
-    ? lerpColor(red, yellow, t/0.5)
-    : lerpColor(yellow, green, (t-0.5)/0.5);
+  const fill = (t < 0.5) ? lerpColor(red, yellow, t/0.5) : lerpColor(yellow, green, (t-0.5)/0.5);
 
   const canvas = document.createElement("canvas");
   canvas.width = size; canvas.height = size;
@@ -343,17 +448,17 @@ function moodImageData(level, size=96){
   const img = ctx.getImageData(0,0,size,size);
   return { width: img.width, height: img.height, data: img.data };
 }
+
 function ensureMoodImages(){
+  if (!map) return;
   for(let lvl=0; lvl<=10; lvl++){
     const name = `mood-${lvl}`;
     if(!map.hasImage(name)) map.addImage(name, moodImageData(lvl,96));
   }
 }
 
-/* =============================================================================
-   3) POINTS SOURCE + LAYERS
-   ============================================================================= */
 function initPointsSourceAndLayers(){
+  if(!map) return;
   if(map.getSource("points")) return;
 
   map.addSource("points", {
@@ -434,12 +539,14 @@ function initPointsSourceAndLayers(){
 }
 
 function clearMarkers(){
+  if(!map) return;
   const source = map.getSource("points");
   if(!source) return;
   source.setData({ type:"FeatureCollection", features: [] });
 }
 
 async function refreshPoints(){
+  if(!map) return;
   const source = map.getSource("points");
   if(!source) return;
 
@@ -466,245 +573,47 @@ async function refreshPoints(){
   setAppMessage(`Loaded markers: ${features.length}`);
 }
 
-/* =============================================================================
-   4) UI HELPERS
-   ============================================================================= */
-const el = id => document.getElementById(id);
-const panel = el("panel");
+function initMapIfNeeded(){
+  if (map || isAuthRoute()) return;
 
-function setAuthMessage(msg){ el("authMsg").textContent = msg || ""; }
-function setResetMessage(msg){ el("resetMsg").textContent = msg || ""; }
-function setAppMessage(msg){ el("appMsg").textContent = msg || ""; }
+  map = new maplibregl.Map({
+    container: "map",
+    style: {
+      version: 8,
+      sources: {
+        osm: {
+          type: "raster",
+          tiles: [
+            "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            "https://b.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            "https://c.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          ],
+          tileSize: 256,
+          attribution: "© OpenStreetMap contributors"
+        }
+      },
+      layers: [{ id: "osm", type: "raster", source: "osm" }]
+    },
+    center: [0, 20],
+    zoom: 2
+  });
 
-const slider = el("slider");
-slider.oninput = ()=> el("moodValue").textContent = slider.value;
+  map.addControl(new maplibregl.NavigationControl(), "top-right");
 
-/* =============================================================================
-   5) MUSIC (fade out on login)
-   ============================================================================= */
-let audioCtx, masterGain, musicStarted = false;
-let musicNodes = [];
-let chordTimer = null;
-
-function stopLoopTimers() {
-  if (chordTimer) { clearTimeout(chordTimer); chordTimer = null; }
-}
-function fadeOutMusic(seconds = 2.5) {
-  if (!audioCtx || !masterGain) return;
-
-  const now = audioCtx.currentTime;
-  masterGain.gain.cancelScheduledValues(now);
-  masterGain.gain.setValueAtTime(masterGain.gain.value, now);
-  masterGain.gain.linearRampToValueAtTime(0.0001, now + seconds);
-
-  setTimeout(() => {
-    try { stopLoopTimers(); } catch {}
-    for (const n of musicNodes) {
-      try { n.stop && n.stop(); } catch {}
-      try { n.disconnect && n.disconnect(); } catch {}
-    }
-    musicNodes = [];
-  }, (seconds + 0.3) * 1000);
-}
-function playAmbientMusic() {
-  if (musicStarted) return;
-  musicStarted = true;
-
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  masterGain = audioCtx.createGain();
-  masterGain.gain.value = 0.22;
-  masterGain.connect(audioCtx.destination);
-
-  const lp = audioCtx.createBiquadFilter();
-  lp.type = "lowpass";
-  lp.frequency.value = 1200;
-  lp.connect(masterGain);
-
-  const chords = [
-    [261.63, 329.63, 392.00],
-    [220.00, 261.63, 329.63],
-    [174.61, 220.00, 261.63],
-    [196.00, 293.66, 392.00]
-  ];
-
-  function padChord(freqs, start, dur) {
-    for (const f of freqs) {
-      const o = audioCtx.createOscillator();
-      o.type = "sine";
-      o.frequency.value = f;
-
-      const g = audioCtx.createGain();
-      g.gain.setValueAtTime(0, start);
-      g.gain.linearRampToValueAtTime(0.12, start + 1.2);
-      g.gain.linearRampToValueAtTime(0.0, start + dur);
-
-      o.connect(g).connect(lp);
-      o.start(start);
-      o.stop(start + dur + 0.05);
-      musicNodes.push(o, g);
-    }
-  }
-
-  function arpeggio(freqs, start) {
-    const pattern = [0, 1, 2, 1];
-    for (let i = 0; i < 8; i++) {
-      const f = freqs[pattern[i % pattern.length]] * (i % 2 === 0 ? 2 : 1);
-      const o = audioCtx.createOscillator();
-      o.type = "triangle";
-      o.frequency.value = f;
-
-      const g = audioCtx.createGain();
-      const t = start + i * 0.5;
-      g.gain.setValueAtTime(0, t);
-      g.gain.linearRampToValueAtTime(0.05, t + 0.03);
-      g.gain.linearRampToValueAtTime(0, t + 0.45);
-
-      o.connect(g).connect(lp);
-      o.start(t);
-      o.stop(t + 0.5);
-      musicNodes.push(o, g);
-    }
-  }
-
-  let idx = 0;
-  function schedule() {
-    const now = audioCtx.currentTime;
-    const start = now + 0.02;
-    const dur = 7.5;
-    const freqs = chords[idx % chords.length];
-    padChord(freqs, start, dur);
-    arpeggio(freqs, start);
-    idx++;
-    chordTimer = setTimeout(schedule, dur * 1000);
-  }
-  schedule();
-}
-
-// Auto-start music on first user interaction (browser policy)
-function autoStartMusicOnce() {
-  playAmbientMusic();
-  document.removeEventListener("pointerdown", autoStartMusicOnce);
-  document.removeEventListener("keydown", autoStartMusicOnce);
-}
-document.addEventListener("pointerdown", autoStartMusicOnce, { once: true });
-document.addEventListener("keydown", autoStartMusicOnce, { once: true });
-
-/* =============================================================================
-   6) SUPABASE CONFIG
-   ============================================================================= */
-const SUPABASE_URL = "https://ugrmxzdhevqrgftlxfnp.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVncm14emRoZXZxcmdmdGx4Zm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyODQ3OTQsImV4cCI6MjA4NDg2MDc5NH0.WgTj-6ADFEMrCgPNxeQZvknBBJI1c9uDY9_8Qlkqu4w";
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-/* =============================================================================
-   7) VIEWS
-   ============================================================================= */
-function showAuth(){
-  panel.className = "panel-welcome";
-  el("authView").style.display="block";
-  el("appView").style.display="none";
-  el("compactView").style.display="none";
-  el("resetView").style.display="none";
-}
-function showReset(){
-  panel.className = "panel-welcome";
-  el("authView").style.display="none";
-  el("appView").style.display="none";
-  el("compactView").style.display="none";
-  el("resetView").style.display="block";
-}
-function showApp(){
-  panel.className = "panel-app";
-  el("authView").style.display="none";
-  el("appView").style.display="block";
-  el("compactView").style.display="none";
-  el("resetView").style.display="none";
-}
-function showCompact(msg="✅ Saved."){
-  panel.className = "panel-compact";
-  el("compactMsg").textContent = msg;
-  el("authView").style.display="none";
-  el("appView").style.display="none";
-  el("compactView").style.display="block";
-  el("resetView").style.display="none";
+  map.on("load", async () => {
+    ensureMoodImages();
+    initPointsSourceAndLayers();
+    clearMarkers();
+  });
 }
 
 /* =============================================================================
-   8) SIGNUP MODAL
-   ============================================================================= */
-const overlay = el("overlay");
-function openSignupModal(){
-  el("suMsg").textContent = "";
-  el("suEmail").value = el("email").value.trim();
-  el("suPass1").value = "";
-  el("suPass2").value = "";
-  overlay.style.display = "flex";
-  overlay.setAttribute("aria-hidden", "false");
-}
-function closeSignupModal(){
-  overlay.style.display = "none";
-  overlay.setAttribute("aria-hidden", "true");
-}
-overlay.addEventListener("click", (e) => {
-  if (e.target === overlay) closeSignupModal();
-});
-el("btnOpenSignup").onclick = openSignupModal;
-el("btnCloseSignup").onclick = closeSignupModal;
-
-/* =============================================================================
-   9) URL + PKCE helpers (NO DUPLICATES)
-   ============================================================================= */
-function getUrlParam(name) {
-  return new URLSearchParams(window.location.search).get(name);
-}
-
-function urlHasOtpExpiredError(){
-  const h = window.location.hash || "";
-  return h.includes("otp_expired") || h.includes("error=access_denied");
-}
-
-/**
- * We show reset view when:
- * - our UI flag ?reset=1 is present
- * - OR Supabase indicates recovery (type=recovery)
- * - OR PKCE code is present (?code=...)
- * - OR implicit hash token is present (#access_token=...)
- */
-function urlHasRecoveryOrReset() {
-  const h = window.location.hash || "";
-  const s = window.location.search || "";
-
-  if (getUrlParam("reset") === "1") return true;
-  if (h.includes("type=recovery") || s.includes("type=recovery")) return true;
-  if (getUrlParam("code")) return true;
-  if (h.includes("access_token=")) return true;
-
-  return false;
-}
-
-/**
- * PKCE: if Supabase returns ?code=..., exchange it for a session
- * BEFORE calling getSession() / updateUser().
- */
-async function bootstrapAuthFromUrlIfNeeded() {
-  const code = getUrlParam("code");
-  if (!code) return;
-
-  const { error } = await sb.auth.exchangeCodeForSession(code);
-  if (error) console.warn("exchangeCodeForSession error:", error.message);
-
-  // Clean URL (remove ?code=... but keep path)
-  const cleanUrl = window.location.origin + window.location.pathname + window.location.hash;
-  window.history.replaceState({}, document.title, cleanUrl);
-}
-
-/* =============================================================================
-   10) setConnected(user)
+   8) CONNECT (normal app only)
    ============================================================================= */
 async function setConnected(user){
   if(user){
+    initMapIfNeeded();
     showApp();
-    fadeOutMusic(2.8);
     clearMarkers();
   }else{
     clearMarkers();
@@ -712,29 +621,42 @@ async function setConnected(user){
   }
 }
 
-/* =============================================================================
-   11) AUTH STATE CHANGE
-   ============================================================================= */
+/* ✅ CRITICAL FIX:
+   On /confirm and /reset we MUST NOT switch to app on auth state change.
+*/
 sb.auth.onAuthStateChange((event, session) => {
-  // Old flow still sometimes emits PASSWORD_RECOVERY
+  if (isConfirmPath()) return;
+  if (isResetPath()) return;
+
   if (event === "PASSWORD_RECOVERY") {
+    document.body.classList.add("route-auth");
     showReset();
     setResetMessage("Please choose a new password.");
-    clearMarkers();
     return;
   }
   setConnected(session?.user || null);
 });
 
 /* =============================================================================
-   12) INITIAL BOOTSTRAP
+   9) BOOTSTRAP (route-specific)
    ============================================================================= */
 (async () => {
   await bootstrapAuthFromUrlIfNeeded();
 
-  const { data } = await sb.auth.getSession();
+  if (isConfirmPath()) {
+    document.body.classList.add("route-auth");
+    showConfirm();
 
-  if (urlHasRecoveryOrReset()) {
+    if (urlHasOtpExpiredError()) {
+      setConfirmMessage("This email link is invalid or has expired.\nPlease sign up again.");
+    } else {
+      setConfirmMessage("✅ Confirmed.\nYou can close this tab, or click Open Mood Map.");
+    }
+    return;
+  }
+
+  if (isResetPath() || urlHasRecovery()) {
+    document.body.classList.add("route-auth");
     showReset();
 
     if (urlHasOtpExpiredError()) {
@@ -742,18 +664,16 @@ sb.auth.onAuthStateChange((event, session) => {
     } else {
       setResetMessage("Please choose a new password.");
     }
-
-    clearMarkers();
-  } else if (urlHasOtpExpiredError()) {
-    showAuth();
-    setAuthMessage("This email link is invalid or has expired.\nPlease request a new reset email.");
-  } else {
-    setConnected(data.session?.user || null);
+    return;
   }
+
+  initMapIfNeeded();
+  const { data } = await sb.auth.getSession();
+  setConnected(data.session?.user || null);
 })();
 
 /* =============================================================================
-   13) LOGIN
+   10) LOGIN
    ============================================================================= */
 el("btnLogin").onclick = async () => {
   const email = el("email").value.trim();
@@ -766,15 +686,12 @@ el("btnLogin").onclick = async () => {
 
   const { error } = await sb.auth.signInWithPassword({ email, password });
 
-  if(error){
-    setAuthMessage("Error:\n" + error.message);
-  } else {
-    setAuthMessage("");
-  }
+  if(error) setAuthMessage("Error:\n" + error.message);
+  else setAuthMessage("");
 };
 
 /* =============================================================================
-   14) SIGN UP (MODAL)
+   11) SIGN UP — redirect to /confirm
    ============================================================================= */
 let signupBusy = false;
 el("btnSignup").onclick = async () => {
@@ -797,9 +714,7 @@ el("btnSignup").onclick = async () => {
   const { error } = await sb.auth.signUp({
     email,
     password: p1,
-    options: {
-      emailRedirectTo: window.location.origin
-    }
+    options: { emailRedirectTo: `${CANONICAL}/confirm` }
   });
 
   if(error){
@@ -819,8 +734,7 @@ el("btnSignup").onclick = async () => {
 };
 
 /* =============================================================================
-   15) FORGOT PASSWORD
-   ✅ Use ?reset=1 (NOT #reset) because the hash may be used by Supabase tokens.
+   12) FORGOT PASSWORD — redirect to /reset
    ============================================================================= */
 let forgotBusy = false;
 el("btnForgot").onclick = async () => {
@@ -841,7 +755,7 @@ el("btnForgot").onclick = async () => {
   setAuthMessage("Sending reset email…");
 
   const { error } = await sb.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/?reset=1`
+    redirectTo: `${CANONICAL}/reset`
   });
 
   if (error) {
@@ -857,7 +771,7 @@ el("btnForgot").onclick = async () => {
 };
 
 /* =============================================================================
-   16) RESET PASSWORD SCREEN
+   13) RESET PASSWORD
    ============================================================================= */
 el("btnDoReset").onclick = async () => {
   const p1 = el("newPassword1").value;
@@ -888,22 +802,22 @@ el("btnDoReset").onclick = async () => {
     return;
   }
 
-  setResetMessage("✅ Password updated.\nYou can now use the app.");
+  setResetMessage("✅ Password updated.\n\nYou can close this tab and return to Mood Map.");
 
-  // Clean URL
-  const cleanUrl = window.location.origin + window.location.pathname;
-  history.replaceState(null, "", cleanUrl);
+  // No auto-open new window; just a clean redirect if they want
+  setTimeout(() => window.location.replace(`${CANONICAL}/`), 1800);
 };
 
-el("btnResetCancel").onclick = () => {
-  showAuth();
-  setResetMessage("");
-  const cleanUrl = window.location.origin + window.location.pathname;
-  history.replaceState(null, "", cleanUrl);
-};
+el("btnResetCancel").onclick = () => window.location.replace(`${CANONICAL}/`);
 
 /* =============================================================================
-   17) LOGOUT
+   14) CONFIRM buttons
+   ============================================================================= */
+el("btnOpenApp").onclick = () => window.location.replace(`${CANONICAL}/`);
+el("btnConfirmBack").onclick = () => window.location.replace(`${CANONICAL}/`);
+
+/* =============================================================================
+   15) LOGOUT
    ============================================================================= */
 async function doLogout(){
   await sb.auth.signOut();
@@ -914,7 +828,7 @@ el("btnLogout").onclick = doLogout;
 el("btnLogout2").onclick = doLogout;
 
 /* =============================================================================
-   18) ONE BUTTON: Locate + Save + Refresh
+   16) SAVE ALL
    ============================================================================= */
 el("btnSaveAll").onclick = async () => {
   setAppMessage("Locating…");
@@ -947,7 +861,7 @@ el("btnSaveAll").onclick = async () => {
 
     if (error) { setAppMessage("Save error:\n" + error.message); return; }
 
-    map.easeTo({ center: [coords.lon, coords.lat], zoom: Math.max(map.getZoom(), 8) });
+    if (map) map.easeTo({ center: [coords.lon, coords.lat], zoom: Math.max(map.getZoom(), 8) });
 
     setAppMessage("✅ Saved. Loading markers…");
     await refreshPoints();
@@ -957,16 +871,6 @@ el("btnSaveAll").onclick = async () => {
     setAppMessage("Geolocation error: " + err.message);
   }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
 };
-
-/* =============================================================================
-   19) MAP INIT
-   ============================================================================= */
-map.on("load", async () => {
-  ensureMoodImages();
-  initPointsSourceAndLayers();
-  clearMarkers();
-});
 </script>
 </body>
 </html>
-
