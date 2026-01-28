@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mood Map — Reset Password</title>
+  <style>
+    html, body { height:100%; margin:0; font:16px system-ui; background:#f6f7fb; }
+    .wrap{ min-height:100%; display:flex; align-items:center; justify-content:center; padding:16px; }
+    .card{
+      width:min(560px, 100%);
+      background: rgba(255,255,255,0.98);
+      border-radius:18px;
+      box-shadow: 0 14px 36px rgba(0,0,0,.18);
+      padding:18px;
+      border: 1px solid rgba(0,0,0,.08);
+    }
+    h1{ font-size:18px; margin:0 0 10px; }
+    .msg{ white-space:pre-wrap; font-size:14px; line-height:1.35; }
+    .row{ display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; }
+    button, a.btn{
+      font:inherit; padding:10px 12px; border-radius:12px;
+      border:1px solid rgba(0,0,0,.12); cursor:pointer; text-decoration:none;
+      display:inline-flex; align-items:center; gap:8px; background:#111; color:#fff;
+    }
+    button.secondary, a.btn.secondary{ background:#eee; color:#111; border-color: rgba(0,0,0,.10); }
+    .small{ margin-top:10px; font-size:13px; opacity:.75; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Mood Map</h1>
+      <div id="status" class="msg">Traitement du lien de réinitialisation…</div>
+      <div id="details" class="small"></div>
+
+      <div class="row">
+        <a class="btn" id="btnGoReset" href="/?reset=1">Aller au formulaire Reset</a>
+        <button class="secondary" id="btnClose">Fermer cet onglet</button>
+      </div>
+
+      <div class="small">
+        Important : pour changer votre mot de passe, vous devez aller sur la page reset.
+        Cet onglet ne se fermera pas automatiquement avant la modification.
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // ==== CONFIG ====
+    const SUPABASE_URL = "https://ugrmxzdhevqrgftlxfnp.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVncm14emRoZXZxcmdmdGx4Zm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyODQ3OTQsImV4cCI6MjA4NDg2MDc5NH0.WgTj-6ADFEMrCgPNxeQZvknBBJI1c9uDY9_8Qlkqu4w";
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const el = (id) => document.getElementById(id);
+    function getUrlParam(name){ return new URLSearchParams(window.location.search).get(name); }
+
+    function hasErrorInUrl(){
+      const h = window.location.hash || "";
+      const s = window.location.search || "";
+      return h.includes("error=") || h.includes("otp_expired") || s.includes("error=");
+    }
+
+    el("btnClose").onclick = () => { try { window.close(); } catch {} };
+
+    (async () => {
+      const target = window.location.origin + "/?reset=1";
+      el("btnGoReset").href = target;
+
+      if (hasErrorInUrl()) {
+        el("status").textContent =
+          "❌ Ce lien de réinitialisation est invalide ou expiré.\nVeuillez refaire 'Forgot password' depuis Mood Map.";
+        el("details").textContent = `Détails: ${window.location.search}${window.location.hash}`;
+        return;
+      }
+
+      const code = getUrlParam("code");
+      const hash = window.location.hash || "";
+
+      try {
+        if (code) {
+          el("status").textContent = "Traitement… (sécurisation de la session recovery)";
+          const { error } = await sb.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+        } else if (hash.includes("access_token=")) {
+          el("status").textContent = "Traitement… (finalisation)";
+          await sb.auth.getSession();
+        }
+
+el("status").textContent = "✅ OK.\nCliquez sur “Aller au formulaire Reset”.";
+el("details").textContent = "Une fois le mot de passe modifié, vous pourrez fermer l’onglet.";
+
+el("btnGoReset").onclick = (e) => {
+  // on laisse le href, mais on contrôle pour être sûr
+  e.preventDefault();
+  window.location.href = target;
+};
+
+
+      } catch (e) {
+        el("status").textContent =
+          "❌ Erreur pendant la validation du lien.\nVeuillez refaire 'Forgot password' depuis Mood Map.";
+        el("details").textContent = "Supabase: " + (e?.message || String(e));
+      }
+    })();
+  </script>
+</body>
+</html>
