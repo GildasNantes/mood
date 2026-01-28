@@ -88,13 +88,15 @@
           await sb.auth.getSession();
         }
 
-        el("status").textContent = "✅ OK.\nRedirection vers le formulaire Reset…";
-        el("details").textContent = "";
+el("status").textContent = "✅ OK.\nCliquez sur “Aller au formulaire Reset”.";
+el("details").textContent = "Une fois le mot de passe modifié, vous pourrez fermer l’onglet.";
 
-        // Redirection directe vers le formulaire reset
-        setTimeout(() => {
-          window.location.href = target;
-        }, 700);
+el("btnGoReset").onclick = (e) => {
+  // on laisse le href, mais on contrôle pour être sûr
+  e.preventDefault();
+  window.location.href = target;
+};
+
 
       } catch (e) {
         el("status").textContent =
