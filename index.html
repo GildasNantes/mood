@@ -912,9 +912,10 @@ el("btnSignup").onclick = async () => {
   const { error } = await sb.auth.signUp({
     email,
     password: p1,
-    options: {
-      emailRedirectTo: window.location.origin
-    }
+options: {
+  emailRedirectTo: `${window.location.origin}/callback.html`
+}
+
   });
 
   if(error){
@@ -954,9 +955,10 @@ el("btnForgot").onclick = async () => {
 
   setAuthMessage("Sending reset email…");
 
-  const { error } = await sb.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/?reset=1`
-  });
+const { error } = await sb.auth.resetPasswordForEmail(email, {
+  redirectTo: `${window.location.origin}/callback.html`
+});
+
 
   if (error) {
     setAuthMessage("Error:\n" + error.message + "\n\nTip: if you see 'rate limit exceeded', wait a bit and try once.");
