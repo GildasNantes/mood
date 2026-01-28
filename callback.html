@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mood Map — Validation</title>
+  <style>
+    html, body { height:100%; margin:0; font:16px system-ui; background: #f6f7fb; }
+    .wrap{
+      min-height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+    }
+    .card{
+      width:min(560px, 100%);
+      background: rgba(255,255,255,0.98);
+      border-radius:18px;
+      box-shadow: 0 14px 36px rgba(0,0,0,.18);
+      padding:18px;
+      border: 1px solid rgba(0,0,0,.08);
+    }
+    h1{ font-size:18px; margin:0 0 10px; }
+    .msg{ white-space:pre-wrap; font-size:14px; line-height:1.35; }
+    .row{ display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; }
+    button, a.btn{
+      font:inherit;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(0,0,0,.12);
+      cursor:pointer;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      background:#111;
+      color:#fff;
+    }
+    button.secondary, a.btn.secondary{
+      background:#eee; color:#111; border-color: rgba(0,0,0,.10);
+    }
+    .small{ margin-top:10px; font-size:13px; opacity:.75; }
+    code{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Mood Map</h1>
+      <div id="status" class="msg">Traitement en cours…</div>
+      <div class="small" id="details"></div>
+
+      <div class="row">
+        <a class="btn secondary" id="btnOpenApp" href="/">Ouvrir Mood Map</a>
+        <button class="secondary" id="btnClose">Fermer cet onglet</button>
+      </div>
+
+      <div class="small" id="countdownBox" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- Supabase JS v2 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // ==== CONFIG (copie exactement tes valeurs) ====
+    const SUPABASE_URL = "https://ugrmxzdhevqrgftlxfnp.supabase.co";
+    const SUPABASE_ANON_KEY = "e";
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const el = (id) => document.getElementById(id);
+
+    function getUrlParam(name) {
+      return new URLSearchParams(window.location.search).get(name);
+    }
+
+    function hasErrorInUrl() {
+      const h = window.location.hash || "";
+      const s = window.location.search || "";
+      return (
+        h.includes("error=") ||
+        h.includes("otp_expired") ||
+        s.includes("error=")
+      );
+    }
+
+    function cleanUrlKeepNothing() {
+      // évite /# et enlève code/hash
+      const clean = window.location.origin + window.location.pathname;
+      history.replaceState(null, "", clean);
+    }
+
+    let tmr = null, itv = null;
+
+    function startCountdownAndClose(seconds = 20) {
+      if (tmr) clearTimeout(tmr);
+      if (itv) clearInterval(itv);
+
+      el("countdownBox").style.display = "block";
+
+      let left = seconds;
+      el("countdownBox").textContent =
+        `Cet onglet va tenter de se fermer automatiquement dans ${left}s.`;
+
+      itv = setInterval(() => {
+        left = Math.max(0, left - 1);
+        el("countdownBox").textContent =
+          `Cet onglet va tenter de se fermer automatiquement dans ${left}s.`;
+        if (left <= 0) clearInterval(itv);
+      }, 1000);
+
+      tmr = setTimeout(() => {
+        try { window.close(); } catch {}
+        // Si bloqué : pas grave, le message reste + bouton Fermer
+      }, seconds * 1000);
+    }
+
+    el("btnClose").onclick = () => { try { window.close(); } catch {} };
+
+    (async () => {
+      // Bouton "Ouvrir Mood Map" : on garde l’origine
+      el("btnOpenApp").href = window.location.origin + "/";
+
+      // 1) Si PKCE code présent (cas verify / recovery / confirm en PKCE)
+      const code = getUrlParam("code");
+
+      // 2) Certaines variantes peuvent utiliser hash tokens
+      const hash = window.location.hash || "";
+
+      // 3) Affiche un statut "pro"
+      let msg = "✅ Lien validé.\nVous pouvez retourner sur Mood Map.";
+      let detail = "";
+
+      if (hasErrorInUrl()) {
+        msg = "❌ Ce lien est invalide ou a expiré.\nVeuillez recommencer depuis Mood Map.";
+        detail = `Détails URL: ${window.location.search}${window.location.hash}`;
+        el("status").textContent = msg;
+        el("details").textContent = detail;
+        cleanUrlKeepNothing();
+        startCountdownAndClose(20);
+        return;
+      }
+
+      try {
+        // Si on a ?code=... : échange pour créer la session
+        if (code) {
+          el("status").textContent = "Traitement… (sécurisation de la session)";
+          const { error } = await sb.auth.exchangeCodeForSession(code);
+          if (error) {
+            msg = "❌ Erreur pendant la validation.\nVeuillez recommencer depuis Mood Map.";
+            detail = "Supabase: " + error.message;
+          } else {
+            msg = "✅ Validation terminée.\nVous pouvez fermer cet onglet.";
+            detail = "Session créée avec succès.";
+          }
+        } else if (hash.includes("access_token=")) {
+          // Dans certains flows, Supabase gère le hash côté SDK quand getSession() est appelé
+          el("status").textContent = "Traitement… (finalisation)";
+          const { data } = await sb.auth.getSession();
+          if (data?.session) {
+            msg = "✅ Validation terminée.\nVous pouvez fermer cet onglet.";
+            detail = "Session détectée.";
+          } else {
+            msg = "✅ Lien ouvert.\nVous pouvez retourner sur Mood Map.";
+            detail = "Aucune session détectée (ce n'est pas forcément une erreur).";
+          }
+        } else {
+          // Pas de code, pas de token : on a quand même ouvert le callback
+          msg = "✅ C’est bon.\nVous pouvez retourner sur Mood Map.";
+          detail = "Aucune action supplémentaire requise.";
+        }
+      } catch (e) {
+        msg = "❌ Erreur inattendue.\nVeuillez retourner sur Mood Map.";
+        detail = String(e && e.message ? e.message : e);
+      }
+
+      el("status").textContent = msg;
+      el("details").textContent = detail;
+
+      // Nettoie l’URL pour éviter /# ou affichage de paramètres sensibles
+      cleanUrlKeepNothing();
+
+      // Auto-fermeture (best-effort)
+      startCountdownAndClose(20);
+    })();
+  </script>
+</body>
+</html>
