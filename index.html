@@ -1,3 +1,5 @@
+// V7 du 28 jan 2026
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -33,6 +35,7 @@
     width: 320px;
   }
 
+  /* Ultra compact after first successful save (mobile-friendly) */
   .panel-compact{
     left:12px; top:12px;
     transform:none;
@@ -76,13 +79,15 @@
 
   #authView,#appView,#compactView,#resetView{ display:none; }
 
+  /* Mobile tweaks */
   @media (max-width: 520px) {
     .panel-welcome{ width: calc(100vw - 24px); }
     .panel-app{ width: calc(100vw - 24px); left: 12px; right: 12px; }
-    button, input { padding: 14px; font-size: 16px; }
+    button, input { padding: 14px; font-size: 16px; } /* prevents iOS zoom on inputs */
     .panel-compact{ left: 12px; right: 12px; }
   }
 
+  /* iPhone safe areas */
   #panel{
     padding-bottom: calc(16px + env(safe-area-inset-bottom));
     padding-top: calc(16px + env(safe-area-inset-top));
@@ -114,20 +119,6 @@
   #modal h4 { margin: 0 0 10px; font-size: 17px; }
   .modal-actions { display:flex; gap:10px; justify-content:flex-end; }
   .warn { color:#b00020; font-size: 13px; white-space: pre-wrap; }
-
-  /* ===========================
-     AUTO-CLOSE BOX (email callback)
-     =========================== */
-  #closeBox{
-    display:none;
-    border:1px solid rgba(0,0,0,.12);
-    background: rgba(255,255,255,0.9);
-    border-radius: 14px;
-    padding: 12px;
-    margin-top: 12px;
-  }
-  #closeTitle{ font-weight: 700; margin-bottom: 6px; }
-  #closeCountdown{ font-variant-numeric: tabular-nums; }
 </style>
 </head>
 
@@ -165,19 +156,6 @@
     </div>
 
     <div id="authMsg" class="msg"></div>
-
-    <!-- Auto-close UX (shown only when opened from email link) -->
-    <div id="closeBox">
-      <div id="closeTitle">✅ Action terminée</div>
-      <div class="small">
-        Cet onglet va tenter de se fermer automatiquement dans
-        <b><span id="closeCountdown">20</span>s</b>.<br>
-        Si rien ne se passe, vous pouvez le fermer manuellement.
-      </div>
-      <div class="row" style="margin-top:10px;">
-        <button id="btnCloseNow" class="secondary" type="button">Close this tab</button>
-      </div>
-    </div>
   </div>
 
   <!-- =========================
@@ -200,19 +178,6 @@
     </div>
 
     <div id="resetMsg" class="msg"></div>
-
-    <!-- Auto-close UX (shown only when opened from email link) -->
-    <div id="closeBoxReset" style="display:none; border:1px solid rgba(0,0,0,.12); background: rgba(255,255,255,0.9); border-radius: 14px; padding: 12px; margin-top: 12px;">
-      <div style="font-weight:700; margin-bottom:6px;">✅ Reset link opened</div>
-      <div class="small">
-        Cet onglet va tenter de se fermer automatiquement dans
-        <b><span id="closeCountdownReset">20</span>s</b>.<br>
-        Si rien ne se passe, vous pouvez le fermer manuellement.
-      </div>
-      <div class="row" style="margin-top:10px;">
-        <button id="btnCloseNowReset" class="secondary" type="button">Close this tab</button>
-      </div>
-    </div>
   </div>
 
   <!-- =========================
@@ -617,6 +582,7 @@ function playAmbientMusic() {
   schedule();
 }
 
+// Auto-start music on first user interaction (browser policy)
 function autoStartMusicOnce() {
   playAmbientMusic();
   document.removeEventListener("pointerdown", autoStartMusicOnce);
@@ -699,6 +665,13 @@ function urlHasOtpExpiredError(){
   return h.includes("otp_expired") || h.includes("error=access_denied");
 }
 
+/**
+ * We show reset view when:
+ * - our UI flag ?reset=1 is present
+ * - OR Supabase indicates recovery (type=recovery)
+ * - OR PKCE code is present (?code=...)
+ * - OR implicit hash token is present (#access_token=...)
+ */
 function urlHasRecoveryOrReset() {
   const h = window.location.hash || "";
   const s = window.location.search || "";
@@ -709,20 +682,6 @@ function urlHasRecoveryOrReset() {
   if (h.includes("access_token=")) return true;
 
   return false;
-}
-
-/* NEW: detect email callback (confirm/reset/magic link) */
-function isEmailCallback() {
-  const h = window.location.hash || "";
-  const s = window.location.search || "";
-
-  return (
-    s.includes("code=") ||
-    h.includes("access_token=") ||
-    s.includes("type=recovery") ||
-    h.includes("type=recovery") ||
-    getUrlParam("reset") === "1"
-  );
 }
 
 /**
@@ -742,64 +701,6 @@ async function bootstrapAuthFromUrlIfNeeded() {
 }
 
 /* =============================================================================
-   9.5) AUTO-CLOSE + COUNTDOWN (best effort)
-   ============================================================================= */
-let closeTimer = null;
-let closeInterval = null;
-
-function stopCloseCountdown() {
-  if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; }
-  if (closeInterval) { clearInterval(closeInterval); closeInterval = null; }
-}
-
-function showCloseUX(where /* "auth" | "reset" */, secondsLeft) {
-  if (where === "reset") {
-    const box = el("closeBoxReset");
-    const counter = el("closeCountdownReset");
-    box.style.display = "block";
-    counter.textContent = String(secondsLeft);
-  } else {
-    const box = el("closeBox");
-    const counter = el("closeCountdown");
-    box.style.display = "block";
-    counter.textContent = String(secondsLeft);
-  }
-}
-
-function updateCloseUX(where, secondsLeft) {
-  if (where === "reset") el("closeCountdownReset").textContent = String(secondsLeft);
-  else el("closeCountdown").textContent = String(secondsLeft);
-}
-
-/**
- * Starts a visible countdown, then tries to close the tab.
- * If close is blocked, we keep a clean message on screen.
- */
-function startAutoCloseCountdown(ms = 20000, where = "auth") {
-  stopCloseCountdown();
-
-  let secondsLeft = Math.max(1, Math.ceil(ms / 1000));
-  showCloseUX(where, secondsLeft);
-
-  closeInterval = setInterval(() => {
-    secondsLeft = Math.max(0, secondsLeft - 1);
-    updateCloseUX(where, secondsLeft);
-    if (secondsLeft <= 0) {
-      stopCloseCountdown();
-    }
-  }, 1000);
-
-  closeTimer = setTimeout(() => {
-    try { window.close(); } catch {}
-    // If blocked, UX remains visible: user can close manually.
-  }, ms);
-}
-
-/* Close buttons */
-el("btnCloseNow").onclick = () => { try { window.close(); } catch {} };
-el("btnCloseNowReset").onclick = () => { try { window.close(); } catch {} };
-
-/* =============================================================================
    10) setConnected(user)
    ============================================================================= */
 async function setConnected(user){
@@ -817,12 +718,11 @@ async function setConnected(user){
    11) AUTH STATE CHANGE
    ============================================================================= */
 sb.auth.onAuthStateChange((event, session) => {
+  // Old flow still sometimes emits PASSWORD_RECOVERY
   if (event === "PASSWORD_RECOVERY") {
     showReset();
     setResetMessage("Please choose a new password.");
     clearMarkers();
-
-    if (isEmailCallback()) startAutoCloseCountdown(20000, "reset");
     return;
   }
   setConnected(session?.user || null);
@@ -846,24 +746,11 @@ sb.auth.onAuthStateChange((event, session) => {
     }
 
     clearMarkers();
-
-    if (isEmailCallback()) startAutoCloseCountdown(20000, "reset");
   } else if (urlHasOtpExpiredError()) {
     showAuth();
     setAuthMessage("This email link is invalid or has expired.\nPlease request a new reset email.");
-
-    if (isEmailCallback()) startAutoCloseCountdown(20000, "auth");
   } else {
     setConnected(data.session?.user || null);
-
-    // If this tab was opened from an email confirm/magic link, still offer auto-close UX.
-    if (isEmailCallback()) {
-      // Show auth view message area (or user may already be connected; still OK)
-      // We keep it simple: show a tiny close UX in auth view only if not connected.
-      if (!data.session?.user) showAuth();
-      startAutoCloseCountdown(20000, "auth");
-      setAuthMessage("✅ Action terminée.\nYou can close this tab.");
-    }
   }
 })();
 
@@ -912,10 +799,9 @@ el("btnSignup").onclick = async () => {
   const { error } = await sb.auth.signUp({
     email,
     password: p1,
-options: {
-  emailRedirectTo: `${window.location.origin}/callback.html`
-}
-
+    options: {
+      emailRedirectTo: window.location.origin
+    }
   });
 
   if(error){
@@ -936,6 +822,7 @@ options: {
 
 /* =============================================================================
    15) FORGOT PASSWORD
+   ✅ Use ?reset=1 (NOT #reset) because the hash may be used by Supabase tokens.
    ============================================================================= */
 let forgotBusy = false;
 el("btnForgot").onclick = async () => {
@@ -955,10 +842,9 @@ el("btnForgot").onclick = async () => {
 
   setAuthMessage("Sending reset email…");
 
-const { error } = await sb.auth.resetPasswordForEmail(email, {
-  redirectTo: `${window.location.origin}/callback.html`
-});
-
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/?reset=1`
+  });
 
   if (error) {
     setAuthMessage("Error:\n" + error.message + "\n\nTip: if you see 'rate limit exceeded', wait a bit and try once.");
@@ -1006,9 +892,6 @@ el("btnDoReset").onclick = async () => {
 
   setResetMessage("✅ Password updated.\nYou can now use the app.");
 
-  // Start/refresh countdown (so user sees it clearly after success)
-  if (isEmailCallback()) startAutoCloseCountdown(20000, "reset");
-
   // Clean URL
   const cleanUrl = window.location.origin + window.location.pathname;
   history.replaceState(null, "", cleanUrl);
@@ -1017,7 +900,6 @@ el("btnDoReset").onclick = async () => {
 el("btnResetCancel").onclick = () => {
   showAuth();
   setResetMessage("");
-  stopCloseCountdown();
   const cleanUrl = window.location.origin + window.location.pathname;
   history.replaceState(null, "", cleanUrl);
 };
