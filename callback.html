@@ -107,16 +107,20 @@
           await sb.auth.getSession();
         }
 
-        el("status").textContent = "✅ Validation terminée.\nRedirection vers Mood Map…";
-        el("details").textContent = "";
+el("status").textContent = "✅ Validation terminée.\nCliquez sur “Ouvrir Mood Map”.";
+el("details").textContent = "Vous pouvez fermer cet onglet après ouverture.";
 
-        // Redirect rapide
-        setTimeout(() => {
-          window.location.href = window.location.origin + nextPath;
-        }, 700);
+const go = () => {
+  // L’utilisateur clique -> on navigue
+  window.location.href = window.location.origin + nextPath;
 
-        // Auto-close (pro) : OK pour confirm/signin
-        startCountdownAndClose(15);
+  // Optionnel : démarrer l’autoclose seulement APRÈS un clic utilisateur
+  // (window.close est plus “accepté” après interaction, même si pas garanti)
+  startCountdownAndClose(15);
+};
+
+el("btnOpenApp").onclick = (e) => { e.preventDefault(); go(); };
+
 
       } catch (e) {
         el("status").textContent =
