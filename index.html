@@ -1,5 +1,3 @@
-// V7 du 28 jan 2026
-
 <!doctype html>
 <html lang="en">
 <head>
@@ -47,12 +45,13 @@
   h3 { margin:0 0 10px; font-size:18px; }
   .row { display:grid; gap:10px; margin:10px 0; }
 
-  input, button{
+  input, button, textarea{
     font:inherit;
     padding:12px;
     border-radius:12px;
     border:1px solid rgba(0,0,0,.15);
   }
+  textarea{ resize: vertical; min-height: 110px; }
   button{ background:#111; color:#fff; border:0; cursor:pointer; }
   button.secondary{ background:#eee; color:#111; }
   button.link{
@@ -83,7 +82,7 @@
   @media (max-width: 520px) {
     .panel-welcome{ width: calc(100vw - 24px); }
     .panel-app{ width: calc(100vw - 24px); left: 12px; right: 12px; }
-    button, input { padding: 14px; font-size: 16px; } /* prevents iOS zoom on inputs */
+    button, input, textarea { padding: 14px; font-size: 16px; } /* prevents iOS zoom on inputs */
     .panel-compact{ left: 12px; right: 12px; }
   }
 
@@ -99,7 +98,7 @@
   /* ===========================
      SIMPLE MODAL (for signup)
      =========================== */
-  #overlay {
+  #overlay, #overlayFeedback {
     position: fixed;
     inset: 0;
     background: rgba(0,0,0,0.45);
@@ -109,16 +108,31 @@
     justify-content: center;
     padding: 12px;
   }
-  #modal {
+  #modal, #modalFeedback {
     width: min(520px, 100%);
     background: rgba(255,255,255,0.98);
     border-radius: 16px;
     box-shadow: 0 14px 36px rgba(0,0,0,.25);
     padding: 16px;
   }
-  #modal h4 { margin: 0 0 10px; font-size: 17px; }
+  #modal h4, #modalFeedback h4 { margin: 0 0 10px; font-size: 17px; }
   .modal-actions { display:flex; gap:10px; justify-content:flex-end; }
   .warn { color:#b00020; font-size: 13px; white-space: pre-wrap; }
+
+  /* ===========================
+     BLINK (for “please close this window”)
+     =========================== */
+  @keyframes mmBlink {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0.15; }
+  }
+  .blink {
+    font-weight: 700;
+    animation: mmBlink 1.05s steps(1, end) infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .blink { animation: none; }
+  }
 </style>
 </head>
 
@@ -204,6 +218,11 @@
   <!-- COMPACT panel (after save) -->
   <div id="compactView">
     <div class="small" id="compactMsg">✅ Saved.</div>
+
+    <div class="row" style="margin-top:8px;">
+      <button id="btnFeedback" class="link" type="button">Any comments?</button>
+    </div>
+
     <div class="row" style="margin-top:8px;">
       <button id="btnLogout2" class="secondary">Sign out</button>
     </div>
@@ -234,6 +253,28 @@
     <div class="modal-actions">
       <button id="btnCloseSignup" class="secondary" type="button">Cancel</button>
       <button id="btnSignup" type="button">Create account</button>
+    </div>
+  </div>
+</div>
+
+<!-- =========================
+     FEEDBACK MODAL (email)
+     ========================= -->
+<div id="overlayFeedback" aria-hidden="true">
+  <div id="modalFeedback" role="dialog" aria-modal="true">
+    <h4>Send a comment</h4>
+
+    <div class="small" id="feedbackHint">
+      This will open your email app to send a message.
+    </div>
+
+    <div class="row" style="margin-top:10px;">
+      <textarea id="fbText" placeholder="Type your message here..."></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button id="btnCloseFeedback" class="secondary" type="button">Cancel</button>
+      <button id="btnSendFeedback" type="button">Send</button>
     </div>
   </div>
 </div>
@@ -478,6 +519,9 @@ function setAuthMessage(msg){ el("authMsg").textContent = msg || ""; }
 function setResetMessage(msg){ el("resetMsg").textContent = msg || ""; }
 function setAppMessage(msg){ el("appMsg").textContent = msg || ""; }
 
+/* For the 2 “close this window” messages: allow simple HTML (controlled strings) */
+function setAuthMessageHtml(html){ el("authMsg").innerHTML = html || ""; }
+
 const slider = el("slider");
 slider.oninput = ()=> el("moodValue").textContent = slider.value;
 
@@ -654,6 +698,50 @@ el("btnOpenSignup").onclick = openSignupModal;
 el("btnCloseSignup").onclick = closeSignupModal;
 
 /* =============================================================================
+   8b) FEEDBACK MODAL
+   ============================================================================= */
+/* IMPORTANT: replace this with your real OVH email address */
+const FEEDBACK_EMAIL = "YOUR_OVH_EMAIL@YOURDOMAIN.TLD";
+const FEEDBACK_SUBJECT = "Mood Map – Feedback";
+
+const overlayFeedback = el("overlayFeedback");
+
+function openFeedbackModal(){
+  el("fbText").value = buildFeedbackTemplate();
+  overlayFeedback.style.display = "flex";
+  overlayFeedback.setAttribute("aria-hidden", "false");
+  setTimeout(() => el("fbText").focus(), 50);
+}
+function closeFeedbackModal(){
+  overlayFeedback.style.display = "none";
+  overlayFeedback.setAttribute("aria-hidden", "true");
+}
+overlayFeedback.addEventListener("click", (e) => {
+  if (e.target === overlayFeedback) closeFeedbackModal();
+});
+el("btnFeedback").onclick = openFeedbackModal;
+el("btnCloseFeedback").onclick = closeFeedbackModal;
+
+function buildFeedbackTemplate(){
+  const u = lastUserEmail ? `User: ${lastUserEmail}\n` : "";
+  const loc = (lastFix && lastFix.lon != null && lastFix.lat != null)
+    ? `Last location: ${lastFix.lat.toFixed(6)}, ${lastFix.lon.toFixed(6)} (±${Math.round(lastFix.accuracy || 0)}m)\n`
+    : "";
+  return `${u}${loc}\nMessage:\n`;
+}
+
+el("btnSendFeedback").onclick = () => {
+  const body = el("fbText").value || "";
+  if (!FEEDBACK_EMAIL.includes("@") || FEEDBACK_EMAIL.includes("YOUR_")) {
+    alert("Please set FEEDBACK_EMAIL in the HTML first.");
+    return;
+  }
+  const mailto = `mailto:${encodeURIComponent(FEEDBACK_EMAIL)}?subject=${encodeURIComponent(FEEDBACK_SUBJECT)}&body=${encodeURIComponent(body)}`;
+  window.location.href = mailto;
+  closeFeedbackModal();
+};
+
+/* =============================================================================
    9) URL + PKCE helpers (NO DUPLICATES)
    ============================================================================= */
 function getUrlParam(name) {
@@ -814,7 +902,12 @@ el("btnSignup").onclick = async () => {
   closeSignupModal();
   showAuth();
   el("email").value = email;
-  setAuthMessage("✅ Account created.\nPlease close this window and check your email to confirm your account.");
+
+  // BLINKING “close this window”
+  setAuthMessageHtml(
+    "✅ Account created.<br>" +
+    "<span class='blink'>Please close this window</span> and check your email to confirm your account."
+  );
 
   btn.disabled = false;
   signupBusy = false;
@@ -849,7 +942,11 @@ el("btnForgot").onclick = async () => {
   if (error) {
     setAuthMessage("Error:\n" + error.message + "\n\nTip: if you see 'rate limit exceeded', wait a bit and try once.");
   } else {
-    setAuthMessage("✅ Reset email sent. \n Please close this windows and check your inbox (and spam).");
+    // BLINKING “close this window”
+    setAuthMessageHtml(
+      "✅ Reset email sent.<br>" +
+      "<span class='blink'>Please close this window</span> and check your inbox (and spam)."
+    );
   }
 
   setTimeout(() => {
@@ -916,24 +1013,88 @@ el("btnLogout").onclick = doLogout;
 el("btnLogout2").onclick = doLogout;
 
 /* =============================================================================
-   18) ONE BUTTON: Locate + Save + Refresh
+   18) BETTER GEOLOCATION (best accuracy from watchPosition)
+   ============================================================================= */
+let lastFix = null;       // {lat, lon, accuracy}
+let lastUserEmail = null; // for feedback template
+
+async function getBestPosition({ desiredAccuracy = 120, maxWaitMs = 14000 } = {}) {
+  if (!navigator.geolocation) throw new Error("Geolocation not supported.");
+
+  return new Promise((resolve, reject) => {
+    let best = null;
+    let done = false;
+    const start = Date.now();
+
+    function finish(ok, payload){
+      if (done) return;
+      done = true;
+      try { navigator.geolocation.clearWatch(watchId); } catch {}
+      clearTimeout(timer);
+      ok ? resolve(payload) : reject(payload);
+    }
+
+    const options = { enableHighAccuracy: true, timeout: maxWaitMs, maximumAge: 0 };
+
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        if (!best || pos.coords.accuracy < best.coords.accuracy) best = pos;
+
+        // If we reach good accuracy, finish early
+        if (pos.coords.accuracy <= desiredAccuracy) {
+          return finish(true, best);
+        }
+
+        // Otherwise keep watching until time is up
+        if (Date.now() - start >= maxWaitMs) {
+          return finish(true, best);
+        }
+      },
+      async (err) => {
+        // Fallback: sometimes watchPosition errors quickly on some devices/browsers
+        try {
+          navigator.geolocation.getCurrentPosition(
+            (pos2) => finish(true, pos2),
+            (err2) => finish(false, err2),
+            { enableHighAccuracy: true, timeout: maxWaitMs + 6000, maximumAge: 0 }
+          );
+        } catch {
+          finish(false, err);
+        }
+      },
+      options
+    );
+
+    const timer = setTimeout(() => {
+      if (best) finish(true, best);
+      else finish(false, new Error("Unable to get position."));
+    }, maxWaitMs + 300);
+  });
+}
+
+/* =============================================================================
+   19) ONE BUTTON: Locate + Save + Refresh
    ============================================================================= */
 el("btnSaveAll").onclick = async () => {
-  setAppMessage("Locating…");
+  try {
+    setAppMessage("Locating… (high accuracy)");
 
-  const { data: { user } } = await sb.auth.getUser();
-  if (!user) { setAppMessage("You must be signed in."); return; }
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) { setAppMessage("You must be signed in."); return; }
+    lastUserEmail = user.email || null;
 
-  if (!navigator.geolocation) {
-    setAppMessage("Geolocation not supported.");
-    return;
-  }
+    const pos = await getBestPosition({ desiredAccuracy: 120, maxWaitMs: 14000 });
 
-  navigator.geolocation.getCurrentPosition(async (pos) => {
     const coords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+    const accuracy = pos.coords.accuracy;
+
+    lastFix = { ...coords, accuracy };
+
     const mood = parseInt(slider.value, 10);
 
-    setAppMessage("Saving…");
+    // Helpful info if accuracy is poor (e.g., hotspot / IP / cell triangulation)
+    const accTxt = (typeof accuracy === "number") ? `±${Math.round(accuracy)}m` : "unknown";
+    setAppMessage(`Saving…\nAccuracy: ${accTxt}`);
 
     const row = {
       user_id: user.id,
@@ -954,14 +1115,19 @@ el("btnSaveAll").onclick = async () => {
     setAppMessage("✅ Saved. Loading markers…");
     await refreshPoints();
 
-    showCompact("✅ Saved. Thank you!");
-  }, (err) => {
-    setAppMessage("Geolocation error: " + err.message);
-  }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+    // If accuracy is very large, give a gentle hint (still in English)
+    if (typeof accuracy === "number" && accuracy > 1500) {
+      showCompact(`✅ Saved (accuracy ${accTxt}).`);
+    } else {
+      showCompact("✅ Saved. Thank you!");
+    }
+  } catch (err) {
+    setAppMessage("Geolocation error: " + (err?.message || String(err)));
+  }
 };
 
 /* =============================================================================
-   19) MAP INIT
+   20) MAP INIT
    ============================================================================= */
 map.on("load", async () => {
   ensureMoodImages();
