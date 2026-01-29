@@ -52,6 +52,7 @@
     border:1px solid rgba(0,0,0,.15);
   }
   textarea{ resize: vertical; min-height: 110px; }
+
   button{ background:#111; color:#fff; border:0; cursor:pointer; }
   button.secondary{ background:#eee; color:#111; }
   button.link{
@@ -96,7 +97,7 @@
   #map { height: calc(var(--vh) * 100); }
 
   /* ===========================
-     SIMPLE MODAL (for signup)
+     SIMPLE MODAL (signup + feedback)
      =========================== */
   #overlay, #overlayFeedback {
     position: fixed;
@@ -153,7 +154,6 @@
       how happy people are across different places.
     </div>
 
-    <!-- LOGIN inputs -->
     <div class="row">
       <input id="email" type="email" placeholder="Email" autocomplete="email">
       <input id="password" type="password" placeholder="Password" autocomplete="current-password">
@@ -239,7 +239,7 @@
     <div class="small">
       You should receive a confirmation email.
       Your account becomes active after you confirm.
-    <br><br>
+      <br><br>
     </div>
 
     <div class="row">
@@ -258,14 +258,14 @@
 </div>
 
 <!-- =========================
-     FEEDBACK MODAL (email)
+     FEEDBACK MODAL (AUTO SEND)
      ========================= -->
 <div id="overlayFeedback" aria-hidden="true">
   <div id="modalFeedback" role="dialog" aria-modal="true">
     <h4>Send a comment</h4>
 
     <div class="small" id="feedbackHint">
-      This will open your email app to send a message.
+      This message will be sent automatically.
     </div>
 
     <div class="row" style="margin-top:10px;">
@@ -519,7 +519,7 @@ function setAuthMessage(msg){ el("authMsg").textContent = msg || ""; }
 function setResetMessage(msg){ el("resetMsg").textContent = msg || ""; }
 function setAppMessage(msg){ el("appMsg").textContent = msg || ""; }
 
-/* For the 2 “close this window” messages: allow simple HTML (controlled strings) */
+// Allow a little HTML in authMsg (controlled strings)
 function setAuthMessageHtml(html){ el("authMsg").innerHTML = html || ""; }
 
 const slider = el("slider");
@@ -698,13 +698,12 @@ el("btnOpenSignup").onclick = openSignupModal;
 el("btnCloseSignup").onclick = closeSignupModal;
 
 /* =============================================================================
-   8b) FEEDBACK MODAL
+   8b) FEEDBACK MODAL (AUTO SEND to Cloudflare Worker)
    ============================================================================= */
-/* IMPORTANT: replace this with your real OVH email address */
-const FEEDBACK_EMAIL = "gloussou@mood2know.com";
-const FEEDBACK_SUBJECT = "Mood Map – Feedback";
-
+const FEEDBACK_API_URL = "/api/feedback"; // since your routes are mood2know.com/api/* and www.../api/*
 const overlayFeedback = el("overlayFeedback");
+let lastFix = null;       // {lat, lon, accuracy}
+let lastUserEmail = null; // for feedback template
 
 function openFeedbackModal(){
   el("fbText").value = buildFeedbackTemplate();
@@ -730,15 +729,38 @@ function buildFeedbackTemplate(){
   return `${u}${loc}\nMessage:\n`;
 }
 
-el("btnSendFeedback").onclick = () => {
-  const body = el("fbText").value || "";
-  if (!FEEDBACK_EMAIL.includes("@") || FEEDBACK_EMAIL.includes("YOUR_")) {
-    alert("Please set FEEDBACK_EMAIL in the HTML first.");
+el("btnSendFeedback").onclick = async () => {
+  const btn = el("btnSendFeedback");
+  const msg = (el("fbText").value || "").trim();
+  if (msg.length < 2) {
+    alert("Please type a message first.");
     return;
   }
-  const mailto = `mailto:${encodeURIComponent(FEEDBACK_EMAIL)}?subject=${encodeURIComponent(FEEDBACK_SUBJECT)}&body=${encodeURIComponent(body)}`;
-  window.location.href = mailto;
-  closeFeedbackModal();
+
+  btn.disabled = true;
+  try {
+    const res = await fetch(FEEDBACK_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: msg,
+        userEmail: lastUserEmail,
+        lastFix
+      })
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) {
+      throw new Error(data.error || `HTTP ${res.status}`);
+    }
+
+    closeFeedbackModal();
+    el("compactMsg").textContent = "✅ Sent. Thank you!";
+  } catch (e) {
+    alert("Send failed: " + (e?.message || String(e)));
+  } finally {
+    btn.disabled = false;
+  }
 };
 
 /* =============================================================================
@@ -753,13 +775,6 @@ function urlHasOtpExpiredError(){
   return h.includes("otp_expired") || h.includes("error=access_denied");
 }
 
-/**
- * We show reset view when:
- * - our UI flag ?reset=1 is present
- * - OR Supabase indicates recovery (type=recovery)
- * - OR PKCE code is present (?code=...)
- * - OR implicit hash token is present (#access_token=...)
- */
 function urlHasRecoveryOrReset() {
   const h = window.location.hash || "";
   const s = window.location.search || "";
@@ -772,10 +787,6 @@ function urlHasRecoveryOrReset() {
   return false;
 }
 
-/**
- * PKCE: if Supabase returns ?code=..., exchange it for a session
- * BEFORE calling getSession() / updateUser().
- */
 async function bootstrapAuthFromUrlIfNeeded() {
   const code = getUrlParam("code");
   if (!code) return;
@@ -783,7 +794,6 @@ async function bootstrapAuthFromUrlIfNeeded() {
   const { error } = await sb.auth.exchangeCodeForSession(code);
   if (error) console.warn("exchangeCodeForSession error:", error.message);
 
-  // Clean URL (remove ?code=... but keep path)
   const cleanUrl = window.location.origin + window.location.pathname + window.location.hash;
   window.history.replaceState({}, document.title, cleanUrl);
 }
@@ -806,7 +816,6 @@ async function setConnected(user){
    11) AUTH STATE CHANGE
    ============================================================================= */
 sb.auth.onAuthStateChange((event, session) => {
-  // Old flow still sometimes emits PASSWORD_RECOVERY
   if (event === "PASSWORD_RECOVERY") {
     showReset();
     setResetMessage("Please choose a new password.");
@@ -903,7 +912,6 @@ el("btnSignup").onclick = async () => {
   showAuth();
   el("email").value = email;
 
-  // BLINKING “close this window”
   setAuthMessageHtml(
     "✅ Account created.<br>" +
     "<span class='blink'>Please close this window</span> and check your email to confirm your account."
@@ -915,7 +923,6 @@ el("btnSignup").onclick = async () => {
 
 /* =============================================================================
    15) FORGOT PASSWORD
-   ✅ Use ?reset=1 (NOT #reset) because the hash may be used by Supabase tokens.
    ============================================================================= */
 let forgotBusy = false;
 el("btnForgot").onclick = async () => {
@@ -942,7 +949,6 @@ el("btnForgot").onclick = async () => {
   if (error) {
     setAuthMessage("Error:\n" + error.message + "\n\nTip: if you see 'rate limit exceeded', wait a bit and try once.");
   } else {
-    // BLINKING “close this window”
     setAuthMessageHtml(
       "✅ Reset email sent.<br>" +
       "<span class='blink'>Please close this window</span> and check your inbox (and spam)."
@@ -989,7 +995,6 @@ el("btnDoReset").onclick = async () => {
 
   setResetMessage("✅ Password updated.\nYou can now use the app.");
 
-  // Clean URL
   const cleanUrl = window.location.origin + window.location.pathname;
   history.replaceState(null, "", cleanUrl);
 };
@@ -1015,9 +1020,6 @@ el("btnLogout2").onclick = doLogout;
 /* =============================================================================
    18) BETTER GEOLOCATION (best accuracy from watchPosition)
    ============================================================================= */
-let lastFix = null;       // {lat, lon, accuracy}
-let lastUserEmail = null; // for feedback template
-
 async function getBestPosition({ desiredAccuracy = 120, maxWaitMs = 14000 } = {}) {
   if (!navigator.geolocation) throw new Error("Geolocation not supported.");
 
@@ -1040,27 +1042,21 @@ async function getBestPosition({ desiredAccuracy = 120, maxWaitMs = 14000 } = {}
       (pos) => {
         if (!best || pos.coords.accuracy < best.coords.accuracy) best = pos;
 
-        // If we reach good accuracy, finish early
         if (pos.coords.accuracy <= desiredAccuracy) {
           return finish(true, best);
         }
 
-        // Otherwise keep watching until time is up
         if (Date.now() - start >= maxWaitMs) {
           return finish(true, best);
         }
       },
-      async (err) => {
-        // Fallback: sometimes watchPosition errors quickly on some devices/browsers
-        try {
-          navigator.geolocation.getCurrentPosition(
-            (pos2) => finish(true, pos2),
-            (err2) => finish(false, err2),
-            { enableHighAccuracy: true, timeout: maxWaitMs + 6000, maximumAge: 0 }
-          );
-        } catch {
-          finish(false, err);
-        }
+      (err) => {
+        // fallback
+        navigator.geolocation.getCurrentPosition(
+          (pos2) => finish(true, pos2),
+          (err2) => finish(false, err2),
+          { enableHighAccuracy: true, timeout: maxWaitMs + 6000, maximumAge: 0 }
+        );
       },
       options
     );
@@ -1087,12 +1083,10 @@ el("btnSaveAll").onclick = async () => {
 
     const coords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
     const accuracy = pos.coords.accuracy;
-
     lastFix = { ...coords, accuracy };
 
     const mood = parseInt(slider.value, 10);
 
-    // Helpful info if accuracy is poor (e.g., hotspot / IP / cell triangulation)
     const accTxt = (typeof accuracy === "number") ? `±${Math.round(accuracy)}m` : "unknown";
     setAppMessage(`Saving…\nAccuracy: ${accTxt}`);
 
@@ -1115,7 +1109,6 @@ el("btnSaveAll").onclick = async () => {
     setAppMessage("✅ Saved. Loading markers…");
     await refreshPoints();
 
-    // If accuracy is very large, give a gentle hint (still in English)
     if (typeof accuracy === "number" && accuracy > 1500) {
       showCompact(`✅ Saved (accuracy ${accTxt}).`);
     } else {
@@ -1137,4 +1130,3 @@ map.on("load", async () => {
 </script>
 </body>
 </html>
-
