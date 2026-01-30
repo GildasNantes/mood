@@ -271,7 +271,7 @@
 
     <label class="small" for="fbText">Message</label>
     <textarea id="fbText" maxlength="5000" placeholder="Write your comment here (max 5000 characters)…"></textarea>
-    <div id="fbCount">0 / 5000</div>
+    <div id="fbCount">0 / 5000 • 0 / 250 words</div>
 
     <div id="fbMsg" class="msg" style="margin-top:8px;"></div>
 
@@ -521,6 +521,12 @@ function setAppMessage(msg){ el("appMsg").textContent = msg || ""; }
 
 const slider = el("slider");
 slider.oninput = ()=> el("moodValue").textContent = slider.value;
+
+/* ===== Feedback limits + word count (ADDED) ===== */
+const FEEDBACK_MAX_WORDS = 250;
+function countWords(s) {
+  return (s.trim().match(/\S+/g) || []).length;
+}
 
 /* =============================================================================
    5) MUSIC (fade out on login)
@@ -974,13 +980,19 @@ const fbMsg  = el("fbMsg");
 const fbCount = el("fbCount");
 const btnFbSend = el("btnFbSend");
 
+function updateFbCounter(){
+  const chars = fbText.value.length;
+  const words = countWords(fbText.value);
+  fbCount.textContent = `${chars} / 5000 • ${words} / ${FEEDBACK_MAX_WORDS} words`;
+}
+
 function openFeedbackModal(metaText){
   fbMsg.textContent = "";
   fbText.value = "";
-  fbCount.textContent = "0 / 5000";
   fbMeta.textContent = metaText || "";
   fbOverlay.style.display = "flex";
   fbOverlay.setAttribute("aria-hidden", "false");
+  updateFbCounter();
   setTimeout(() => fbText.focus(), 50);
 }
 function closeFeedbackModal(){
@@ -990,9 +1002,7 @@ function closeFeedbackModal(){
 fbOverlay.addEventListener("click", (e) => { if (e.target === fbOverlay) closeFeedbackModal(); });
 el("btnFbCancel").onclick = closeFeedbackModal;
 
-fbText.addEventListener("input", () => {
-  fbCount.textContent = `${fbText.value.length} / 5000`;
-});
+fbText.addEventListener("input", updateFbCounter);
 
 el("btnFeedback").onclick = async () => {
   const { data: { user } } = await sb.auth.getUser();
@@ -1032,6 +1042,14 @@ btnFbSend.onclick = async () => {
     return;
   }
 
+  const words = countWords(message);
+  if (words > FEEDBACK_MAX_WORDS) {
+    fbMsg.textContent = `Too many words (${words}). Max is ${FEEDBACK_MAX_WORDS}.`;
+    btnFbSend.disabled = false;
+    fbBusy = false;
+    return;
+  }
+
   const lf = lastFix || {};
   const row = {
     user_id: user.id,
@@ -1046,7 +1064,11 @@ btnFbSend.onclick = async () => {
   const { error } = await sb.from("mood_feedback").insert(row);
 
   if (error) {
-    fbMsg.textContent = "Error:\n" + error.message;
+    if (error.code === "23505") {
+      fbMsg.textContent = "You already sent a comment today. Please try again tomorrow.";
+    } else {
+      fbMsg.textContent = "Error:\n" + error.message;
+    }
     btnFbSend.disabled = false;
     fbBusy = false;
     return;
