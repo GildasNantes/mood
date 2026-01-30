@@ -1063,16 +1063,36 @@ btnFbSend.onclick = async () => {
 
   const { error } = await sb.from("mood_feedback").insert(row);
 
-  if (error) {
-    if (error.code === "23505") {
-      fbMsg.textContent = "You already sent a comment today. Please try again tomorrow.";
-    } else {
-      fbMsg.textContent = "Error:\n" + error.message;
-    }
-    btnFbSend.disabled = false;
-    fbBusy = false;
-    return;
+if (error) {
+  // Supabase may return code=23505 or only a text message
+  const raw =
+    (error.message || "") +
+    " " +
+    (error.details || "") +
+    " " +
+    (error.hint || "");
+
+  const isDuplicate =
+    error.code === "23505" ||
+    raw.includes("duplicate key value") ||
+    raw.includes("mood_feedback_one_per_day");
+
+  if (isDuplicate) {
+    fbMsg.textContent =
+      "You have already sent a comment today.\n\n" +
+      "To keep feedback meaningful and avoid spam, only one comment per day is allowed.\n" +
+      "Please come back tomorrow 🙂";
+  } else {
+    fbMsg.textContent =
+      "An unexpected error occurred.\n\n" +
+      (error.message || "Unknown error");
   }
+
+  btnFbSend.disabled = false;
+  fbBusy = false;
+  return;
+}
+
 
   fbMsg.textContent = "✅ Saved. Thank you!";
   setTimeout(() => {
