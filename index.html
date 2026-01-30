@@ -751,7 +751,9 @@ el("btnSendFeedback").onclick = async () => {
 
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) {
-      throw new Error(data.error || `HTTP ${res.status}`);
+     const more = data.details ? `\n\n${data.details}` : "";
+throw new Error((data.error || `HTTP ${res.status}`) + more);
+
     }
 
     closeFeedbackModal();
@@ -1130,3 +1132,4 @@ map.on("load", async () => {
 </script>
 </body>
 </html>
+
