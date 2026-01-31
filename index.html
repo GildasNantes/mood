@@ -8,97 +8,93 @@
 <link rel="stylesheet" href="./maplibre-gl.css">
 
 <style>
-  html, body { margin:0; height:100%; font:16px system-ui; }
-  #map { position:fixed; inset:0; }
+html, body { margin:0; height:100%; font:16px system-ui; }
+#map { position:fixed; inset:0; }
 
-  #panel{
-    position: fixed;
-    z-index: 10;
-    background: rgba(255,255,255,0.96);
-    border-radius: 16px;
-    box-shadow: 0 14px 36px rgba(0,0,0,.25);
-    padding: 16px;
-    transition: all .35s ease;
-    padding-bottom: calc(16px + env(safe-area-inset-bottom));
-    padding-top: calc(16px + env(safe-area-inset-top));
-    left:12px; top:12px; /* default pos for drag */
-  }
+/* ================= PANEL ================= */
+#panel{
+  position: fixed;
+  z-index: 10;
+  left:12px; top:12px;
+  background: rgba(255,255,255,0.96);
+  border-radius: 16px;
+  box-shadow: 0 14px 36px rgba(0,0,0,.25);
+  padding: 16px;
+  transition: all .35s ease;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  padding-top: calc(16px + env(safe-area-inset-top));
+}
 
-  /* Big panel (default) */
-  .panel-app{
-    width: 320px;
-  }
+.panel-app{ width:320px; }
+.panel-compact{ width:auto; padding:10px 12px; border-radius:14px; }
+.panel-mini{ width:auto; padding:8px; border-radius:999px; background:rgba(255,255,255,.92); }
 
-  /* Compact panel (after save) */
-  .panel-compact{
-    width: auto;
-    padding: 10px 12px;
-    border-radius: 14px;
-  }
+/* Drag handle */
+#dragHandle{
+  width:54px;
+  height:6px;
+  margin:6px auto 10px;
+  border-radius:999px;
+  background:rgba(0,0,0,.18);
+  cursor:grab;
+  touch-action:none;
+}
+#dragHandle:active{ cursor:grabbing; }
 
-  /* Mini pill mode */
-  .panel-mini{
-    width: auto;
-    padding: 8px;
-    border-radius: 999px;
-    background: rgba(255,255,255,0.92);
-  }
-  .pill{
-    background:#111; color:#fff; border:0;
-    padding:10px 14px; border-radius:999px;
-    font-weight:600;
-    cursor:pointer;
-  }
+h3{ margin:0 0 6px; font-size:18px; }
+.row{ display:grid; gap:10px; margin:10px 0; }
 
-  h3 { margin:0 0 10px; font-size:18px; }
-  .row { display:grid; gap:10px; margin:10px 0; }
+input, button, textarea{
+  font:inherit;
+  padding:12px;
+  border-radius:12px;
+  border:1px solid rgba(0,0,0,.15);
+}
+textarea{ resize:vertical; min-height:120px; }
 
-  input, button, textarea{
-    font:inherit;
-    padding:12px;
-    border-radius:12px;
-    border:1px solid rgba(0,0,0,.15);
-  }
-  textarea{ resize: vertical; min-height: 120px; }
+button{ background:#111; color:#fff; border:0; cursor:pointer; }
+button.secondary{ background:#eee; color:#111; }
+button:disabled{ opacity:.55; cursor:not-allowed; }
 
-  button{ background:#111; color:#fff; border:0; cursor:pointer; }
-  button.secondary{ background:#eee; color:#111; }
-  button:disabled { opacity:.55; cursor: not-allowed; }
+.small{ font-size:13px; opacity:.75; }
+.msg{ white-space:pre-wrap; font-size:13px; }
 
-  .small{ font-size:13px; opacity:.75; }
-  .msg{ white-space:pre-wrap; font-size:13px; }
+#appView, #compactView, #miniView{ display:none; }
 
-  #appView, #compactView, #miniView { display:none; }
+/* Pill */
+.pill{
+  background:#111; color:#fff; border:0;
+  padding:10px 14px;
+  border-radius:999px;
+  font-weight:600;
+}
 
-  :root { --vh: 1vh; }
-  #map { height: calc(var(--vh) * 100); }
+/* Mobile */
+@media (max-width:520px){
+  .panel-app{ width:calc(100vw - 24px); }
+  button,input,textarea{ padding:14px; font-size:16px; }
+}
 
-  @media (max-width: 520px) {
-    .panel-app{ width: calc(100vw - 24px); }
-    button, input, textarea { padding: 14px; font-size: 16px; }
-  }
-
-  /* Feedback modal */
-  #fbOverlay{
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.45);
-    z-index: 60;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 12px;
-  }
-  #fbModal{
-    width: min(720px, 100%);
-    background: rgba(255,255,255,0.98);
-    border-radius: 16px;
-    box-shadow: 0 14px 36px rgba(0,0,0,.25);
-    padding: 16px;
-  }
-  #fbModal h4 { margin: 0 0 10px; font-size: 17px; }
-  #fbCount{ font-size: 12px; opacity: .7; text-align:right; margin-top:6px; }
-  .modal-actions { display:flex; gap:10px; justify-content:flex-end; }
+/* ============== FEEDBACK MODAL ============== */
+#fbOverlay{
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.45);
+  z-index:60;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:12px;
+}
+#fbModal{
+  width:min(720px,100%);
+  background:rgba(255,255,255,.98);
+  border-radius:16px;
+  box-shadow:0 14px 36px rgba(0,0,0,.25);
+  padding:16px;
+}
+#fbModal h4{ margin:0 0 10px; font-size:17px; }
+#fbCount{ font-size:12px; opacity:.7; text-align:right; margin-top:6px; }
+.modal-actions{ display:flex; gap:10px; justify-content:flex-end; }
 </style>
 </head>
 
@@ -107,8 +103,9 @@
 
 <div id="panel" class="panel-app">
   <h3>Mood Map</h3>
+  <div id="dragHandle"></div>
 
-  <!-- APP VIEW (default) -->
+  <!-- APP VIEW -->
   <div id="appView">
     <div class="row">
       <label>Your mood: <b><span id="moodValue">5</span>/10</b></label>
@@ -119,45 +116,44 @@
       <button id="btnSave">Locate + Save</button>
     </div>
 
-    <div class="small" id="hint">
-      Choose your mood, then tap “Locate + Save” to reveal the world’s mood 🌍
+    <div class="small">
+      Choose your mood, then tap “Locate + Save” to reveal the world 🌍
     </div>
 
     <div id="appMsg" class="msg"></div>
   </div>
 
-  <!-- COMPACT VIEW (after save) -->
+  <!-- COMPACT VIEW -->
   <div id="compactView">
     <div class="small" id="compactMsg">✅ Saved.</div>
     <div class="row" style="margin-top:8px; gap:8px;">
-      <button id="btnFeedback" class="secondary" type="button">Any comments?</button>
-      <button id="btnMini" class="secondary" type="button">Minimize</button>
-      <button id="btnExpand" class="secondary" type="button">Change mood</button>
+      <button id="btnFeedback" class="secondary">Any comments?</button>
+      <button id="btnMini" class="secondary">Minimize</button>
+      <button id="btnExpand" class="secondary">Change mood</button>
     </div>
   </div>
 
-  <!-- MINI VIEW (pill) -->
+  <!-- MINI VIEW -->
   <div id="miniView">
-    <button id="btnMiniOpen" class="pill" type="button">Any comments?</button>
+    <button id="btnMiniOpen" class="pill">Any comments?</button>
   </div>
 </div>
 
 <!-- FEEDBACK MODAL -->
-<div id="fbOverlay" aria-hidden="true">
-  <div id="fbModal" role="dialog" aria-modal="true">
+<div id="fbOverlay">
+  <div id="fbModal">
     <h4>Send a comment</h4>
     <div class="small">This message will be stored automatically.</div>
-    <div style="height:10px"></div>
 
-    <label class="small" for="fbText">Message</label>
-    <textarea id="fbText" maxlength="5000" placeholder="Write your comment here (max 5000 characters)…"></textarea>
+    <label class="small">Message</label>
+    <textarea id="fbText" maxlength="5000"></textarea>
     <div id="fbCount">0 / 5000 • 0 / 250 words</div>
 
-    <div id="fbMsg" class="msg" style="margin-top:8px;"></div>
+    <div id="fbMsg" class="msg"></div>
 
-    <div class="modal-actions" style="margin-top:12px;">
-      <button id="btnFbCancel" class="secondary" type="button">Cancel</button>
-      <button id="btnFbSend" type="button">Send</button>
+    <div class="modal-actions">
+      <button id="btnFbCancel" class="secondary">Cancel</button>
+      <button id="btnFbSend">Send</button>
     </div>
   </div>
 </div>
@@ -166,586 +162,71 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-/* =============================================================================
-   0) MOBILE VIEWPORT FIX (iOS)
-   ============================================================================= */
-function setVh() {
-  document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
-}
-window.addEventListener('resize', setVh);
-setVh();
-
-/* =============================================================================
-   1) MAP SETUP
-   ============================================================================= */
-const map = new maplibregl.Map({
-  container: "map",
-  style: {
-    version: 8,
-    sources: {
-      osm: {
-        type: "raster",
-        tiles: [
-          "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
-          "https://b.tile.openstreetmap.org/{z}/{x}/{y}.png",
-          "https://c.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        ],
-        tileSize: 256,
-        attribution: "© OpenStreetMap contributors"
-      }
-    },
-    layers: [{ id: "osm", type: "raster", source: "osm" }]
-  },
-  center: [0, 20],
-  zoom: 2
-});
-map.addControl(new maplibregl.NavigationControl(), "top-right");
-
-/* =============================================================================
-   2) MOOD ICONS (0..10)
-   ============================================================================= */
-function lerp(a,b,t){ return a + (b - a) * t; }
-function lerpColor(c1,c2,t){
-  const r = Math.round(lerp(c1[0], c2[0], t));
-  const g = Math.round(lerp(c1[1], c2[1], t));
-  const b = Math.round(lerp(c1[2], c2[2], t));
-  return `rgb(${r},${g},${b})`;
-}
-function moodImageData(level, size=96){
-  const t = Math.max(0, Math.min(1, level/10));
-  const red=[215,25,28], yellow=[255,255,191], green=[26,150,65];
-  const fill = (t < 0.5)
-    ? lerpColor(red, yellow, t/0.5)
-    : lerpColor(yellow, green, (t-0.5)/0.5);
-
-  const canvas = document.createElement("canvas");
-  canvas.width = size; canvas.height = size;
-  const ctx = canvas.getContext("2d");
-
-  const cx = size/2, cy = size/2, r = size*0.42;
-
-  ctx.beginPath(); ctx.arc(cx, cy+3, r, 0, Math.PI*2);
-  ctx.fillStyle="rgba(0,0,0,0.18)"; ctx.fill();
-
-  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
-  ctx.fillStyle = fill; ctx.fill();
-  ctx.lineWidth = Math.max(3, size*0.04);
-  ctx.strokeStyle = "rgba(0,0,0,0.25)";
-  ctx.stroke();
-
-  const eyeY = cy - size*0.10, eyeDX=size*0.14, eyeR=size*0.04;
-  ctx.beginPath();
-  ctx.arc(cx-eyeDX, eyeY, eyeR, 0, Math.PI*2);
-  ctx.arc(cx+eyeDX, eyeY, eyeR, 0, Math.PI*2);
-  ctx.fillStyle="rgba(0,0,0,0.75)";
-  ctx.fill();
-
-  const browY = eyeY - size*0.08;
-  const browTilt = lerp(0.20, -0.20, t);
-  ctx.lineWidth = Math.max(3, size*0.035);
-  ctx.strokeStyle="rgba(0,0,0,0.55)";
-  ctx.lineCap="round";
-
-  ctx.beginPath();
-  ctx.moveTo(cx-eyeDX-size*0.06, browY + browTilt*size*0.08);
-  ctx.lineTo(cx-eyeDX+size*0.06, browY - browTilt*size*0.08);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.moveTo(cx+eyeDX-size*0.06, browY - browTilt*size*0.08);
-  ctx.lineTo(cx+eyeDX+size*0.06, browY + browTilt*size*0.08);
-  ctx.stroke();
-
-  const mouthY = cy + size*0.12, mouthW=size*0.26;
-  const curvature = lerp(-1, 1, t);
-  ctx.beginPath();
-  ctx.moveTo(cx-mouthW, mouthY);
-  ctx.quadraticCurveTo(cx, mouthY + curvature*size*0.12, cx+mouthW, mouthY);
-  ctx.strokeStyle="rgba(0,0,0,0.70)";
-  ctx.lineWidth=Math.max(4, size*0.05);
-  ctx.lineCap="round";
-  ctx.stroke();
-
-  const img = ctx.getImageData(0,0,size,size);
-  return { width: img.width, height: img.height, data: img.data };
-}
-function ensureMoodImages(){
-  for(let lvl=0; lvl<=10; lvl++){
-    const name = `mood-${lvl}`;
-    if(!map.hasImage(name)) map.addImage(name, moodImageData(lvl,96));
-  }
-}
-
-/* =============================================================================
-   3) POINTS SOURCE + LAYERS
-   ============================================================================= */
-function initPointsSourceAndLayers(){
-  if(map.getSource("points")) return;
-
-  map.addSource("points", {
-    type: "geojson",
-    data: { type:"FeatureCollection", features: [] },
-    cluster: true,
-    clusterRadius: 60,
-    clusterMaxZoom: 14,
-    clusterProperties: { sum: ["+", ["get", "value"]], count: ["+", 1] }
-  });
-
-  const avgRoundedClamped = [
-    "case",
-    ["<", ["round", ["/", ["get","sum"], ["get","count"]]], 0], 0,
-    [">", ["round", ["/", ["get","sum"], ["get","count"]]], 10], 10,
-    ["round", ["/", ["get","sum"], ["get","count"]]]
-  ];
-
-  map.addLayer({
-    id: "clusters-mood",
-    type: "symbol",
-    source: "points",
-    filter: ["has", "point_count"],
-    layout: {
-      "icon-image": ["concat","mood-", ["to-string", avgRoundedClamped]],
-      "icon-size": ["step", ["get","point_count"], 0.65, 10, 0.75, 50, 0.9, 200, 1.05, 1000, 1.2],
-      "icon-allow-overlap": true,
-      "text-field": ["to-string", ["get","point_count"]],
-      "text-size": 12,
-      "text-offset": [0, 1.55],
-      "text-allow-overlap": true,
-      "text-anchor": "top"
-    },
-    paint: {
-      "text-color": "rgba(0,0,0,0.75)",
-      "text-halo-color": "rgba(255,255,255,0.9)",
-      "text-halo-width": 1
-    }
-  });
-
-  map.addLayer({
-    id: "points-mood",
-    type: "symbol",
-    source: "points",
-    filter: ["!", ["has", "point_count"]],
-    layout: {
-      "icon-image": [
-        "concat","mood-",
-        ["to-string",
-          ["case",
-            ["<", ["round", ["get","value"]], 0], 0,
-            [">", ["round", ["get","value"]], 10], 10,
-            ["round", ["get","value"]]
-          ]
-        ]
-      ],
-      "icon-size": 0.55,
-      "icon-allow-overlap": true
-    }
-  });
-
-  map.on("click", "clusters-mood", (e) => {
-    const f = e.features[0];
-    map.getSource("points").getClusterExpansionZoom(
-      f.properties.cluster_id,
-      (err, zoom) => {
-        if (err) return;
-        map.easeTo({ center: f.geometry.coordinates, zoom });
-      }
-    );
-  });
-
-  map.on("mouseenter", "clusters-mood", () => map.getCanvas().style.cursor = "pointer");
-  map.on("mouseleave", "clusters-mood", () => map.getCanvas().style.cursor = "");
-}
-
-function clearMarkers(){
-  const source = map.getSource("points");
-  if(!source) return;
-  source.setData({ type:"FeatureCollection", features: [] });
-}
-
-/* Only reveal markers after first successful save (this session) */
-let revealedThisSession = false;
-
-async function refreshPoints(){
-  if (!revealedThisSession) return;
-
-  const source = map.getSource("points");
-  if(!source) return;
-
-  const { data, error } = await sb
-    .from("mood_entries")
-    .select("mood, lon, lat")
-    .order("created_at", { ascending:false })
-    .limit(20000);
-
-  if(error){
-    setAppMessage("Load failed: " + (error.message || "Unknown error"));
-    console.warn("LOAD error:", error);
-    return;
-  }
-
-  const features = (data || [])
-    .filter(r => typeof r.lon==="number" && typeof r.lat==="number")
-    .map(r => ({
-      type: "Feature",
-      properties: { value: r.mood },
-      geometry: { type:"Point", coordinates:[r.lon, r.lat] }
-    }));
-
-  source.setData({ type:"FeatureCollection", features });
-}
-
-/* =============================================================================
-   4) UI HELPERS + VIEWS
-   ============================================================================= */
+/* ================= HELPERS ================= */
 const el = id => document.getElementById(id);
 const panel = el("panel");
+const slider = el("slider");
 
+/* ================= VIEWS ================= */
 function showApp(){
-  panel.className = "panel-app";
-  el("appView").style.display = "block";
-  el("compactView").style.display = "none";
-  el("miniView").style.display = "none";
+  panel.className="panel-app";
+  el("appView").style.display="block";
+  el("compactView").style.display="none";
+  el("miniView").style.display="none";
 }
 function showCompact(msg="✅ Saved."){
-  panel.className = "panel-compact";
-  el("compactMsg").textContent = msg;
-  el("appView").style.display = "none";
-  el("compactView").style.display = "block";
-  el("miniView").style.display = "none";
+  panel.className="panel-compact";
+  el("compactMsg").textContent=msg;
+  el("appView").style.display="none";
+  el("compactView").style.display="block";
+  el("miniView").style.display="none";
 }
 function showMini(){
-  panel.className = "panel-mini";
-  el("appView").style.display = "none";
-  el("compactView").style.display = "none";
-  el("miniView").style.display = "block";
+  panel.className="panel-mini";
+  el("appView").style.display="none";
+  el("compactView").style.display="none";
+  el("miniView").style.display="block";
 }
+function setAppMessage(m){ el("appMsg").textContent=m||""; }
 
-function setAppMessage(msg){ el("appMsg").textContent = msg || ""; }
+slider.oninput=()=>el("moodValue").textContent=slider.value;
 
-const slider = el("slider");
-slider.oninput = ()=> el("moodValue").textContent = slider.value;
+/* ================= DRAG HANDLE ================= */
+let dragging=false, offX=0, offY=0;
+const handle=el("dragHandle");
 
-/* =============================================================================
-   5) AMBIENT MUSIC (fade out on save)
-   ============================================================================= */
-let audioCtx, masterGain, musicStarted = false;
-let musicNodes = [];
-let chordTimer = null;
-
-function stopLoopTimers() {
-  if (chordTimer) { clearTimeout(chordTimer); chordTimer = null; }
-}
-function fadeOutMusic(seconds = 2.6) {
-  if (!audioCtx || !masterGain) return;
-  const now = audioCtx.currentTime;
-  masterGain.gain.cancelScheduledValues(now);
-  masterGain.gain.setValueAtTime(masterGain.gain.value, now);
-  masterGain.gain.linearRampToValueAtTime(0.0001, now + seconds);
-
-  setTimeout(() => {
-    try { stopLoopTimers(); } catch {}
-    for (const n of musicNodes) {
-      try { n.stop && n.stop(); } catch {}
-      try { n.disconnect && n.disconnect(); } catch {}
-    }
-    musicNodes = [];
-  }, (seconds + 0.3) * 1000);
-}
-
-function playAmbientMusic() {
-  if (musicStarted) return;
-  musicStarted = true;
-
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  masterGain = audioCtx.createGain();
-  masterGain.gain.value = 0.20;
-  masterGain.connect(audioCtx.destination);
-
-  const lp = audioCtx.createBiquadFilter();
-  lp.type = "lowpass";
-  lp.frequency.value = 1200;
-  lp.connect(masterGain);
-
-  const chords = [
-    [261.63, 329.63, 392.00],
-    [220.00, 261.63, 329.63],
-    [174.61, 220.00, 261.63],
-    [196.00, 293.66, 392.00]
-  ];
-
-  function padChord(freqs, start, dur) {
-    for (const f of freqs) {
-      const o = audioCtx.createOscillator();
-      o.type = "sine";
-      o.frequency.value = f;
-
-      const g = audioCtx.createGain();
-      g.gain.setValueAtTime(0, start);
-      g.gain.linearRampToValueAtTime(0.11, start + 1.2);
-      g.gain.linearRampToValueAtTime(0.0, start + dur);
-
-      o.connect(g).connect(lp);
-      o.start(start);
-      o.stop(start + dur + 0.05);
-      musicNodes.push(o, g);
-    }
-  }
-
-  function arpeggio(freqs, start) {
-    const pattern = [0, 1, 2, 1];
-    for (let i = 0; i < 8; i++) {
-      const f = freqs[pattern[i % pattern.length]] * (i % 2 === 0 ? 2 : 1);
-      const o = audioCtx.createOscillator();
-      o.type = "triangle";
-      o.frequency.value = f;
-
-      const g = audioCtx.createGain();
-      const t = start + i * 0.5;
-      g.gain.setValueAtTime(0, t);
-      g.gain.linearRampToValueAtTime(0.05, t + 0.03);
-      g.gain.linearRampToValueAtTime(0, t + 0.45);
-
-      o.connect(g).connect(lp);
-      o.start(t);
-      o.stop(t + 0.5);
-      musicNodes.push(o, g);
-    }
-  }
-
-  let idx = 0;
-  function schedule() {
-    const now = audioCtx.currentTime;
-    const start = now + 0.02;
-    const dur = 7.5;
-    const freqs = chords[idx % chords.length];
-    padChord(freqs, start, dur);
-    arpeggio(freqs, start);
-    idx++;
-    chordTimer = setTimeout(schedule, dur * 1000);
-  }
-  schedule();
-}
-
-/* iPhone/Safari: must start audio from a real user gesture */
-function startMusicOnce(){
-  if (musicStarted) return;
-  playAmbientMusic();
-}
-document.addEventListener("touchstart", startMusicOnce, { once:true, passive:true });
-document.addEventListener("pointerdown", startMusicOnce, { once:true });
-document.addEventListener("keydown", startMusicOnce, { once:true });
-slider.addEventListener("input", startMusicOnce, { once:true });
-el("btnSave").addEventListener("pointerdown", startMusicOnce, { once:true });
-
-/* =============================================================================
-   6) SUPABASE CONFIG
-   ============================================================================= */
-const SUPABASE_URL = "https://ugrmxzdhevqrgftlxfnp.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVncm14emRoZXZxcmdmdGx4Zm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyODQ3OTQsImV4cCI6MjA4NDg2MDc5NH0.WgTj-6ADFEMrCgPNxeQZvknBBJI1c9uDY9_8Qlkqu4w";
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-/* anon_id stable per device */
-function getAnonId(){
-  const key = "mood_anon_id";
-  let v = localStorage.getItem(key);
-  if(!v){
-    v = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "-" + Math.random());
-    localStorage.setItem(key, v);
-  }
-  return v;
-}
-
-/* =============================================================================
-   7) SAVE (Locate + Save)
-   ============================================================================= */
-el("btnSave").onclick = async () => {
-  setAppMessage("Locating…");
-  el("btnSave").disabled = true;
-
-  if (!navigator.geolocation) {
-    setAppMessage("Geolocation is not supported on this device.");
-    el("btnSave").disabled = false;
-    return;
-  }
-
-  navigator.geolocation.getCurrentPosition(async (pos) => {
-    const coords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-    const mood = parseInt(slider.value, 10);
-    const anonId = getAnonId();
-
-    setAppMessage("Saving your mood…");
-
-    const row = { anon_id: anonId, mood, lon: coords.lon, lat: coords.lat };
-
-    const { error } = await sb
-      .from("mood_entries")
-      .upsert(row, { onConflict: "anon_id" });
-
-    if (error) {
-      setAppMessage("Save failed: " + (error.message || "Unknown error"));
-      console.warn("SAVE error:", error);
-      el("btnSave").disabled = false;
-      return;
-    }
-
-    fadeOutMusic(2.6);
-    revealedThisSession = true;
-
-    setAppMessage("Thank you! Loading the world’s mood…");
-    map.easeTo({ center: [coords.lon, coords.lat], zoom: Math.max(map.getZoom(), 8) });
-
-    setTimeout(async () => {
-      await refreshPoints();
-      showCompact("✅ Saved. Thank you!");
-      el("btnSave").disabled = false;
-    }, 700);
-
-  }, (err) => {
-    setAppMessage("Geolocation error: " + err.message);
-    el("btnSave").disabled = false;
-  }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
-};
-
-/* Expand panel to change mood */
-el("btnExpand").onclick = () => {
-  showApp();
-  setAppMessage("");
-};
-
-/* Mini mode */
-el("btnMini").onclick = showMini;
-el("btnMiniOpen").onclick = () => openFeedbackModal();
-
-/* =============================================================================
-   8) FEEDBACK MODAL (anonymous)
-   ============================================================================= */
-const FEEDBACK_MAX_WORDS = 250;
-function countWords(s){ return (s.trim().match(/\S+/g) || []).length; }
-
-const fbOverlay = el("fbOverlay");
-const fbText = el("fbText");
-const fbMsg  = el("fbMsg");
-const fbCount = el("fbCount");
-const btnFbSend = el("btnFbSend");
-
-function updateFbCounter(){
-  const chars = fbText.value.length;
-  const words = countWords(fbText.value);
-  fbCount.textContent = `${chars} / 5000 • ${words} / ${FEEDBACK_MAX_WORDS} words`;
-}
-
-function openFeedbackModal(){
-  fbMsg.textContent = "";
-  fbText.value = "";
-  fbOverlay.style.display = "flex";
-  fbOverlay.setAttribute("aria-hidden", "false");
-  updateFbCounter();
-  setTimeout(() => fbText.focus(), 50);
-}
-function closeFeedbackModal(){
-  fbOverlay.style.display = "none";
-  fbOverlay.setAttribute("aria-hidden", "true");
-}
-fbOverlay.addEventListener("click", (e) => { if (e.target === fbOverlay) closeFeedbackModal(); });
-el("btnFbCancel").onclick = closeFeedbackModal;
-fbText.addEventListener("input", updateFbCounter);
-
-el("btnFeedback").onclick = () => openFeedbackModal();
-
-btnFbSend.onclick = async () => {
-  btnFbSend.disabled = true;
-  fbMsg.textContent = "Sending…";
-
-  const message = fbText.value.trim();
-  if (message.length < 2) {
-    fbMsg.textContent = "Please write a message.";
-    btnFbSend.disabled = false;
-    return;
-  }
-  const words = countWords(message);
-  if (words > FEEDBACK_MAX_WORDS) {
-    fbMsg.textContent = `Too many words (${words}). Max is ${FEEDBACK_MAX_WORDS}.`;
-    btnFbSend.disabled = false;
-    return;
-  }
-
-  const { error } = await sb.from("mood_feedback").insert({
-    anon_id: getAnonId(),
-    message
-  });
-
-  if (error) {
-    const raw = (error.message || "") + " " + (error.details || "") + " " + (error.hint || "");
-    const isDuplicate =
-      error.code === "23505" ||
-      raw.includes("duplicate key value") ||
-      raw.toLowerCase().includes("one_per_day");
-
-    fbMsg.textContent = isDuplicate
-      ? "Only one save per day please!"
-      : "Unable to send comment. Please try again.";
-
-    console.warn("FEEDBACK error:", error);
-    btnFbSend.disabled = false;
-    return;
-  }
-
-  fbMsg.textContent = "✅ Thank you for your feedback!";
-  setTimeout(() => closeFeedbackModal(), 700);
-  btnFbSend.disabled = false;
-};
-
-/* =============================================================================
-   8.5) DRAGGABLE PANEL (touch + mouse)
-   ============================================================================= */
-let dragging = false;
-let dragOffX = 0, dragOffY = 0;
-
-function isInteractiveTarget(t){
-  const tag = (t && t.tagName || "").toLowerCase();
-  return tag === "button" || tag === "input" || tag === "textarea" || tag === "label";
-}
-
-panel.addEventListener("pointerdown", (e) => {
-  if (isInteractiveTarget(e.target)) return;
-  dragging = true;
+handle.addEventListener("pointerdown",e=>{
+  dragging=true;
   panel.setPointerCapture(e.pointerId);
+  const r=panel.getBoundingClientRect();
+  offX=e.clientX-r.left;
+  offY=e.clientY-r.top;
+});
+panel.addEventListener("pointermove",e=>{
+  if(!dragging) return;
+  let x=e.clientX-offX, y=e.clientY-offY;
+  x=Math.max(8,Math.min(innerWidth-panel.offsetWidth-8,x));
+  y=Math.max(8,Math.min(innerHeight-panel.offsetHeight-8,y));
+  panel.style.left=x+"px";
+  panel.style.top=y+"px";
+});
+panel.addEventListener("pointerup",()=>dragging=false);
+panel.addEventListener("pointercancel",()=>dragging=false);
 
-  const rect = panel.getBoundingClientRect();
-  dragOffX = e.clientX - rect.left;
-  dragOffY = e.clientY - rect.top;
+/* ================= MINI DOUBLE TAP ================= */
+let lastTap=0;
+el("btnMiniOpen").addEventListener("click",()=>{
+  const now=Date.now();
+  if(now-lastTap<320) showCompact("✅ Saved.");
+  lastTap=now;
 });
 
-panel.addEventListener("pointermove", (e) => {
-  if (!dragging) return;
+/* ================= BUTTONS ================= */
+el("btnMini").onclick=showMini;
+el("btnExpand").onclick=()=>{ showApp(); setAppMessage(""); };
 
-  let x = e.clientX - dragOffX;
-  let y = e.clientY - dragOffY;
-
-  const maxX = window.innerWidth - panel.offsetWidth - 8;
-  const maxY = window.innerHeight - panel.offsetHeight - 8;
-  x = Math.max(8, Math.min(maxX, x));
-  y = Math.max(8, Math.min(maxY, y));
-
-  panel.style.left = x + "px";
-  panel.style.top  = y + "px";
-  panel.style.right = "auto";
-  panel.style.bottom = "auto";
-});
-
-panel.addEventListener("pointerup", () => { dragging = false; });
-panel.addEventListener("pointercancel", () => { dragging = false; });
-
-/* =============================================================================
-   9) INIT
-   ============================================================================= */
-map.on("load", async () => {
-  ensureMoodImages();
-  initPointsSourceAndLayers();
-  clearMarkers();           // hidden at first
-  revealedThisSession = false;
-  showApp();
-});
+/* ================= INIT ================= */
+showApp();
 </script>
 </body>
 </html>
