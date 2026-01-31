@@ -75,12 +75,12 @@
 
 @media (max-width: 520px) {
 
-  /* panneau standard (app + compact) */
   .panel-app,
   .panel-compact{
     left: 12px;
-    right: 12px;
-    width: calc(100vw - 48px); /* 2 × marge (12px × 2 côtés) */
+    width: 50vw;                    /* ← moitié exacte de l’iPhone */
+    max-width: 280px;               /* garde l’esprit “compact” */
+    min-width: 220px;               /* évite trop petit */
   }
 
   button, input, textarea {
@@ -788,3 +788,4 @@ map.on("load", async () => {
 </script>
 </body>
 </html>
+
