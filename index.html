@@ -23,13 +23,13 @@
     padding-top: calc(16px + env(safe-area-inset-top));
   }
 
-  /* Big panel (desktop default) */
+  /* Big panel (default) */
   .panel-app{
     left:12px; top:12px;
     width: 320px;
   }
 
-  /* Compact panel (mobile styling + after save) */
+  /* Compact panel (mobile default + after save) */
   .panel-compact{
     left:12px; top:12px;
     width: auto;
@@ -73,11 +73,21 @@
   :root { --vh: 1vh; }
   #map { height: calc(var(--vh) * 100); }
 
-  @media (max-width: 520px) {
-    .panel-app{ width: calc(100vw - 24px); left: 12px; right: 12px; }
-    .panel-compact{ left: 12px; right: 12px; }
-    button, input, textarea { padding: 14px; font-size: 16px; }
+@media (max-width: 520px) {
+
+  /* panneau standard (app + compact) */
+  .panel-app,
+  .panel-compact{
+    left: 12px;
+    right: 12px;
+    width: calc(100vw - 48px); /* 2 × marge (12px × 2 côtés) */
   }
+
+  button, input, textarea {
+    padding: 14px;
+    font-size: 16px;
+  }
+}
 
   /* Feedback modal */
   #fbOverlay{
@@ -174,205 +184,7 @@ window.addEventListener('resize', setVh);
 setVh();
 
 /* =============================================================================
-   1) UI HELPERS + VIEWS
-   ============================================================================= */
-const el = id => document.getElementById(id);
-const panel = el("panel");
-
-const isPhone =
-  window.matchMedia("(pointer: coarse)").matches ||
-  window.matchMedia("(max-width: 520px)").matches;
-
-function showApp(){
-  // On phone: keep compact styling but show the mood picker view
-  panel.className = isPhone ? "panel-compact" : "panel-app";
-  el("appView").style.display = "block";
-  el("compactView").style.display = "none";
-}
-function showCompact(msg="✅ Saved."){
-  panel.className = "panel-compact";
-  el("compactMsg").textContent = msg;
-  el("appView").style.display = "none";
-  el("compactView").style.display = "block";
-}
-function setAppMessage(msg){ el("appMsg").textContent = msg || ""; }
-
-const slider = el("slider");
-slider.oninput = ()=> el("moodValue").textContent = slider.value;
-
-/* =============================================================================
-   2) DRAGGABLE PANEL VIA HANDLE
-   ============================================================================= */
-const dragHandle = el("dragHandle");
-let dragging = false;
-let dragOffX = 0, dragOffY = 0;
-
-dragHandle.addEventListener("pointerdown", (e) => {
-  dragging = true;
-  panel.setPointerCapture(e.pointerId);
-
-  const rect = panel.getBoundingClientRect();
-  dragOffX = e.clientX - rect.left;
-  dragOffY = e.clientY - rect.top;
-});
-
-panel.addEventListener("pointermove", (e) => {
-  if (!dragging) return;
-
-  let x = e.clientX - dragOffX;
-  let y = e.clientY - dragOffY;
-
-  const maxX = window.innerWidth - panel.offsetWidth - 8;
-  const maxY = window.innerHeight - panel.offsetHeight - 8;
-  x = Math.max(8, Math.min(maxX, x));
-  y = Math.max(8, Math.min(maxY, y));
-
-  panel.style.left = x + "px";
-  panel.style.top  = y + "px";
-  panel.style.right = "auto";
-  panel.style.bottom = "auto";
-});
-
-panel.addEventListener("pointerup", () => { dragging = false; });
-panel.addEventListener("pointercancel", () => { dragging = false; });
-
-/* =============================================================================
-   3) AMBIENT MUSIC (iPhone-proof)
-   ============================================================================= */
-let audioCtx, masterGain, musicStarted = false;
-let musicNodes = [];
-let chordTimer = null;
-
-function stopLoopTimers() {
-  if (chordTimer) { clearTimeout(chordTimer); chordTimer = null; }
-}
-
-function fadeOutMusic(seconds = 2.6) {
-  if (!audioCtx || !masterGain) return;
-  const now = audioCtx.currentTime;
-  masterGain.gain.cancelScheduledValues(now);
-  masterGain.gain.setValueAtTime(masterGain.gain.value, now);
-  masterGain.gain.linearRampToValueAtTime(0.0001, now + seconds);
-
-  setTimeout(() => {
-    try { stopLoopTimers(); } catch {}
-    for (const n of musicNodes) {
-      try { n.stop && n.stop(); } catch {}
-      try { n.disconnect && n.disconnect(); } catch {}
-    }
-    musicNodes = [];
-  }, (seconds + 0.3) * 1000);
-}
-
-// iOS unlock: play a tiny silent buffer inside the gesture
-function iosUnlock(ctx){
-  try {
-    const buffer = ctx.createBuffer(1, 1, 22050);
-    const src = ctx.createBufferSource();
-    src.buffer = buffer;
-    const g = ctx.createGain();
-    g.gain.value = 0.0;
-    src.connect(g).connect(ctx.destination);
-    src.start(0);
-    src.stop(0.01);
-  } catch(e) {}
-}
-
-function playAmbientMusic() {
-  if (musicStarted) return;
-  musicStarted = true;
-
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-  // Ensure audio is "unlocked" on iOS
-  iosUnlock(audioCtx);
-  try { audioCtx.resume && audioCtx.resume(); } catch(e){}
-
-  masterGain = audioCtx.createGain();
-  masterGain.gain.value = 0.20;
-  masterGain.connect(audioCtx.destination);
-
-  const lp = audioCtx.createBiquadFilter();
-  lp.type = "lowpass";
-  lp.frequency.value = 1200;
-  lp.connect(masterGain);
-
-  const chords = [
-    [261.63, 329.63, 392.00],
-    [220.00, 261.63, 329.63],
-    [174.61, 220.00, 261.63],
-    [196.00, 293.66, 392.00]
-  ];
-
-  function padChord(freqs, start, dur) {
-    for (const f of freqs) {
-      const o = audioCtx.createOscillator();
-      o.type = "sine";
-      o.frequency.value = f;
-
-      const g = audioCtx.createGain();
-      g.gain.setValueAtTime(0, start);
-      g.gain.linearRampToValueAtTime(0.11, start + 1.2);
-      g.gain.linearRampToValueAtTime(0.0, start + dur);
-
-      o.connect(g).connect(lp);
-      o.start(start);
-      o.stop(start + dur + 0.05);
-      musicNodes.push(o, g);
-    }
-  }
-
-  function arpeggio(freqs, start) {
-    const pattern = [0, 1, 2, 1];
-    for (let i = 0; i < 8; i++) {
-      const f = freqs[pattern[i % pattern.length]] * (i % 2 === 0 ? 2 : 1);
-      const o = audioCtx.createOscillator();
-      o.type = "triangle";
-      o.frequency.value = f;
-
-      const g = audioCtx.createGain();
-      const t = start + i * 0.5;
-      g.gain.setValueAtTime(0, t);
-      g.gain.linearRampToValueAtTime(0.05, t + 0.03);
-      g.gain.linearRampToValueAtTime(0, t + 0.45);
-
-      o.connect(g).connect(lp);
-      o.start(t);
-      o.stop(t + 0.5);
-      musicNodes.push(o, g);
-    }
-  }
-
-  let idx = 0;
-  function schedule() {
-    const now = audioCtx.currentTime;
-    const start = now + 0.02;
-    const dur = 7.5;
-    const freqs = chords[idx % chords.length];
-    padChord(freqs, start, dur);
-    arpeggio(freqs, start);
-    idx++;
-    chordTimer = setTimeout(schedule, dur * 1000);
-  }
-  schedule();
-}
-
-function autoStartMusicOnce(){
-  playAmbientMusic();
-  window.removeEventListener("touchstart", autoStartMusicOnce, true);
-  window.removeEventListener("pointerdown", autoStartMusicOnce, true);
-  window.removeEventListener("click", autoStartMusicOnce, true);
-  window.removeEventListener("keydown", autoStartMusicOnce, true);
-}
-
-// IMPORTANT: capture=true to run before MapLibre eats the gesture
-window.addEventListener("touchstart", autoStartMusicOnce, { capture:true, passive:true });
-window.addEventListener("pointerdown", autoStartMusicOnce, { capture:true });
-window.addEventListener("click", autoStartMusicOnce, { capture:true });
-window.addEventListener("keydown", autoStartMusicOnce, { capture:true });
-
-/* =============================================================================
-   4) MAP SETUP
+   1) MAP SETUP
    ============================================================================= */
 const map = new maplibregl.Map({
   container: "map",
@@ -398,7 +210,7 @@ const map = new maplibregl.Map({
 map.addControl(new maplibregl.NavigationControl(), "top-right");
 
 /* =============================================================================
-   5) MOOD ICONS (0..10)
+   2) MOOD ICONS (0..10)
    ============================================================================= */
 function lerp(a,b,t){ return a + (b - a) * t; }
 function lerpColor(c1,c2,t){
@@ -473,7 +285,7 @@ function ensureMoodImages(){
 }
 
 /* =============================================================================
-   6) POINTS SOURCE + LAYERS
+   3) POINTS SOURCE + LAYERS
    ============================================================================= */
 function initPointsSourceAndLayers(){
   if(map.getSource("points")) return;
@@ -591,7 +403,224 @@ async function refreshPoints(){
 }
 
 /* =============================================================================
-   7) SUPABASE CONFIG
+   4) UI HELPERS + VIEWS
+   ============================================================================= */
+const el = id => document.getElementById(id);
+const panel = el("panel");
+
+/* Better mobile detection than only width */
+const isPhone = window.matchMedia("(pointer: coarse)").matches || window.matchMedia("(max-width: 520px)").matches;
+
+function showApp(){
+  // On phone: keep the compact panel styling all the time
+  panel.className = isPhone ? "panel-compact" : "panel-app";
+  el("appView").style.display = "block";
+  el("compactView").style.display = "none";
+}
+function showCompact(msg="✅ Saved."){
+  panel.className = "panel-compact";
+  el("compactMsg").textContent = msg;
+  el("appView").style.display = "none";
+  el("compactView").style.display = "block";
+}
+function setAppMessage(msg){ el("appMsg").textContent = msg || ""; }
+
+const slider = el("slider");
+slider.oninput = ()=> el("moodValue").textContent = slider.value;
+
+/* =============================================================================
+   4.5) DRAGGABLE PANEL VIA HANDLE
+   ============================================================================= */
+const dragHandle = el("dragHandle");
+let dragging = false;
+let dragOffX = 0, dragOffY = 0;
+
+dragHandle.addEventListener("pointerdown", (e) => {
+  dragging = true;
+  panel.setPointerCapture(e.pointerId);
+
+  const rect = panel.getBoundingClientRect();
+  dragOffX = e.clientX - rect.left;
+  dragOffY = e.clientY - rect.top;
+});
+
+panel.addEventListener("pointermove", (e) => {
+  if (!dragging) return;
+
+  let x = e.clientX - dragOffX;
+  let y = e.clientY - dragOffY;
+
+  const maxX = window.innerWidth - panel.offsetWidth - 8;
+  const maxY = window.innerHeight - panel.offsetHeight - 8;
+  x = Math.max(8, Math.min(maxX, x));
+  y = Math.max(8, Math.min(maxY, y));
+
+  panel.style.left = x + "px";
+  panel.style.top  = y + "px";
+  panel.style.right = "auto";
+  panel.style.bottom = "auto";
+});
+
+panel.addEventListener("pointerup", () => { dragging = false; });
+panel.addEventListener("pointercancel", () => { dragging = false; });
+
+/* =============================================================================
+   5) AMBIENT MUSIC (max browser compatibility)
+   ============================================================================= */
+let audioCtx, masterGain, musicStarted = false;
+let musicNodes = [];
+let chordTimer = null;
+
+function stopLoopTimers() {
+  if (chordTimer) { clearTimeout(chordTimer); chordTimer = null; }
+}
+function fadeOutMusic(seconds = 2.6) {
+  if (!audioCtx || !masterGain) return;
+  const now = audioCtx.currentTime;
+  masterGain.gain.cancelScheduledValues(now);
+  masterGain.gain.setValueAtTime(masterGain.gain.value, now);
+  masterGain.gain.linearRampToValueAtTime(0.0001, now + seconds);
+
+  setTimeout(() => {
+    try { stopLoopTimers(); } catch {}
+    for (const n of musicNodes) {
+      try { n.stop && n.stop(); } catch {}
+      try { n.disconnect && n.disconnect(); } catch {}
+    }
+    musicNodes = [];
+  }, (seconds + 0.3) * 1000);
+}
+
+function playAmbientMusic() {
+  if (musicStarted) return;
+  musicStarted = true;
+
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  // iOS: must resume inside a user gesture context
+  try { audioCtx.resume && audioCtx.resume(); } catch(e){}
+
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = 0.20;
+  masterGain.connect(audioCtx.destination);
+
+  const lp = audioCtx.createBiquadFilter();
+  lp.type = "lowpass";
+  lp.frequency.value = 1200;
+  lp.connect(masterGain);
+
+  const chords = [
+    [261.63, 329.63, 392.00],
+    [220.00, 261.63, 329.63],
+    [174.61, 220.00, 261.63],
+    [196.00, 293.66, 392.00]
+  ];
+
+  function padChord(freqs, start, dur) {
+    for (const f of freqs) {
+      const o = audioCtx.createOscillator();
+      o.type = "sine";
+      o.frequency.value = f;
+
+      const g = audioCtx.createGain();
+      g.gain.setValueAtTime(0, start);
+      g.gain.linearRampToValueAtTime(0.11, start + 1.2);
+      g.gain.linearRampToValueAtTime(0.0, start + dur);
+
+      o.connect(g).connect(lp);
+      o.start(start);
+      o.stop(start + dur + 0.05);
+      musicNodes.push(o, g);
+    }
+  }
+
+  function arpeggio(freqs, start) {
+    const pattern = [0, 1, 2, 1];
+    for (let i = 0; i < 8; i++) {
+      const f = freqs[pattern[i % pattern.length]] * (i % 2 === 0 ? 2 : 1);
+      const o = audioCtx.createOscillator();
+      o.type = "triangle";
+      o.frequency.value = f;
+
+      const g = audioCtx.createGain();
+      const t = start + i * 0.5;
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.05, t + 0.03);
+      g.gain.linearRampToValueAtTime(0, t + 0.45);
+
+      o.connect(g).connect(lp);
+      o.start(t);
+      o.stop(t + 0.5);
+      musicNodes.push(o, g);
+    }
+  }
+
+  let idx = 0;
+  function schedule() {
+    const now = audioCtx.currentTime;
+    const start = now + 0.02;
+    const dur = 7.5;
+    const freqs = chords[idx % chords.length];
+    padChord(freqs, start, dur);
+    arpeggio(freqs, start);
+    idx++;
+    chordTimer = setTimeout(schedule, dur * 1000);
+  }
+  schedule();
+}
+
+// One-time "audio unlock" that works across many browsers (esp. iOS)
+function unlockAndStartAudio() {
+  if (!musicStarted) playAmbientMusic();
+  try { audioCtx && audioCtx.resume && audioCtx.resume(); } catch(e){}
+
+  detachAudioUnlock();
+}
+
+function detachAudioUnlock() {
+  const optsCap = { capture: true };
+  const optsCapPassive = { capture: true, passive: true };
+
+  window.removeEventListener("pointerdown", unlockAndStartAudio, optsCap);
+  window.removeEventListener("touchstart", unlockAndStartAudio, optsCapPassive);
+  window.removeEventListener("touchend", unlockAndStartAudio, optsCapPassive);
+  window.removeEventListener("mousedown", unlockAndStartAudio, optsCap);
+  window.removeEventListener("click", unlockAndStartAudio, optsCap);
+  window.removeEventListener("keydown", unlockAndStartAudio, optsCap);
+  window.removeEventListener("wheel", unlockAndStartAudio, optsCapPassive);
+  window.removeEventListener("scroll", unlockAndStartAudio, optsCapPassive);
+
+  const mapEl = document.getElementById("map");
+  if (mapEl) {
+    mapEl.removeEventListener("pointerdown", unlockAndStartAudio, optsCap);
+    mapEl.removeEventListener("touchstart", unlockAndStartAudio, optsCapPassive);
+    mapEl.removeEventListener("click", unlockAndStartAudio, optsCap);
+  }
+}
+
+(function attachAudioUnlock() {
+  const optsCap = { capture: true };
+  const optsCapPassive = { capture: true, passive: true };
+
+  window.addEventListener("pointerdown", unlockAndStartAudio, optsCap);
+  window.addEventListener("touchstart", unlockAndStartAudio, optsCapPassive);
+  window.addEventListener("touchend", unlockAndStartAudio, optsCapPassive);
+  window.addEventListener("mousedown", unlockAndStartAudio, optsCap);
+  window.addEventListener("click", unlockAndStartAudio, optsCap);
+  window.addEventListener("keydown", unlockAndStartAudio, optsCap);
+  window.addEventListener("wheel", unlockAndStartAudio, optsCapPassive);
+  window.addEventListener("scroll", unlockAndStartAudio, optsCapPassive);
+
+  const mapEl = document.getElementById("map");
+  if (mapEl) {
+    mapEl.addEventListener("pointerdown", unlockAndStartAudio, optsCap);
+    mapEl.addEventListener("touchstart", unlockAndStartAudio, optsCapPassive);
+    mapEl.addEventListener("click", unlockAndStartAudio, optsCap);
+  }
+})();
+
+/* =============================================================================
+   6) SUPABASE CONFIG
    ============================================================================= */
 const SUPABASE_URL = "https://ugrmxzdhevqrgftlxfnp.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVncm14emRoZXZxcmdmdGx4Zm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyODQ3OTQsImV4cCI6MjA4NDg2MDc5NH0.WgTj-6ADFEMrCgPNxeQZvknBBJI1c9uDY9_8Qlkqu4w";
@@ -608,7 +637,7 @@ function getAnonId(){
 }
 
 /* =============================================================================
-   8) SAVE (Locate + Save)
+   7) SAVE (Locate + Save)
    ============================================================================= */
 el("btnSave").onclick = async () => {
   setAppMessage("Locating…");
@@ -664,7 +693,7 @@ el("btnExpand").onclick = () => {
 };
 
 /* =============================================================================
-   9) FEEDBACK MODAL
+   8) FEEDBACK MODAL
    ============================================================================= */
 const FEEDBACK_MAX_WORDS = 250;
 function countWords(s){ return (s.trim().match(/\S+/g) || []).length; }
@@ -743,7 +772,7 @@ btnFbSend.onclick = async () => {
 };
 
 /* =============================================================================
-   10) INIT
+   9) INIT
    ============================================================================= */
 map.on("load", async () => {
   ensureMoodImages();
@@ -751,7 +780,8 @@ map.on("load", async () => {
   clearMarkers();
   revealedThisSession = false;
 
-  // Start with mood picker everywhere (phone + desktop)
+  // Start with mood picker everywhere (phone + desktop).
+  // Keep compact styling on phone while showing the app view.
   panel.className = isPhone ? "panel-compact" : "panel-app";
   showApp();
 });
