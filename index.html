@@ -358,8 +358,9 @@ function clearMarkers(){
 }
 
 async function refreshPoints(){
-  const hasSubmitted = localStorage.getItem("mood_has_submitted") === "1";
-  if (!hasSubmitted) return; // do not show moods before user submits
+ // const hasSubmitted = localStorage.getItem("mood_has_submitted") === "1";
+ //if (!hasSubmitted) return; // do not show moods before user submits
+// always allowed to refresh markers (we control visibility elsewhere)
 
   const source = map.getSource("points");
   if(!source) return;
@@ -484,14 +485,14 @@ el("btnSaveAll").onclick = async () => {
         return;
       }
 
-      if (isRls) {
-        setAppMessage(
-          "Unable to save your mood right now.\n\n" +
-          "The server rejected the request due to security rules.\n" +
-          "Please try again later."
-        );
-        return;
-      }
+
+if (isRls) {
+  localStorage.setItem("mood_has_submitted", "1"); // allow map to show
+  setAppMessage("Only one save per day, please! Loading the world’s mood…");
+  showCompact("Only one save per day 🙂");
+  setTimeout(async () => { await refreshPoints(); }, 800);
+  return;
+}
 
       setAppMessage("Unable to save.\n\nDetails: " + (error.message || "Unknown error"));
       return;
@@ -539,7 +540,8 @@ function updateFbCounter(){
 function openFeedbackModal(metaText){
   fbMsg.textContent = "";
   fbText.value = "";
-  fbMeta.textContent = metaText || "";
+fbMeta.style.display = "none";
+  fbMeta.textContent = "";
   fbOverlay.style.display = "flex";
   fbOverlay.setAttribute("aria-hidden", "false");
   updateFbCounter();
@@ -554,12 +556,7 @@ el("btnFbCancel").onclick = closeFeedbackModal;
 fbText.addEventListener("input", updateFbCounter);
 
 function feedbackMetaText(){
-  const anonId = getAnonId();
-  const lf = lastFix;
-  const locLine = lf
-    ? `Last location: ${lf.lat.toFixed(6)}, ${lf.lon.toFixed(6)} (±${Math.round(lf.accuracy)}m)`
-    : `Last location: unknown (save your mood first)`;
-  return `Anon: ${anonId}\n${locLine}\nUA: ${navigator.userAgent}`;
+  return ""; // no metadata shown
 }
 
 el("btnFeedback").onclick = () => openFeedbackModal(feedbackMetaText());
