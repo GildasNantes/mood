@@ -76,7 +76,9 @@
   #map { height: calc(var(--vh) * 100); }
 
   @media (max-width: 520px) {
+    /* app stays usable full width */
     .panel-app{ width: calc(100vw - 24px); left: 12px; right: 12px; }
+    /* compact also full width */
     .panel-compact{ left: 12px; right: 12px; }
     button, input, textarea { padding: 14px; font-size: 16px; }
   }
@@ -400,8 +402,11 @@ async function refreshPoints(){
 const el = id => document.getElementById(id);
 const panel = el("panel");
 
+/* Phone -> use compact panel styling immediately */
+const isPhone = window.matchMedia("(max-width: 520px)").matches;
+
 function showApp(){
-  panel.className = "panel-app";
+  panel.className = isPhone ? "panel-compact" : "panel-app";
   el("appView").style.display = "block";
   el("compactView").style.display = "none";
 }
@@ -455,6 +460,7 @@ panel.addEventListener("pointercancel", () => { dragging = false; });
 
 /* =============================================================================
    5) AMBIENT MUSIC (fade out on save)
+   (kept like your previous version: pointerdown + keydown)
    ============================================================================= */
 let audioCtx, masterGain, musicStarted = false;
 let musicNodes = [];
@@ -558,11 +564,9 @@ function autoStartMusicOnce() {
   playAmbientMusic();
   document.removeEventListener("pointerdown", autoStartMusicOnce);
   document.removeEventListener("keydown", autoStartMusicOnce);
-  document.removeEventListener("touchstart", autoStartMusicOnce);
 }
 document.addEventListener("pointerdown", autoStartMusicOnce, { once: true });
 document.addEventListener("keydown", autoStartMusicOnce, { once: true });
-document.addEventListener("touchstart", autoStartMusicOnce, { once: true, passive: true }); /* iOS FIX */
 
 /* =============================================================================
    6) SUPABASE CONFIG
@@ -673,20 +677,7 @@ fbOverlay.addEventListener("click", (e) => { if (e.target === fbOverlay) closeFe
 el("btnFbCancel").onclick = closeFeedbackModal;
 fbText.addEventListener("input", updateFbCounter);
 
-/* Single tap = open feedback */
 el("btnFeedback").onclick = () => openFeedbackModal();
-
-/* Double tap/double click on "Any comments?" = go back to compact if needed (ADDED)
-   (If you later add a mini/pill view, you can move this to that button.) */
-let lastTap = 0;
-el("btnFeedback").addEventListener("click", () => {
-  const now = Date.now();
-  if (now - lastTap < 320) {
-    // restore compact view (useful if you add a mini mode later)
-    showCompact("✅ Saved. Thank you!");
-  }
-  lastTap = now;
-});
 
 btnFbSend.onclick = async () => {
   btnFbSend.disabled = true;
@@ -739,7 +730,7 @@ map.on("load", async () => {
   initPointsSourceAndLayers();
   clearMarkers();
   revealedThisSession = false;
-  showApp();
+  showApp(); // on phone, showApp() uses compact style immediately
 });
 </script>
 </body>
