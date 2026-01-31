@@ -111,12 +111,10 @@
     </div>
 
     <div class="row">
-      <button id="btnSaveAll">Locate + Save + Refresh</button>
+      <button id="btnSaveAll">Locate + Save</button>
     </div>
 
-    <div class="small">
-      1 save per day (per device). Markers appear after your first save.
-    </div>
+    <div class="small">Save once per day (per device). After saving, you’ll see the world’s mood 🌍</div>
     <div id="appMsg" class="msg"></div>
 
     <div class="row" style="margin-top:8px;">
@@ -135,7 +133,7 @@
   </div>
 </div>
 
-<!-- FEEDBACK MODAL (stores into Supabase) -->
+<!-- FEEDBACK MODAL -->
 <div id="fbOverlay" aria-hidden="true">
   <div id="fbModal" role="dialog" aria-modal="true">
     <h4>Send a comment</h4>
@@ -360,6 +358,9 @@ function clearMarkers(){
 }
 
 async function refreshPoints(){
+  const hasSubmitted = localStorage.getItem("mood_has_submitted") === "1";
+  if (!hasSubmitted) return; // do not show moods before user submits
+
   const source = map.getSource("points");
   if(!source) return;
 
@@ -399,7 +400,7 @@ function showApp(){
   el("appView").style.display = "block";
   el("compactView").style.display = "none";
 }
-function showCompact(msg="✅ Saved."){
+function showCompact(msg="Saved."){
   panel.className = "panel-compact";
   el("compactMsg").textContent = msg;
   el("appView").style.display = "none";
@@ -440,7 +441,7 @@ el("btnSaveAll").onclick = async () => {
   const anonId = getAnonId();
 
   if (!navigator.geolocation) {
-    setAppMessage("Geolocation not supported.");
+    setAppMessage("Geolocation is not supported on this device.");
     return;
   }
 
@@ -450,7 +451,7 @@ el("btnSaveAll").onclick = async () => {
 
     lastFix = { lat: coords.lat, lon: coords.lon, accuracy: pos.coords.accuracy };
 
-    setAppMessage("Saving…");
+    setAppMessage("Saving your mood…");
 
     const row = {
       anon_id: anonId,
@@ -463,22 +464,50 @@ el("btnSaveAll").onclick = async () => {
     const { error } = await sb.from("mood_entries").insert(row);
 
     if (error) {
-      const raw = (error.message || "") + " " + (error.details || "") + " " + (error.hint || "");
-      const isDup = raw.includes("mood_entries_one_per_day") || raw.includes("duplicate key value");
+      const raw = ((error.message || "") + " " + (error.details || "") + " " + (error.hint || "")).toLowerCase();
+
+      const isDup =
+        raw.includes("mood_entries_one_per_day") ||
+        raw.includes("duplicate key value");
+
+      const isRls =
+        raw.includes("row-level security") ||
+        raw.includes("violates row-level security") ||
+        raw.includes("permission denied") ||
+        raw.includes("not authorized");
+
       if (isDup) {
-        setAppMessage("✅ Already saved today 🙂 Come back tomorrow.");
-        showCompact("✅ Already saved today 🙂");
-      } else {
-        setAppMessage("Save error:\n" + error.message);
+        localStorage.setItem("mood_has_submitted", "1");
+        setAppMessage("You already shared your mood today 🙂 Loading the world’s mood…");
+        showCompact("Mood already shared today 🙂");
+        setTimeout(async () => { await refreshPoints(); }, 1200);
+        return;
       }
+
+      if (isRls) {
+        setAppMessage(
+          "Unable to save your mood right now.\n\n" +
+          "The server rejected the request due to security rules.\n" +
+          "Please try again later."
+        );
+        return;
+      }
+
+      setAppMessage("Unable to save.\n\nDetails: " + (error.message || "Unknown error"));
       return;
     }
 
-    map.easeTo({ center: [coords.lon, coords.lat], zoom: Math.max(map.getZoom(), 8) });
-    setAppMessage("✅ Saved. Loading markers…");
-    await refreshPoints();
+    localStorage.setItem("mood_has_submitted", "1");
 
-    showCompact("✅ Saved. Thank you!");
+    map.easeTo({ center: [coords.lon, coords.lat], zoom: Math.max(map.getZoom(), 8) });
+
+    setAppMessage("Thank you! Loading the world’s mood…");
+    showCompact("Thank you! 🌍");
+
+    setTimeout(async () => {
+      await refreshPoints();
+    }, 1200);
+
   }, (err) => {
     setAppMessage("Geolocation error: " + err.message);
   }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
@@ -486,7 +515,7 @@ el("btnSaveAll").onclick = async () => {
 
 el("btnBack").onclick = () => {
   showApp();
-  setAppMessage("");
+  setAppMessage("Choose your mood and save to see how others feel 🌍");
 };
 
 /* =============================================================================
@@ -529,7 +558,7 @@ function feedbackMetaText(){
   const lf = lastFix;
   const locLine = lf
     ? `Last location: ${lf.lat.toFixed(6)}, ${lf.lon.toFixed(6)} (±${Math.round(lf.accuracy)}m)`
-    : `Last location: unknown (tap "Locate + Save + Refresh" first)`;
+    : `Last location: unknown (save your mood first)`;
   return `Anon: ${anonId}\n${locLine}\nUA: ${navigator.userAgent}`;
 }
 
@@ -562,8 +591,6 @@ btnFbSend.onclick = async () => {
   const anonId = getAnonId();
   const lf = lastFix || {};
 
-  // NOTE: this assumes your mood_feedback table can accept anon_id (text) and NULL user_id.
-  // If your table requires user_id (uuid NOT NULL), tell me and I’ll adapt the SQL.
   const row = {
     anon_id: anonId,
     message,
@@ -611,12 +638,15 @@ map.on("load", async () => {
   initPointsSourceAndLayers();
   clearMarkers();
 
-  // Start directly in the app
   showApp();
-  setAppMessage("Choose your mood 🙂");
 
-  // Optional: preload markers immediately
-  await refreshPoints();
+  const hasSubmitted = localStorage.getItem("mood_has_submitted") === "1";
+  if (hasSubmitted) {
+    setAppMessage("Loading the world’s mood…");
+    await refreshPoints();
+  } else {
+    setAppMessage("Choose your mood and save to see how others feel 🌍");
+  }
 });
 </script>
 </body>
