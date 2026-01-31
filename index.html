@@ -74,7 +74,6 @@
   #map { height: calc(var(--vh) * 100); }
 
   @media (max-width: 520px) {
-    /* app view becomes full width on phone */
     .panel-app{ width: calc(100vw - 24px); left: 12px; right: 12px; }
     .panel-compact{ left: 12px; right: 12px; }
     button, input, textarea { padding: 14px; font-size: 16px; }
@@ -399,9 +398,7 @@ async function refreshPoints(){
 const el = id => document.getElementById(id);
 const panel = el("panel");
 
-/* Better mobile detection than only width:
-   - pointer:coarse catches iPhone even if viewport oddities
-*/
+/* Better mobile detection than only width */
 const isPhone = window.matchMedia("(pointer: coarse)").matches || window.matchMedia("(max-width: 520px)").matches;
 
 function showApp(){
@@ -458,7 +455,7 @@ panel.addEventListener("pointerup", () => { dragging = false; });
 panel.addEventListener("pointercancel", () => { dragging = false; });
 
 /* =============================================================================
-   5) AMBIENT MUSIC (FIXED FOR iPhone)
+   5) AMBIENT MUSIC (max browser compatibility)
    ============================================================================= */
 let audioCtx, masterGain, musicStarted = false;
 let musicNodes = [];
@@ -562,32 +559,55 @@ function playAmbientMusic() {
   schedule();
 }
 
-function autoStartMusicOnce() {
-  // iOS: ensure resume at the exact gesture moment
+// One-time "audio unlock" that works across many browsers (esp. iOS)
+function unlockAndStartAudio() {
+  if (!musicStarted) playAmbientMusic();
   try { audioCtx && audioCtx.resume && audioCtx.resume(); } catch(e){}
-  playAmbientMusic();
 
-  document.removeEventListener("pointerdown", autoStartMusicOnce);
-  document.removeEventListener("touchstart", autoStartMusicOnce);
-  document.removeEventListener("touchend", autoStartMusicOnce);
-  document.removeEventListener("click", autoStartMusicOnce);
-  document.removeEventListener("keydown", autoStartMusicOnce);
+  detachAudioUnlock();
 }
 
-// Keep desktop behaviour + add iPhone-friendly gestures:
-document.addEventListener("pointerdown", autoStartMusicOnce, { once: true });
-document.addEventListener("touchstart", autoStartMusicOnce, { once: true, passive: true });
-document.addEventListener("touchend", autoStartMusicOnce, { once: true, passive: true });
-document.addEventListener("click", autoStartMusicOnce, { once: true });
-document.addEventListener("keydown", autoStartMusicOnce, { once: true });
+function detachAudioUnlock() {
+  const optsCap = { capture: true };
+  const optsCapPassive = { capture: true, passive: true };
 
-["btnSave","btnExpand","btnFeedback"].forEach(id => {
-  const b = document.getElementById(id);
-  b && b.addEventListener("touchstart", autoStartMusicOnce, { once:true, passive:true, capture:true });
-  b && b.addEventListener("click", autoStartMusicOnce, { once:true, capture:true });
-});
+  window.removeEventListener("pointerdown", unlockAndStartAudio, optsCap);
+  window.removeEventListener("touchstart", unlockAndStartAudio, optsCapPassive);
+  window.removeEventListener("touchend", unlockAndStartAudio, optsCapPassive);
+  window.removeEventListener("mousedown", unlockAndStartAudio, optsCap);
+  window.removeEventListener("click", unlockAndStartAudio, optsCap);
+  window.removeEventListener("keydown", unlockAndStartAudio, optsCap);
+  window.removeEventListener("wheel", unlockAndStartAudio, optsCapPassive);
+  window.removeEventListener("scroll", unlockAndStartAudio, optsCapPassive);
 
+  const mapEl = document.getElementById("map");
+  if (mapEl) {
+    mapEl.removeEventListener("pointerdown", unlockAndStartAudio, optsCap);
+    mapEl.removeEventListener("touchstart", unlockAndStartAudio, optsCapPassive);
+    mapEl.removeEventListener("click", unlockAndStartAudio, optsCap);
+  }
+}
 
+(function attachAudioUnlock() {
+  const optsCap = { capture: true };
+  const optsCapPassive = { capture: true, passive: true };
+
+  window.addEventListener("pointerdown", unlockAndStartAudio, optsCap);
+  window.addEventListener("touchstart", unlockAndStartAudio, optsCapPassive);
+  window.addEventListener("touchend", unlockAndStartAudio, optsCapPassive);
+  window.addEventListener("mousedown", unlockAndStartAudio, optsCap);
+  window.addEventListener("click", unlockAndStartAudio, optsCap);
+  window.addEventListener("keydown", unlockAndStartAudio, optsCap);
+  window.addEventListener("wheel", unlockAndStartAudio, optsCapPassive);
+  window.addEventListener("scroll", unlockAndStartAudio, optsCapPassive);
+
+  const mapEl = document.getElementById("map");
+  if (mapEl) {
+    mapEl.addEventListener("pointerdown", unlockAndStartAudio, optsCap);
+    mapEl.addEventListener("touchstart", unlockAndStartAudio, optsCapPassive);
+    mapEl.addEventListener("click", unlockAndStartAudio, optsCap);
+  }
+})();
 
 /* =============================================================================
    6) SUPABASE CONFIG
@@ -750,14 +770,11 @@ map.on("load", async () => {
   clearMarkers();
   revealedThisSession = false;
 
-  // Démarre en compact sur iPhone, en app view sur desktop
-  if (isPhone) {
-    showCompact("👋 Welcome! You can leave a comment anytime.");
-  } else {
-    showApp();
-  }
+  // Start with mood picker everywhere (phone + desktop).
+  // Keep compact styling on phone while showing the app view.
+  panel.className = isPhone ? "panel-compact" : "panel-app";
+  showApp();
 });
-
 </script>
 </body>
 </html>
