@@ -63,9 +63,7 @@
     button, input, textarea { padding: 14px; font-size: 16px; }
   }
 
-  /* ===========================
-     FEEDBACK MODAL
-     =========================== */
+  /* FEEDBACK MODAL */
   #fbOverlay{
     position: fixed;
     inset: 0;
@@ -84,7 +82,6 @@
     padding: 16px;
   }
   #fbModal h4 { margin: 0 0 10px; font-size: 17px; }
-  #fbMeta{ display:none; } /* hidden: no metadata shown */
   #fbCount{ font-size: 12px; opacity: .7; text-align:right; margin-top:6px; }
   .modal-actions { display:flex; gap:10px; justify-content:flex-end; }
 </style>
@@ -96,7 +93,6 @@
 <div id="panel" class="panel-app">
   <h3>Mood Map</h3>
 
-  <!-- APP VIEW (NO LOGIN) -->
   <div id="appView">
     <div class="row">
       <label>Your mood: <b><span id="moodValue">5</span>/10</b></label>
@@ -107,7 +103,9 @@
       <button id="btnSaveAll">Locate + Save</button>
     </div>
 
-    <div class="small">Tap “Locate + Save” to reveal the world’s mood 🌍</div>
+    <div class="small" id="hint">
+      Choose your mood, then tap “Locate + Save” to reveal the world’s mood 🌍
+    </div>
     <div id="appMsg" class="msg"></div>
 
     <div class="row" style="margin-top:8px;">
@@ -115,7 +113,6 @@
     </div>
   </div>
 
-  <!-- COMPACT VIEW -->
   <div id="compactView" style="display:none;">
     <div class="small" id="compactMsg">Saved.</div>
 
@@ -131,10 +128,6 @@
   <div id="fbModal" role="dialog" aria-modal="true">
     <h4>Send a comment</h4>
     <div class="small">This message will be stored automatically.</div>
-    <div style="height:10px"></div>
-
-    <div id="fbMeta"></div>
-
     <div style="height:10px"></div>
 
     <label class="small" for="fbText">Message</label>
@@ -154,18 +147,12 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-/* =============================================================================
-   0) MOBILE VIEWPORT FIX (iOS)
-   ============================================================================= */
-function setVh() {
-  document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
-}
+/* 0) iOS viewport */
+function setVh() { document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`); }
 window.addEventListener('resize', setVh);
 setVh();
 
-/* =============================================================================
-   1) MAP SETUP
-   ============================================================================= */
+/* 1) Map */
 const map = new maplibregl.Map({
   container: "map",
   style: {
@@ -189,9 +176,7 @@ const map = new maplibregl.Map({
 });
 map.addControl(new maplibregl.NavigationControl(), "top-right");
 
-/* =============================================================================
-   2) MOOD ICONS (0..10)
-   ============================================================================= */
+/* 2) Mood icons */
 function lerp(a,b,t){ return a + (b - a) * t; }
 function lerpColor(c1,c2,t){
   const r = Math.round(lerp(c1[0], c2[0], t));
@@ -202,16 +187,13 @@ function lerpColor(c1,c2,t){
 function moodImageData(level, size=96){
   const t = Math.max(0, Math.min(1, level/10));
   const red=[215,25,28], yellow=[255,255,191], green=[26,150,65];
-  const fill = (t < 0.5)
-    ? lerpColor(red, yellow, t/0.5)
-    : lerpColor(yellow, green, (t-0.5)/0.5);
+  const fill = (t < 0.5) ? lerpColor(red, yellow, t/0.5) : lerpColor(yellow, green, (t-0.5)/0.5);
 
   const canvas = document.createElement("canvas");
   canvas.width = size; canvas.height = size;
   const ctx = canvas.getContext("2d");
 
   const cx = size/2, cy = size/2, r = size*0.42;
-
   ctx.beginPath(); ctx.arc(cx, cy+3, r, 0, Math.PI*2);
   ctx.fillStyle="rgba(0,0,0,0.18)"; ctx.fill();
 
@@ -264,9 +246,7 @@ function ensureMoodImages(){
   }
 }
 
-/* =============================================================================
-   3) POINTS SOURCE + LAYERS
-   ============================================================================= */
+/* 3) Points layers */
 function initPointsSourceAndLayers(){
   if(map.getSource("points")) return;
 
@@ -350,9 +330,11 @@ function clearMarkers(){
   source.setData({ type:"FeatureCollection", features: [] });
 }
 
+/* ===== IMPORTANT: reveal only AFTER user clicks save (THIS SESSION) ===== */
+let revealedThisSession = false;
+
 async function refreshPoints(){
-  const hasSubmitted = localStorage.getItem("mood_has_submitted") === "1";
-  if (!hasSubmitted) return; // only reveal moods after user's first save
+  if (!revealedThisSession) return;
 
   const source = map.getSource("points");
   if(!source) return;
@@ -365,6 +347,7 @@ async function refreshPoints(){
 
   if(error){
     setAppMessage("Load error:\n" + error.message);
+    console.warn("refreshPoints error:", error);
     return;
   }
 
@@ -377,15 +360,11 @@ async function refreshPoints(){
     }));
 
   source.setData({ type:"FeatureCollection", features });
-  setAppMessage(`Loaded markers: ${features.length}`);
 }
 
-/* =============================================================================
-   4) UI HELPERS
-   ============================================================================= */
+/* 4) UI */
 const el = id => document.getElementById(id);
 const panel = el("panel");
-
 function setAppMessage(msg){ el("appMsg").textContent = msg || ""; }
 
 function showApp(){
@@ -403,16 +382,12 @@ function showCompact(msg="Saved."){
 const slider = el("slider");
 slider.oninput = ()=> el("moodValue").textContent = slider.value;
 
-/* =============================================================================
-   5) SUPABASE CONFIG
-   ============================================================================= */
+/* 5) Supabase */
 const SUPABASE_URL = "https://ugrmxzdhevqrgftlxfnp.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVncm14emRoZXZxcmdmdGx4Zm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyODQ3OTQsImV4cCI6MjA4NDg2MDc5NH0.WgTj-6ADFEMrCgPNxeQZvknBBJI1c9uDY9_8Qlkqu4w";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-/* =============================================================================
-   6) ANON ID (local)
-   ============================================================================= */
+/* 6) anon id */
 function getAnonId(){
   const key = "mood_anon_id";
   let v = localStorage.getItem(key);
@@ -423,9 +398,7 @@ function getAnonId(){
   return v;
 }
 
-/* =============================================================================
-   7) SAVE (UPSERT: one row per anon_id, replaces previous mood)
-   ============================================================================= */
+/* 7) SAVE (UPSERT: one row per anon_id) */
 let lastFix = null;
 
 el("btnSaveAll").onclick = async () => {
@@ -441,7 +414,6 @@ el("btnSaveAll").onclick = async () => {
   navigator.geolocation.getCurrentPosition(async (pos) => {
     const coords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
     const mood = parseInt(slider.value, 10);
-
     lastFix = { lat: coords.lat, lon: coords.lon, accuracy: pos.coords.accuracy };
 
     setAppMessage("Saving your mood…");
@@ -459,11 +431,14 @@ el("btnSaveAll").onclick = async () => {
       .upsert(row, { onConflict: "anon_id" });
 
     if (error) {
-      setAppMessage("Unable to save. Please try again.");
+      // Show a friendly message + log the real reason
+      setAppMessage("Unable to save. (Open DevTools Console for details)");
+      console.warn("SAVE error:", error);
       return;
     }
 
-    localStorage.setItem("mood_has_submitted", "1");
+    // Reveal the world mood ONLY after a successful save
+    revealedThisSession = true;
 
     map.easeTo({ center: [coords.lon, coords.lat], zoom: Math.max(map.getZoom(), 8) });
 
@@ -481,12 +456,10 @@ el("btnSaveAll").onclick = async () => {
 
 el("btnBack").onclick = () => {
   showApp();
-  setAppMessage("Tap “Locate + Save” to reveal the world’s mood 🌍");
+  setAppMessage("Choose your mood, then tap “Locate + Save” to reveal the world’s mood 🌍");
 };
 
-/* =============================================================================
-   8) FEEDBACK (simple, no anon_id sent)
-   ============================================================================= */
+/* 8) FEEDBACK (simple insert) */
 const FEEDBACK_MAX_WORDS = 250;
 function countWords(s) { return (s.trim().match(/\S+/g) || []).length; }
 
@@ -543,12 +516,14 @@ btnFbSend.onclick = async () => {
     return;
   }
 
+  // Minimal row (your table must allow this + policy for anon)
   const row = { message };
 
   const { error } = await sb.from("mood_feedback").insert(row);
 
   if (error) {
-    fbMsg.textContent = "An unexpected error occurred.";
+    fbMsg.textContent = "Unable to send. (Open DevTools Console for details)";
+    console.warn("FEEDBACK error:", error);
     btnFbSend.disabled = false;
     fbBusy = false;
     return;
@@ -561,23 +536,17 @@ btnFbSend.onclick = async () => {
   fbBusy = false;
 };
 
-/* =============================================================================
-   9) MAP INIT
-   ============================================================================= */
+/* 9) init */
 map.on("load", async () => {
   ensureMoodImages();
   initPointsSourceAndLayers();
+
+  // IMPORTANT: always start hidden
+  revealedThisSession = false;
   clearMarkers();
 
   showApp();
-
-  const hasSubmitted = localStorage.getItem("mood_has_submitted") === "1";
-  if (hasSubmitted) {
-    setAppMessage("Loading the world’s mood…");
-    await refreshPoints();
-  } else {
-    setAppMessage("Tap “Locate + Save” to reveal the world’s mood 🌍");
-  }
+  setAppMessage("Choose your mood, then tap “Locate + Save” to reveal the world’s mood 🌍");
 });
 </script>
 </body>
