@@ -38,6 +38,21 @@
   }
 
   h3 { margin:0 0 10px; font-size:18px; }
+
+  /* =========================
+     DRAG HANDLE (ADDED)
+     ========================= */
+  #dragHandle{
+    width: 54px;
+    height: 6px;
+    border-radius: 999px;
+    margin: 6px auto 10px;
+    background: rgba(0,0,0,0.18);
+    cursor: grab;
+    touch-action: none;
+  }
+  #dragHandle:active{ cursor: grabbing; }
+
   .row { display:grid; gap:10px; margin:10px 0; }
 
   input, button, textarea{
@@ -95,6 +110,9 @@
 
 <div id="panel" class="panel-app">
   <h3>Mood Map</h3>
+
+  <!-- HANDLE (ADDED) -->
+  <div id="dragHandle" title="Drag panel" aria-label="Drag panel"></div>
 
   <!-- APP VIEW (default) -->
   <div id="appView">
@@ -400,6 +418,42 @@ const slider = el("slider");
 slider.oninput = ()=> el("moodValue").textContent = slider.value;
 
 /* =============================================================================
+   4.5) DRAGGABLE PANEL VIA HANDLE (ADDED)
+   ============================================================================= */
+const dragHandle = el("dragHandle");
+let dragging = false;
+let dragOffX = 0, dragOffY = 0;
+
+dragHandle.addEventListener("pointerdown", (e) => {
+  dragging = true;
+  panel.setPointerCapture(e.pointerId);
+
+  const rect = panel.getBoundingClientRect();
+  dragOffX = e.clientX - rect.left;
+  dragOffY = e.clientY - rect.top;
+});
+
+panel.addEventListener("pointermove", (e) => {
+  if (!dragging) return;
+
+  let x = e.clientX - dragOffX;
+  let y = e.clientY - dragOffY;
+
+  const maxX = window.innerWidth - panel.offsetWidth - 8;
+  const maxY = window.innerHeight - panel.offsetHeight - 8;
+  x = Math.max(8, Math.min(maxX, x));
+  y = Math.max(8, Math.min(maxY, y));
+
+  panel.style.left = x + "px";
+  panel.style.top  = y + "px";
+  panel.style.right = "auto";
+  panel.style.bottom = "auto";
+});
+
+panel.addEventListener("pointerup", () => { dragging = false; });
+panel.addEventListener("pointercancel", () => { dragging = false; });
+
+/* =============================================================================
    5) AMBIENT MUSIC (fade out on save)
    ============================================================================= */
 let audioCtx, masterGain, musicStarted = false;
@@ -504,9 +558,11 @@ function autoStartMusicOnce() {
   playAmbientMusic();
   document.removeEventListener("pointerdown", autoStartMusicOnce);
   document.removeEventListener("keydown", autoStartMusicOnce);
+  document.removeEventListener("touchstart", autoStartMusicOnce);
 }
 document.addEventListener("pointerdown", autoStartMusicOnce, { once: true });
 document.addEventListener("keydown", autoStartMusicOnce, { once: true });
+document.addEventListener("touchstart", autoStartMusicOnce, { once: true, passive: true }); /* iOS FIX */
 
 /* =============================================================================
    6) SUPABASE CONFIG
@@ -546,7 +602,6 @@ el("btnSave").onclick = async () => {
 
     setAppMessage("Saving your mood…");
 
-    // IMPORTANT: no "location" field sent
     const row = { anon_id: anonId, mood, lon: coords.lon, lat: coords.lat };
 
     const { error } = await sb
@@ -560,10 +615,7 @@ el("btnSave").onclick = async () => {
       return;
     }
 
-    // Fade out music AFTER user has saved their mood
     fadeOutMusic(2.6);
-
-    // reveal markers only now
     revealedThisSession = true;
 
     setAppMessage("Thank you! Loading the world’s mood…");
@@ -621,7 +673,20 @@ fbOverlay.addEventListener("click", (e) => { if (e.target === fbOverlay) closeFe
 el("btnFbCancel").onclick = closeFeedbackModal;
 fbText.addEventListener("input", updateFbCounter);
 
+/* Single tap = open feedback */
 el("btnFeedback").onclick = () => openFeedbackModal();
+
+/* Double tap/double click on "Any comments?" = go back to compact if needed (ADDED)
+   (If you later add a mini/pill view, you can move this to that button.) */
+let lastTap = 0;
+el("btnFeedback").addEventListener("click", () => {
+  const now = Date.now();
+  if (now - lastTap < 320) {
+    // restore compact view (useful if you add a mini mode later)
+    showCompact("✅ Saved. Thank you!");
+  }
+  lastTap = now;
+});
 
 btnFbSend.onclick = async () => {
   btnFbSend.disabled = true;
@@ -646,8 +711,6 @@ btnFbSend.onclick = async () => {
   });
 
   if (error) {
-    // Requested custom message:
-    // If your DB has a "one per day" unique constraint, we can detect duplicates
     const raw = (error.message || "") + " " + (error.details || "") + " " + (error.hint || "");
     const isDuplicate =
       error.code === "23505" ||
@@ -674,7 +737,7 @@ btnFbSend.onclick = async () => {
 map.on("load", async () => {
   ensureMoodImages();
   initPointsSourceAndLayers();
-  clearMarkers();           // hidden at first
+  clearMarkers();
   revealedThisSession = false;
   showApp();
 });
