@@ -462,14 +462,16 @@ el("btnSaveAll").onclick = async () => {
       location: `POINT(${coords.lon} ${coords.lat})`
     };
 
-    const { error } = await sb.from("mood_entries").insert(row);
+    const { error } = await sb
+  .from("mood_entries")
+  .upsert(row, { onConflict: "anon_id" });
 
     if (error) {
       const raw = ((error.message || "") + " " + (error.details || "") + " " + (error.hint || "")).toLowerCase();
 
-      const isDup =
-        raw.includes("mood_entries_one_per_day") ||
-        raw.includes("duplicate key value");
+ const isDup =
+  raw.includes("duplicate key value") ||
+  raw.includes("unique constraint");
 
       const isRls =
         raw.includes("row-level security") ||
@@ -488,8 +490,8 @@ el("btnSaveAll").onclick = async () => {
 
 if (isRls) {
   localStorage.setItem("mood_has_submitted", "1"); // allow map to show
-  setAppMessage("Only one save per day, please! Loading the world’s mood…");
-  showCompact("Only one save per day 🙂");
+  setAppMessage("Mood updated! Loading the world’s mood…");
+  //showCompact("Only one save per day 🙂");
   setTimeout(async () => { await refreshPoints(); }, 800);
   return;
 }
