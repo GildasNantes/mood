@@ -21,20 +21,33 @@
     transition: all .35s ease;
     padding-bottom: calc(16px + env(safe-area-inset-bottom));
     padding-top: calc(16px + env(safe-area-inset-top));
+    left:12px; top:12px; /* default pos for drag */
   }
 
   /* Big panel (default) */
   .panel-app{
-    left:12px; top:12px;
     width: 320px;
   }
 
   /* Compact panel (after save) */
   .panel-compact{
-    left:12px; top:12px;
     width: auto;
     padding: 10px 12px;
     border-radius: 14px;
+  }
+
+  /* Mini pill mode */
+  .panel-mini{
+    width: auto;
+    padding: 8px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.92);
+  }
+  .pill{
+    background:#111; color:#fff; border:0;
+    padding:10px 14px; border-radius:999px;
+    font-weight:600;
+    cursor:pointer;
   }
 
   h3 { margin:0 0 10px; font-size:18px; }
@@ -55,14 +68,13 @@
   .small{ font-size:13px; opacity:.75; }
   .msg{ white-space:pre-wrap; font-size:13px; }
 
-  #appView, #compactView { display:none; }
+  #appView, #compactView, #miniView { display:none; }
 
   :root { --vh: 1vh; }
   #map { height: calc(var(--vh) * 100); }
 
   @media (max-width: 520px) {
-    .panel-app{ width: calc(100vw - 24px); left: 12px; right: 12px; }
-    .panel-compact{ left: 12px; right: 12px; }
+    .panel-app{ width: calc(100vw - 24px); }
     button, input, textarea { padding: 14px; font-size: 16px; }
   }
 
@@ -119,8 +131,14 @@
     <div class="small" id="compactMsg">✅ Saved.</div>
     <div class="row" style="margin-top:8px; gap:8px;">
       <button id="btnFeedback" class="secondary" type="button">Any comments?</button>
+      <button id="btnMini" class="secondary" type="button">Minimize</button>
       <button id="btnExpand" class="secondary" type="button">Change mood</button>
     </div>
+  </div>
+
+  <!-- MINI VIEW (pill) -->
+  <div id="miniView">
+    <button id="btnMiniOpen" class="pill" type="button">Any comments?</button>
   </div>
 </div>
 
@@ -386,12 +404,20 @@ function showApp(){
   panel.className = "panel-app";
   el("appView").style.display = "block";
   el("compactView").style.display = "none";
+  el("miniView").style.display = "none";
 }
 function showCompact(msg="✅ Saved."){
   panel.className = "panel-compact";
   el("compactMsg").textContent = msg;
   el("appView").style.display = "none";
   el("compactView").style.display = "block";
+  el("miniView").style.display = "none";
+}
+function showMini(){
+  panel.className = "panel-mini";
+  el("appView").style.display = "none";
+  el("compactView").style.display = "none";
+  el("miniView").style.display = "block";
 }
 
 function setAppMessage(msg){ el("appMsg").textContent = msg || ""; }
@@ -500,13 +526,16 @@ function playAmbientMusic() {
   schedule();
 }
 
-function autoStartMusicOnce() {
+/* iPhone/Safari: must start audio from a real user gesture */
+function startMusicOnce(){
+  if (musicStarted) return;
   playAmbientMusic();
-  document.removeEventListener("pointerdown", autoStartMusicOnce);
-  document.removeEventListener("keydown", autoStartMusicOnce);
 }
-document.addEventListener("pointerdown", autoStartMusicOnce, { once: true });
-document.addEventListener("keydown", autoStartMusicOnce, { once: true });
+document.addEventListener("touchstart", startMusicOnce, { once:true, passive:true });
+document.addEventListener("pointerdown", startMusicOnce, { once:true });
+document.addEventListener("keydown", startMusicOnce, { once:true });
+slider.addEventListener("input", startMusicOnce, { once:true });
+el("btnSave").addEventListener("pointerdown", startMusicOnce, { once:true });
 
 /* =============================================================================
    6) SUPABASE CONFIG
@@ -546,7 +575,6 @@ el("btnSave").onclick = async () => {
 
     setAppMessage("Saving your mood…");
 
-    // IMPORTANT: no "location" field sent
     const row = { anon_id: anonId, mood, lon: coords.lon, lat: coords.lat };
 
     const { error } = await sb
@@ -560,10 +588,7 @@ el("btnSave").onclick = async () => {
       return;
     }
 
-    // Fade out music AFTER user has saved their mood
     fadeOutMusic(2.6);
-
-    // reveal markers only now
     revealedThisSession = true;
 
     setAppMessage("Thank you! Loading the world’s mood…");
@@ -586,6 +611,10 @@ el("btnExpand").onclick = () => {
   showApp();
   setAppMessage("");
 };
+
+/* Mini mode */
+el("btnMini").onclick = showMini;
+el("btnMiniOpen").onclick = () => openFeedbackModal();
 
 /* =============================================================================
    8) FEEDBACK MODAL (anonymous)
@@ -646,8 +675,6 @@ btnFbSend.onclick = async () => {
   });
 
   if (error) {
-    // Requested custom message:
-    // If your DB has a "one per day" unique constraint, we can detect duplicates
     const raw = (error.message || "") + " " + (error.details || "") + " " + (error.hint || "");
     const isDuplicate =
       error.code === "23505" ||
@@ -667,6 +694,47 @@ btnFbSend.onclick = async () => {
   setTimeout(() => closeFeedbackModal(), 700);
   btnFbSend.disabled = false;
 };
+
+/* =============================================================================
+   8.5) DRAGGABLE PANEL (touch + mouse)
+   ============================================================================= */
+let dragging = false;
+let dragOffX = 0, dragOffY = 0;
+
+function isInteractiveTarget(t){
+  const tag = (t && t.tagName || "").toLowerCase();
+  return tag === "button" || tag === "input" || tag === "textarea" || tag === "label";
+}
+
+panel.addEventListener("pointerdown", (e) => {
+  if (isInteractiveTarget(e.target)) return;
+  dragging = true;
+  panel.setPointerCapture(e.pointerId);
+
+  const rect = panel.getBoundingClientRect();
+  dragOffX = e.clientX - rect.left;
+  dragOffY = e.clientY - rect.top;
+});
+
+panel.addEventListener("pointermove", (e) => {
+  if (!dragging) return;
+
+  let x = e.clientX - dragOffX;
+  let y = e.clientY - dragOffY;
+
+  const maxX = window.innerWidth - panel.offsetWidth - 8;
+  const maxY = window.innerHeight - panel.offsetHeight - 8;
+  x = Math.max(8, Math.min(maxX, x));
+  y = Math.max(8, Math.min(maxY, y));
+
+  panel.style.left = x + "px";
+  panel.style.top  = y + "px";
+  panel.style.right = "auto";
+  panel.style.bottom = "auto";
+});
+
+panel.addEventListener("pointerup", () => { dragging = false; });
+panel.addEventListener("pointercancel", () => { dragging = false; });
 
 /* =============================================================================
    9) INIT
