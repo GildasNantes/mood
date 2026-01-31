@@ -84,14 +84,7 @@
     padding: 16px;
   }
   #fbModal h4 { margin: 0 0 10px; font-size: 17px; }
-  #fbMeta{
-    font-size: 13px;
-    opacity: .85;
-    background: rgba(0,0,0,0.04);
-    padding: 10px 12px;
-    border-radius: 12px;
-    white-space: pre-wrap;
-  }
+  #fbMeta{ display:none; } /* hidden: no metadata shown */
   #fbCount{ font-size: 12px; opacity: .7; text-align:right; margin-top:6px; }
   .modal-actions { display:flex; gap:10px; justify-content:flex-end; }
 </style>
@@ -114,7 +107,7 @@
       <button id="btnSaveAll">Locate + Save</button>
     </div>
 
-    <div class="small">Save once per day (per device). After saving, you’ll see the world’s mood 🌍</div>
+    <div class="small">Tap “Locate + Save” to reveal the world’s mood 🌍</div>
     <div id="appMsg" class="msg"></div>
 
     <div class="row" style="margin-top:8px;">
@@ -124,7 +117,7 @@
 
   <!-- COMPACT VIEW -->
   <div id="compactView" style="display:none;">
-    <div class="small" id="compactMsg">✅ Saved.</div>
+    <div class="small" id="compactMsg">Saved.</div>
 
     <div class="row" style="margin-top:8px; gap:8px;">
       <button id="btnBack" class="secondary" type="button">Back</button>
@@ -358,9 +351,8 @@ function clearMarkers(){
 }
 
 async function refreshPoints(){
- // const hasSubmitted = localStorage.getItem("mood_has_submitted") === "1";
- //if (!hasSubmitted) return; // do not show moods before user submits
-// always allowed to refresh markers (we control visibility elsewhere)
+  const hasSubmitted = localStorage.getItem("mood_has_submitted") === "1";
+  if (!hasSubmitted) return; // only reveal moods after user's first save
 
   const source = map.getSource("points");
   if(!source) return;
@@ -415,7 +407,7 @@ slider.oninput = ()=> el("moodValue").textContent = slider.value;
    5) SUPABASE CONFIG
    ============================================================================= */
 const SUPABASE_URL = "https://ugrmxzdhevqrgftlxfnp.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVncm14emRoZXZxcmdmdGx4Zm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyODQ3OTQsImV4cCI6MjA4NDg2MDc5NH0.WgTj-6ADFEMrCgPNxeQZvknBBJI1c9uDY9_8Qlkqu4w";
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY_HERE";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /* =============================================================================
@@ -432,7 +424,7 @@ function getAnonId(){
 }
 
 /* =============================================================================
-   7) SAVE (insert-only, 1/day via unique index on (anon_id, day))
+   7) SAVE (UPSERT: one row per anon_id, replaces previous mood)
    ============================================================================= */
 let lastFix = null;
 
@@ -463,40 +455,11 @@ el("btnSaveAll").onclick = async () => {
     };
 
     const { error } = await sb
-  .from("mood_entries")
-  .upsert(row, { onConflict: "anon_id" });
+      .from("mood_entries")
+      .upsert(row, { onConflict: "anon_id" });
 
     if (error) {
-      const raw = ((error.message || "") + " " + (error.details || "") + " " + (error.hint || "")).toLowerCase();
-
- const isDup =
-  raw.includes("duplicate key value") ||
-  raw.includes("unique constraint");
-
-      const isRls =
-        raw.includes("row-level security") ||
-        raw.includes("violates row-level security") ||
-        raw.includes("permission denied") ||
-        raw.includes("not authorized");
-
-      if (isDup) {
-        localStorage.setItem("mood_has_submitted", "1");
-        setAppMessage("You already shared your mood today 🙂 Loading the world’s mood…");
-        showCompact("Mood already shared today 🙂");
-        setTimeout(async () => { await refreshPoints(); }, 1200);
-        return;
-      }
-
-
-if (isRls) {
-  localStorage.setItem("mood_has_submitted", "1"); // allow map to show
-  setAppMessage("Mood updated! Loading the world’s mood…");
-  //showCompact("Only one save per day 🙂");
-  setTimeout(async () => { await refreshPoints(); }, 800);
-  return;
-}
-
-      setAppMessage("Unable to save.\n\nDetails: " + (error.message || "Unknown error"));
+      setAppMessage("Unable to save. Please try again.");
       return;
     }
 
@@ -509,7 +472,7 @@ if (isRls) {
 
     setTimeout(async () => {
       await refreshPoints();
-    }, 1200);
+    }, 900);
 
   }, (err) => {
     setAppMessage("Geolocation error: " + err.message);
@@ -518,18 +481,17 @@ if (isRls) {
 
 el("btnBack").onclick = () => {
   showApp();
-  setAppMessage("Choose your mood and save to see how others feel 🌍");
+  setAppMessage("Tap “Locate + Save” to reveal the world’s mood 🌍");
 };
 
 /* =============================================================================
-   8) FEEDBACK (anonymous)
+   8) FEEDBACK (simple, no anon_id sent)
    ============================================================================= */
 const FEEDBACK_MAX_WORDS = 250;
 function countWords(s) { return (s.trim().match(/\S+/g) || []).length; }
 
 const fbOverlay = el("fbOverlay");
 const fbText = el("fbText");
-const fbMeta = el("fbMeta");
 const fbMsg  = el("fbMsg");
 const fbCount = el("fbCount");
 const btnFbSend = el("btnFbSend");
@@ -539,11 +501,9 @@ function updateFbCounter(){
   const words = countWords(fbText.value);
   fbCount.textContent = `${chars} / 5000 • ${words} / ${FEEDBACK_MAX_WORDS} words`;
 }
-function openFeedbackModal(metaText){
+function openFeedbackModal(){
   fbMsg.textContent = "";
   fbText.value = "";
-fbMeta.style.display = "none";
-  fbMeta.textContent = "";
   fbOverlay.style.display = "flex";
   fbOverlay.setAttribute("aria-hidden", "false");
   updateFbCounter();
@@ -557,12 +517,8 @@ fbOverlay.addEventListener("click", (e) => { if (e.target === fbOverlay) closeFe
 el("btnFbCancel").onclick = closeFeedbackModal;
 fbText.addEventListener("input", updateFbCounter);
 
-function feedbackMetaText(){
-  return ""; // no metadata shown
-}
-
-el("btnFeedback").onclick = () => openFeedbackModal(feedbackMetaText());
-el("btnFeedback2").onclick = () => openFeedbackModal(feedbackMetaText());
+el("btnFeedback").onclick = () => openFeedbackModal();
+el("btnFeedback2").onclick = () => openFeedbackModal();
 
 let fbBusy = false;
 btnFbSend.onclick = async () => {
@@ -587,36 +543,12 @@ btnFbSend.onclick = async () => {
     return;
   }
 
-  const anonId = getAnonId();
-  const lf = lastFix || {};
-
-  const row = {
-    anon_id: anonId,
-    message,
-    lat: (typeof lf.lat === "number") ? lf.lat : null,
-    lon: (typeof lf.lon === "number") ? lf.lon : null,
-    accuracy_m: (typeof lf.accuracy === "number") ? Math.round(lf.accuracy) : null,
-    user_agent: navigator.userAgent
-  };
+  const row = { message };
 
   const { error } = await sb.from("mood_feedback").insert(row);
 
   if (error) {
-    const raw = (error.message || "") + " " + (error.details || "") + " " + (error.hint || "");
-    const isDuplicate =
-      error.code === "23505" ||
-      raw.includes("duplicate key value") ||
-      raw.includes("mood_feedback_one_per_day");
-
-    if (isDuplicate) {
-      fbMsg.textContent =
-        "You have already sent a comment today.\n\n" +
-        "Only one comment per day is allowed.\n" +
-        "Please come back tomorrow 🙂";
-    } else {
-      fbMsg.textContent = "An unexpected error occurred.\n\n" + (error.message || "Unknown error");
-    }
-
+    fbMsg.textContent = "An unexpected error occurred.";
     btnFbSend.disabled = false;
     fbBusy = false;
     return;
@@ -644,7 +576,7 @@ map.on("load", async () => {
     setAppMessage("Loading the world’s mood…");
     await refreshPoints();
   } else {
-    setAppMessage("Choose your mood and save to see how others feel 🌍");
+    setAppMessage("Tap “Locate + Save” to reveal the world’s mood 🌍");
   }
 });
 </script>
