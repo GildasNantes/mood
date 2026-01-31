@@ -29,7 +29,7 @@
     width: 320px;
   }
 
-  /* Compact panel (after save) */
+  /* Compact panel (mobile default + after save) */
   .panel-compact{
     left:12px; top:12px;
     width: auto;
@@ -39,9 +39,7 @@
 
   h3 { margin:0 0 10px; font-size:18px; }
 
-  /* =========================
-     DRAG HANDLE (ADDED)
-     ========================= */
+  /* DRAG HANDLE */
   #dragHandle{
     width: 54px;
     height: 6px;
@@ -76,9 +74,8 @@
   #map { height: calc(var(--vh) * 100); }
 
   @media (max-width: 520px) {
-    /* app stays usable full width */
+    /* app view becomes full width on phone */
     .panel-app{ width: calc(100vw - 24px); left: 12px; right: 12px; }
-    /* compact also full width */
     .panel-compact{ left: 12px; right: 12px; }
     button, input, textarea { padding: 14px; font-size: 16px; }
   }
@@ -113,10 +110,10 @@
 <div id="panel" class="panel-app">
   <h3>Mood Map</h3>
 
-  <!-- HANDLE (ADDED) -->
+  <!-- HANDLE -->
   <div id="dragHandle" title="Drag panel" aria-label="Drag panel"></div>
 
-  <!-- APP VIEW (default) -->
+  <!-- APP VIEW -->
   <div id="appView">
     <div class="row">
       <label>Your mood: <b><span id="moodValue">5</span>/10</b></label>
@@ -134,7 +131,7 @@
     <div id="appMsg" class="msg"></div>
   </div>
 
-  <!-- COMPACT VIEW (after save) -->
+  <!-- COMPACT VIEW -->
   <div id="compactView">
     <div class="small" id="compactMsg">✅ Saved.</div>
     <div class="row" style="margin-top:8px; gap:8px;">
@@ -402,10 +399,13 @@ async function refreshPoints(){
 const el = id => document.getElementById(id);
 const panel = el("panel");
 
-/* Phone -> use compact panel styling immediately */
-const isPhone = window.matchMedia("(max-width: 520px)").matches;
+/* Better mobile detection than only width:
+   - pointer:coarse catches iPhone even if viewport oddities
+*/
+const isPhone = window.matchMedia("(pointer: coarse)").matches || window.matchMedia("(max-width: 520px)").matches;
 
 function showApp(){
+  // On phone: keep the compact panel styling all the time
   panel.className = isPhone ? "panel-compact" : "panel-app";
   el("appView").style.display = "block";
   el("compactView").style.display = "none";
@@ -416,14 +416,13 @@ function showCompact(msg="✅ Saved."){
   el("appView").style.display = "none";
   el("compactView").style.display = "block";
 }
-
 function setAppMessage(msg){ el("appMsg").textContent = msg || ""; }
 
 const slider = el("slider");
 slider.oninput = ()=> el("moodValue").textContent = slider.value;
 
 /* =============================================================================
-   4.5) DRAGGABLE PANEL VIA HANDLE (ADDED)
+   4.5) DRAGGABLE PANEL VIA HANDLE
    ============================================================================= */
 const dragHandle = el("dragHandle");
 let dragging = false;
@@ -459,8 +458,7 @@ panel.addEventListener("pointerup", () => { dragging = false; });
 panel.addEventListener("pointercancel", () => { dragging = false; });
 
 /* =============================================================================
-   5) AMBIENT MUSIC (fade out on save)
-   (kept like your previous version: pointerdown + keydown)
+   5) AMBIENT MUSIC (FIXED FOR iPhone)
    ============================================================================= */
 let audioCtx, masterGain, musicStarted = false;
 let musicNodes = [];
@@ -491,6 +489,10 @@ function playAmbientMusic() {
   musicStarted = true;
 
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  // iOS: must resume inside a user gesture context
+  try { audioCtx.resume && audioCtx.resume(); } catch(e){}
+
   masterGain = audioCtx.createGain();
   masterGain.gain.value = 0.20;
   masterGain.connect(audioCtx.destination);
@@ -561,11 +563,22 @@ function playAmbientMusic() {
 }
 
 function autoStartMusicOnce() {
+  // iOS: ensure resume at the exact gesture moment
+  try { audioCtx && audioCtx.resume && audioCtx.resume(); } catch(e){}
   playAmbientMusic();
+
   document.removeEventListener("pointerdown", autoStartMusicOnce);
+  document.removeEventListener("touchstart", autoStartMusicOnce);
+  document.removeEventListener("touchend", autoStartMusicOnce);
+  document.removeEventListener("click", autoStartMusicOnce);
   document.removeEventListener("keydown", autoStartMusicOnce);
 }
+
+// Keep desktop behaviour + add iPhone-friendly gestures:
 document.addEventListener("pointerdown", autoStartMusicOnce, { once: true });
+document.addEventListener("touchstart", autoStartMusicOnce, { once: true, passive: true });
+document.addEventListener("touchend", autoStartMusicOnce, { once: true, passive: true });
+document.addEventListener("click", autoStartMusicOnce, { once: true });
 document.addEventListener("keydown", autoStartMusicOnce, { once: true });
 
 /* =============================================================================
@@ -575,7 +588,6 @@ const SUPABASE_URL = "https://ugrmxzdhevqrgftlxfnp.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVncm14emRoZXZxcmdmdGx4Zm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyODQ3OTQsImV4cCI6MjA4NDg2MDc5NH0.WgTj-6ADFEMrCgPNxeQZvknBBJI1c9uDY9_8Qlkqu4w";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-/* anon_id stable per device */
 function getAnonId(){
   const key = "mood_anon_id";
   let v = localStorage.getItem(key);
@@ -637,14 +649,13 @@ el("btnSave").onclick = async () => {
   }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
 };
 
-/* Expand panel to change mood */
 el("btnExpand").onclick = () => {
   showApp();
   setAppMessage("");
 };
 
 /* =============================================================================
-   8) FEEDBACK MODAL (anonymous)
+   8) FEEDBACK MODAL
    ============================================================================= */
 const FEEDBACK_MAX_WORDS = 250;
 function countWords(s){ return (s.trim().match(/\S+/g) || []).length; }
@@ -730,7 +741,11 @@ map.on("load", async () => {
   initPointsSourceAndLayers();
   clearMarkers();
   revealedThisSession = false;
-  showApp(); // on phone, showApp() uses compact style immediately
+
+  // Force compact styling immediately on phone (no drag needed)
+  panel.className = isPhone ? "panel-compact" : "panel-app";
+
+  showApp();
 });
 </script>
 </body>
