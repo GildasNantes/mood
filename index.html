@@ -19,29 +19,38 @@
     box-shadow: 0 14px 36px rgba(0,0,0,.25);
     padding: 16px;
     transition: all .35s ease;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+    padding-top: calc(16px + env(safe-area-inset-top));
   }
 
-  .panel-welcome{
-    left:50%; top:50%;
-    transform:translate(-50%,-50%);
-    width: min(440px, calc(100vw - 24px));
-  }
-
+  /* Big panel (desktop default) */
   .panel-app{
     left:12px; top:12px;
-    transform:none;
     width: 320px;
   }
 
+  /* Compact panel (mobile styling + after save) */
   .panel-compact{
     left:12px; top:12px;
-    transform:none;
     width: auto;
     padding: 10px 12px;
     border-radius: 14px;
   }
 
   h3 { margin:0 0 10px; font-size:18px; }
+
+  /* DRAG HANDLE */
+  #dragHandle{
+    width: 54px;
+    height: 6px;
+    border-radius: 999px;
+    margin: 6px auto 10px;
+    background: rgba(0,0,0,0.18);
+    cursor: grab;
+    touch-action: none;
+  }
+  #dragHandle:active{ cursor: grabbing; }
+
   .row { display:grid; gap:10px; margin:10px 0; }
 
   input, button, textarea{
@@ -51,74 +60,26 @@
     border:1px solid rgba(0,0,0,.15);
   }
   textarea{ resize: vertical; min-height: 120px; }
+
   button{ background:#111; color:#fff; border:0; cursor:pointer; }
   button.secondary{ background:#eee; color:#111; }
-  button.link{
-    background: transparent;
-    color: #111;
-    border: 0;
-    padding: 0;
-    text-align: left;
-    text-decoration: underline;
-    cursor: pointer;
-    font-size: 14px;
-    opacity: .85;
-  }
-  button:disabled { opacity: .55; cursor: not-allowed; }
-
-  #welcomeBox{
-    background: linear-gradient(135deg,#ffecd2,#fcb69f);
-    border-radius:14px;
-    padding:14px;
-  }
+  button:disabled { opacity:.55; cursor: not-allowed; }
 
   .small{ font-size:13px; opacity:.75; }
   .msg{ white-space:pre-wrap; font-size:13px; }
 
-  #authView,#appView,#compactView,#resetView{ display:none; }
-
-  @media (max-width: 520px) {
-    .panel-welcome{ width: calc(100vw - 24px); }
-    .panel-app{ width: calc(100vw - 24px); left: 12px; right: 12px; }
-    button, input, textarea { padding: 14px; font-size: 16px; }
-    .panel-compact{ left: 12px; right: 12px; }
-  }
-
-  #panel{
-    padding-bottom: calc(16px + env(safe-area-inset-bottom));
-    padding-top: calc(16px + env(safe-area-inset-top));
-  }
+  #appView, #compactView { display:none; }
 
   :root { --vh: 1vh; }
   #map { height: calc(var(--vh) * 100); }
 
-  /* ===========================
-     SIMPLE MODAL (signup)
-     =========================== */
-  #overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.45);
-    z-index: 50;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 12px;
+  @media (max-width: 520px) {
+    .panel-app{ width: calc(100vw - 24px); left: 12px; right: 12px; }
+    .panel-compact{ left: 12px; right: 12px; }
+    button, input, textarea { padding: 14px; font-size: 16px; }
   }
-  #modal {
-    width: min(520px, 100%);
-    background: rgba(255,255,255,0.98);
-    border-radius: 16px;
-    box-shadow: 0 14px 36px rgba(0,0,0,.25);
-    padding: 16px;
-  }
-  #modal h4 { margin: 0 0 10px; font-size: 17px; }
-  .modal-actions { display:flex; gap:10px; justify-content:flex-end; }
-  .warn { color:#b00020; font-size: 13px; white-space: pre-wrap; }
 
-  /* ===========================
-     FEEDBACK MODAL
-     =========================== */
+  /* Feedback modal */
   #fbOverlay{
     position: fixed;
     inset: 0;
@@ -137,70 +98,19 @@
     padding: 16px;
   }
   #fbModal h4 { margin: 0 0 10px; font-size: 17px; }
-  #fbMeta{
-    font-size: 13px;
-    opacity: .85;
-    background: rgba(0,0,0,0.04);
-    padding: 10px 12px;
-    border-radius: 12px;
-    white-space: pre-wrap;
-  }
   #fbCount{ font-size: 12px; opacity: .7; text-align:right; margin-top:6px; }
+  .modal-actions { display:flex; gap:10px; justify-content:flex-end; }
 </style>
 </head>
 
 <body>
 <div id="map"></div>
 
-<div id="panel" class="panel-welcome">
+<div id="panel" class="panel-app">
   <h3>Mood Map</h3>
 
-  <!-- AUTH VIEW -->
-  <div id="authView">
-    <div id="welcomeBox">
-      <b>Welcome 🌍</b><br><br>
-      Discover the mood of the world.<br>
-      Create an account to share how you feel and explore
-      how happy people are across different places.
-    </div>
-
-    <div class="row">
-      <input id="email" type="email" placeholder="Email" autocomplete="email">
-      <input id="password" type="password" placeholder="Password" autocomplete="current-password">
-    </div>
-
-    <div class="row" style="grid-template-columns:1fr 1fr">
-      <button id="btnLogin">Sign in</button>
-      <button id="btnOpenSignup" class="secondary">Create account</button>
-    </div>
-
-    <div class="row">
-      <button id="btnForgot" class="link" type="button">Forgot your password?</button>
-      <div class="small">We will email you a reset link.</div>
-    </div>
-
-    <div id="authMsg" class="msg"></div>
-  </div>
-
-  <!-- RESET VIEW -->
-  <div id="resetView">
-    <div id="welcomeBox">
-      <b>Reset your password</b><br><br>
-      Please choose a new password (enter it twice).
-    </div>
-
-    <div class="row">
-      <input id="newPassword1" type="password" placeholder="New password">
-      <input id="newPassword2" type="password" placeholder="Confirm new password">
-    </div>
-
-    <div class="row">
-      <button id="btnDoReset">Update password</button>
-      <button id="btnResetCancel" class="secondary" type="button">Back</button>
-    </div>
-
-    <div id="resetMsg" class="msg"></div>
-  </div>
+  <!-- HANDLE -->
+  <div id="dragHandle" title="Drag panel" aria-label="Drag panel"></div>
 
   <!-- APP VIEW -->
   <div id="appView">
@@ -210,63 +120,31 @@
     </div>
 
     <div class="row">
-      <button id="btnSaveAll">Locate + Save + Refresh</button>
+      <button id="btnSave">Locate + Save</button>
     </div>
 
-    <div class="small">Markers appear after your first save.</div>
+    <div class="small" id="hint">
+      Choose your mood, then tap “Locate + Save” to reveal the world’s mood 🌍
+    </div>
+
     <div id="appMsg" class="msg"></div>
-
-    <div class="row">
-      <button id="btnLogout" class="secondary">Sign out</button>
-    </div>
   </div>
 
   <!-- COMPACT VIEW -->
   <div id="compactView">
     <div class="small" id="compactMsg">✅ Saved.</div>
-
     <div class="row" style="margin-top:8px; gap:8px;">
       <button id="btnFeedback" class="secondary" type="button">Any comments?</button>
-      <button id="btnLogout2" class="secondary">Sign out</button>
+      <button id="btnExpand" class="secondary" type="button">Change mood</button>
     </div>
   </div>
 </div>
 
-<!-- SIGNUP MODAL -->
-<div id="overlay" aria-hidden="true">
-  <div id="modal" role="dialog" aria-modal="true">
-    <h4>Create your account</h4>
-
-    <div class="small">
-      You should receive a confirmation email.
-      Your account becomes active after you confirm.
-    <br><br>
-    </div>
-
-    <div class="row">
-      <input id="suEmail" type="email" placeholder="Email" autocomplete="email">
-      <input id="suPass1" type="password" placeholder="Password (min 6 chars)" autocomplete="new-password">
-      <input id="suPass2" type="password" placeholder="Confirm password" autocomplete="new-password">
-    </div>
-
-    <div id="suMsg" class="warn"></div>
-
-    <div class="modal-actions">
-      <button id="btnCloseSignup" class="secondary" type="button">Cancel</button>
-      <button id="btnSignup" type="button">Create account</button>
-    </div>
-  </div>
-</div>
-
-<!-- FEEDBACK MODAL (stores into Supabase) -->
+<!-- FEEDBACK MODAL -->
 <div id="fbOverlay" aria-hidden="true">
   <div id="fbModal" role="dialog" aria-modal="true">
     <h4>Send a comment</h4>
     <div class="small">This message will be stored automatically.</div>
-    <div style="height:10px"></div>
-
-    <div id="fbMeta"></div>
-
     <div style="height:10px"></div>
 
     <label class="small" for="fbText">Message</label>
@@ -296,7 +174,205 @@ window.addEventListener('resize', setVh);
 setVh();
 
 /* =============================================================================
-   1) MAP SETUP
+   1) UI HELPERS + VIEWS
+   ============================================================================= */
+const el = id => document.getElementById(id);
+const panel = el("panel");
+
+const isPhone =
+  window.matchMedia("(pointer: coarse)").matches ||
+  window.matchMedia("(max-width: 520px)").matches;
+
+function showApp(){
+  // On phone: keep compact styling but show the mood picker view
+  panel.className = isPhone ? "panel-compact" : "panel-app";
+  el("appView").style.display = "block";
+  el("compactView").style.display = "none";
+}
+function showCompact(msg="✅ Saved."){
+  panel.className = "panel-compact";
+  el("compactMsg").textContent = msg;
+  el("appView").style.display = "none";
+  el("compactView").style.display = "block";
+}
+function setAppMessage(msg){ el("appMsg").textContent = msg || ""; }
+
+const slider = el("slider");
+slider.oninput = ()=> el("moodValue").textContent = slider.value;
+
+/* =============================================================================
+   2) DRAGGABLE PANEL VIA HANDLE
+   ============================================================================= */
+const dragHandle = el("dragHandle");
+let dragging = false;
+let dragOffX = 0, dragOffY = 0;
+
+dragHandle.addEventListener("pointerdown", (e) => {
+  dragging = true;
+  panel.setPointerCapture(e.pointerId);
+
+  const rect = panel.getBoundingClientRect();
+  dragOffX = e.clientX - rect.left;
+  dragOffY = e.clientY - rect.top;
+});
+
+panel.addEventListener("pointermove", (e) => {
+  if (!dragging) return;
+
+  let x = e.clientX - dragOffX;
+  let y = e.clientY - dragOffY;
+
+  const maxX = window.innerWidth - panel.offsetWidth - 8;
+  const maxY = window.innerHeight - panel.offsetHeight - 8;
+  x = Math.max(8, Math.min(maxX, x));
+  y = Math.max(8, Math.min(maxY, y));
+
+  panel.style.left = x + "px";
+  panel.style.top  = y + "px";
+  panel.style.right = "auto";
+  panel.style.bottom = "auto";
+});
+
+panel.addEventListener("pointerup", () => { dragging = false; });
+panel.addEventListener("pointercancel", () => { dragging = false; });
+
+/* =============================================================================
+   3) AMBIENT MUSIC (iPhone-proof)
+   ============================================================================= */
+let audioCtx, masterGain, musicStarted = false;
+let musicNodes = [];
+let chordTimer = null;
+
+function stopLoopTimers() {
+  if (chordTimer) { clearTimeout(chordTimer); chordTimer = null; }
+}
+
+function fadeOutMusic(seconds = 2.6) {
+  if (!audioCtx || !masterGain) return;
+  const now = audioCtx.currentTime;
+  masterGain.gain.cancelScheduledValues(now);
+  masterGain.gain.setValueAtTime(masterGain.gain.value, now);
+  masterGain.gain.linearRampToValueAtTime(0.0001, now + seconds);
+
+  setTimeout(() => {
+    try { stopLoopTimers(); } catch {}
+    for (const n of musicNodes) {
+      try { n.stop && n.stop(); } catch {}
+      try { n.disconnect && n.disconnect(); } catch {}
+    }
+    musicNodes = [];
+  }, (seconds + 0.3) * 1000);
+}
+
+// iOS unlock: play a tiny silent buffer inside the gesture
+function iosUnlock(ctx){
+  try {
+    const buffer = ctx.createBuffer(1, 1, 22050);
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    const g = ctx.createGain();
+    g.gain.value = 0.0;
+    src.connect(g).connect(ctx.destination);
+    src.start(0);
+    src.stop(0.01);
+  } catch(e) {}
+}
+
+function playAmbientMusic() {
+  if (musicStarted) return;
+  musicStarted = true;
+
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  // Ensure audio is "unlocked" on iOS
+  iosUnlock(audioCtx);
+  try { audioCtx.resume && audioCtx.resume(); } catch(e){}
+
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = 0.20;
+  masterGain.connect(audioCtx.destination);
+
+  const lp = audioCtx.createBiquadFilter();
+  lp.type = "lowpass";
+  lp.frequency.value = 1200;
+  lp.connect(masterGain);
+
+  const chords = [
+    [261.63, 329.63, 392.00],
+    [220.00, 261.63, 329.63],
+    [174.61, 220.00, 261.63],
+    [196.00, 293.66, 392.00]
+  ];
+
+  function padChord(freqs, start, dur) {
+    for (const f of freqs) {
+      const o = audioCtx.createOscillator();
+      o.type = "sine";
+      o.frequency.value = f;
+
+      const g = audioCtx.createGain();
+      g.gain.setValueAtTime(0, start);
+      g.gain.linearRampToValueAtTime(0.11, start + 1.2);
+      g.gain.linearRampToValueAtTime(0.0, start + dur);
+
+      o.connect(g).connect(lp);
+      o.start(start);
+      o.stop(start + dur + 0.05);
+      musicNodes.push(o, g);
+    }
+  }
+
+  function arpeggio(freqs, start) {
+    const pattern = [0, 1, 2, 1];
+    for (let i = 0; i < 8; i++) {
+      const f = freqs[pattern[i % pattern.length]] * (i % 2 === 0 ? 2 : 1);
+      const o = audioCtx.createOscillator();
+      o.type = "triangle";
+      o.frequency.value = f;
+
+      const g = audioCtx.createGain();
+      const t = start + i * 0.5;
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.05, t + 0.03);
+      g.gain.linearRampToValueAtTime(0, t + 0.45);
+
+      o.connect(g).connect(lp);
+      o.start(t);
+      o.stop(t + 0.5);
+      musicNodes.push(o, g);
+    }
+  }
+
+  let idx = 0;
+  function schedule() {
+    const now = audioCtx.currentTime;
+    const start = now + 0.02;
+    const dur = 7.5;
+    const freqs = chords[idx % chords.length];
+    padChord(freqs, start, dur);
+    arpeggio(freqs, start);
+    idx++;
+    chordTimer = setTimeout(schedule, dur * 1000);
+  }
+  schedule();
+}
+
+function autoStartMusicOnce(){
+  playAmbientMusic();
+  window.removeEventListener("touchstart", autoStartMusicOnce, true);
+  window.removeEventListener("pointerdown", autoStartMusicOnce, true);
+  window.removeEventListener("click", autoStartMusicOnce, true);
+  window.removeEventListener("keydown", autoStartMusicOnce, true);
+}
+
+// IMPORTANT: capture=true to run before MapLibre eats the gesture
+window.addEventListener("touchstart", autoStartMusicOnce, { capture:true, passive:true });
+window.addEventListener("pointerdown", autoStartMusicOnce, { capture:true });
+window.addEventListener("click", autoStartMusicOnce, { capture:true });
+window.addEventListener("keydown", autoStartMusicOnce, { capture:true });
+
+/* =============================================================================
+   4) MAP SETUP
    ============================================================================= */
 const map = new maplibregl.Map({
   container: "map",
@@ -322,7 +398,7 @@ const map = new maplibregl.Map({
 map.addControl(new maplibregl.NavigationControl(), "top-right");
 
 /* =============================================================================
-   2) MOOD ICONS (0..10)
+   5) MOOD ICONS (0..10)
    ============================================================================= */
 function lerp(a,b,t){ return a + (b - a) * t; }
 function lerpColor(c1,c2,t){
@@ -397,7 +473,7 @@ function ensureMoodImages(){
 }
 
 /* =============================================================================
-   3) POINTS SOURCE + LAYERS
+   6) POINTS SOURCE + LAYERS
    ============================================================================= */
 function initPointsSourceAndLayers(){
   if(map.getSource("points")) return;
@@ -482,7 +558,12 @@ function clearMarkers(){
   source.setData({ type:"FeatureCollection", features: [] });
 }
 
+/* Only reveal markers after first successful save (this session) */
+let revealedThisSession = false;
+
 async function refreshPoints(){
+  if (!revealedThisSession) return;
+
   const source = map.getSource("points");
   if(!source) return;
 
@@ -493,7 +574,8 @@ async function refreshPoints(){
     .limit(20000);
 
   if(error){
-    setAppMessage("Load error:\n" + error.message);
+    setAppMessage("Load failed: " + (error.message || "Unknown error"));
+    console.warn("LOAD error:", error);
     return;
   }
 
@@ -506,476 +588,89 @@ async function refreshPoints(){
     }));
 
   source.setData({ type:"FeatureCollection", features });
-  setAppMessage(`Loaded markers: ${features.length}`);
 }
 
 /* =============================================================================
-   4) UI HELPERS
-   ============================================================================= */
-const el = id => document.getElementById(id);
-const panel = el("panel");
-
-function setAuthMessage(msg){ el("authMsg").textContent = msg || ""; }
-function setResetMessage(msg){ el("resetMsg").textContent = msg || ""; }
-function setAppMessage(msg){ el("appMsg").textContent = msg || ""; }
-
-const slider = el("slider");
-slider.oninput = ()=> el("moodValue").textContent = slider.value;
-
-/* ===== Feedback limits + word count (ADDED) ===== */
-const FEEDBACK_MAX_WORDS = 250;
-function countWords(s) {
-  return (s.trim().match(/\S+/g) || []).length;
-}
-
-/* =============================================================================
-   5) MUSIC (fade out on login)
-   ============================================================================= */
-let audioCtx, masterGain, musicStarted = false;
-let musicNodes = [];
-let chordTimer = null;
-
-function stopLoopTimers() {
-  if (chordTimer) { clearTimeout(chordTimer); chordTimer = null; }
-}
-function fadeOutMusic(seconds = 2.5) {
-  if (!audioCtx || !masterGain) return;
-  const now = audioCtx.currentTime;
-  masterGain.gain.cancelScheduledValues(now);
-  masterGain.gain.setValueAtTime(masterGain.gain.value, now);
-  masterGain.gain.linearRampToValueAtTime(0.0001, now + seconds);
-
-  setTimeout(() => {
-    try { stopLoopTimers(); } catch {}
-    for (const n of musicNodes) {
-      try { n.stop && n.stop(); } catch {}
-      try { n.disconnect && n.disconnect(); } catch {}
-    }
-    musicNodes = [];
-  }, (seconds + 0.3) * 1000);
-}
-function playAmbientMusic() {
-  if (musicStarted) return;
-  musicStarted = true;
-
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  masterGain = audioCtx.createGain();
-  masterGain.gain.value = 0.22;
-  masterGain.connect(audioCtx.destination);
-
-  const lp = audioCtx.createBiquadFilter();
-  lp.type = "lowpass";
-  lp.frequency.value = 1200;
-  lp.connect(masterGain);
-
-  const chords = [
-    [261.63, 329.63, 392.00],
-    [220.00, 261.63, 329.63],
-    [174.61, 220.00, 261.63],
-    [196.00, 293.66, 392.00]
-  ];
-
-  function padChord(freqs, start, dur) {
-    for (const f of freqs) {
-      const o = audioCtx.createOscillator();
-      o.type = "sine";
-      o.frequency.value = f;
-
-      const g = audioCtx.createGain();
-      g.gain.setValueAtTime(0, start);
-      g.gain.linearRampToValueAtTime(0.12, start + 1.2);
-      g.gain.linearRampToValueAtTime(0.0, start + dur);
-
-      o.connect(g).connect(lp);
-      o.start(start);
-      o.stop(start + dur + 0.05);
-      musicNodes.push(o, g);
-    }
-  }
-
-  function arpeggio(freqs, start) {
-    const pattern = [0, 1, 2, 1];
-    for (let i = 0; i < 8; i++) {
-      const f = freqs[pattern[i % pattern.length]] * (i % 2 === 0 ? 2 : 1);
-      const o = audioCtx.createOscillator();
-      o.type = "triangle";
-      o.frequency.value = f;
-
-      const g = audioCtx.createGain();
-      const t = start + i * 0.5;
-      g.gain.setValueAtTime(0, t);
-      g.gain.linearRampToValueAtTime(0.05, t + 0.03);
-      g.gain.linearRampToValueAtTime(0, t + 0.45);
-
-      o.connect(g).connect(lp);
-      o.start(t);
-      o.stop(t + 0.5);
-      musicNodes.push(o, g);
-    }
-  }
-
-  let idx = 0;
-  function schedule() {
-    const now = audioCtx.currentTime;
-    const start = now + 0.02;
-    const dur = 7.5;
-    const freqs = chords[idx % chords.length];
-    padChord(freqs, start, dur);
-    arpeggio(freqs, start);
-    idx++;
-    chordTimer = setTimeout(schedule, dur * 1000);
-  }
-  schedule();
-}
-
-function autoStartMusicOnce() {
-  playAmbientMusic();
-  document.removeEventListener("pointerdown", autoStartMusicOnce);
-  document.removeEventListener("keydown", autoStartMusicOnce);
-}
-document.addEventListener("pointerdown", autoStartMusicOnce, { once: true });
-document.addEventListener("keydown", autoStartMusicOnce, { once: true });
-
-/* =============================================================================
-   6) SUPABASE CONFIG
+   7) SUPABASE CONFIG
    ============================================================================= */
 const SUPABASE_URL = "https://ugrmxzdhevqrgftlxfnp.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVncm14emRoZXZxcmdmdGx4Zm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyODQ3OTQsImV4cCI6MjA4NDg2MDc5NH0.WgTj-6ADFEMrCgPNxeQZvknBBJI1c9uDY9_8Qlkqu4w";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-/* =============================================================================
-   7) VIEWS
-   ============================================================================= */
-function showAuth(){
-  panel.className = "panel-welcome";
-  el("authView").style.display="block";
-  el("appView").style.display="none";
-  el("compactView").style.display="none";
-  el("resetView").style.display="none";
-}
-function showReset(){
-  panel.className = "panel-welcome";
-  el("authView").style.display="none";
-  el("appView").style.display="none";
-  el("compactView").style.display="none";
-  el("resetView").style.display="block";
-}
-function showApp(){
-  panel.className = "panel-app";
-  el("authView").style.display="none";
-  el("appView").style.display="block";
-  el("compactView").style.display="none";
-  el("resetView").style.display="none";
-}
-function showCompact(msg="✅ Saved."){
-  panel.className = "panel-compact";
-  el("compactMsg").textContent = msg;
-  el("authView").style.display="none";
-  el("appView").style.display="none";
-  el("compactView").style.display="block";
-  el("resetView").style.display="none";
-}
-
-/* =============================================================================
-   8) SIGNUP MODAL
-   ============================================================================= */
-const overlay = el("overlay");
-function openSignupModal(){
-  el("suMsg").textContent = "";
-  el("suEmail").value = el("email").value.trim();
-  el("suPass1").value = "";
-  el("suPass2").value = "";
-  overlay.style.display = "flex";
-  overlay.setAttribute("aria-hidden", "false");
-}
-function closeSignupModal(){
-  overlay.style.display = "none";
-  overlay.setAttribute("aria-hidden", "true");
-}
-overlay.addEventListener("click", (e) => { if (e.target === overlay) closeSignupModal(); });
-el("btnOpenSignup").onclick = openSignupModal;
-el("btnCloseSignup").onclick = closeSignupModal;
-
-/* =============================================================================
-   9) URL + PKCE helpers
-   ============================================================================= */
-function getUrlParam(name) {
-  return new URLSearchParams(window.location.search).get(name);
-}
-function urlHasOtpExpiredError(){
-  const h = window.location.hash || "";
-  return h.includes("otp_expired") || h.includes("error=access_denied");
-}
-function urlHasRecoveryOrReset() {
-  const h = window.location.hash || "";
-  const s = window.location.search || "";
-  if (getUrlParam("reset") === "1") return true;
-  if (h.includes("type=recovery") || s.includes("type=recovery")) return true;
-  if (getUrlParam("code")) return true;
-  if (h.includes("access_token=")) return true;
-  return false;
-}
-async function bootstrapAuthFromUrlIfNeeded() {
-  const code = getUrlParam("code");
-  if (!code) return;
-  const { error } = await sb.auth.exchangeCodeForSession(code);
-  if (error) console.warn("exchangeCodeForSession error:", error.message);
-  const cleanUrl = window.location.origin + window.location.pathname + window.location.hash;
-  window.history.replaceState({}, document.title, cleanUrl);
-}
-
-/* =============================================================================
-   10) setConnected(user)
-   ============================================================================= */
-async function setConnected(user){
-  if(user){
-    showApp();
-    fadeOutMusic(2.8);
-    clearMarkers();
-  }else{
-    clearMarkers();
-    showAuth();
+function getAnonId(){
+  const key = "mood_anon_id";
+  let v = localStorage.getItem(key);
+  if(!v){
+    v = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "-" + Math.random());
+    localStorage.setItem(key, v);
   }
+  return v;
 }
 
 /* =============================================================================
-   11) AUTH STATE CHANGE
+   8) SAVE (Locate + Save)
    ============================================================================= */
-sb.auth.onAuthStateChange((event, session) => {
-  if (event === "PASSWORD_RECOVERY") {
-    showReset();
-    setResetMessage("Please choose a new password.");
-    clearMarkers();
-    return;
-  }
-  setConnected(session?.user || null);
-});
-
-/* =============================================================================
-   12) INITIAL BOOTSTRAP
-   ============================================================================= */
-(async () => {
-  await bootstrapAuthFromUrlIfNeeded();
-  const { data } = await sb.auth.getSession();
-
-  if (urlHasRecoveryOrReset()) {
-    showReset();
-    if (urlHasOtpExpiredError()) {
-      setResetMessage("This email link is invalid or has expired.\nPlease request a new reset email.");
-    } else {
-      setResetMessage("Please choose a new password.");
-    }
-    clearMarkers();
-  } else if (urlHasOtpExpiredError()) {
-    showAuth();
-    setAuthMessage("This email link is invalid or has expired.\nPlease request a new reset email.");
-  } else {
-    setConnected(data.session?.user || null);
-  }
-})();
-
-/* =============================================================================
-   13) LOGIN
-   ============================================================================= */
-el("btnLogin").onclick = async () => {
-  const email = el("email").value.trim();
-  const password = el("password").value;
-  if(!email) return setAuthMessage("Error: empty email");
-  if(!password) return setAuthMessage("Error: empty password");
-
-  setAuthMessage("Signing in…");
-  const { error } = await sb.auth.signInWithPassword({ email, password });
-  if(error) setAuthMessage("Error:\n" + error.message);
-  else setAuthMessage("");
-};
-
-/* =============================================================================
-   14) SIGN UP
-   ============================================================================= */
-let signupBusy = false;
-el("btnSignup").onclick = async () => {
-  if (signupBusy) return;
-  signupBusy = true;
-  const btn = el("btnSignup");
-  btn.disabled = true;
-
-  const email = el("suEmail").value.trim();
-  const p1 = el("suPass1").value;
-  const p2 = el("suPass2").value;
-
-  if(!email) { el("suMsg").textContent = "Please enter an email."; btn.disabled=false; signupBusy=false; return; }
-  if(!p1 || p1.length < 6) { el("suMsg").textContent = "Password must be at least 6 characters."; btn.disabled=false; signupBusy=false; return; }
-  if(p1 !== p2) { el("suMsg").textContent = "Passwords do not match."; btn.disabled=false; signupBusy=false; return; }
-
-  el("suMsg").textContent = "Creating account…";
-
-  const { error } = await sb.auth.signUp({
-    email,
-    password: p1,
-    options: { emailRedirectTo: window.location.origin }
-  });
-
-  if(error){
-    el("suMsg").textContent = "Error:\n" + error.message;
-    btn.disabled = false;
-    signupBusy = false;
-    return;
-  }
-
-  closeSignupModal();
-  showAuth();
-  el("email").value = email;
-  setAuthMessage("✅ Account created.\nPlease close this window and check your email to confirm your account.");
-
-  btn.disabled = false;
-  signupBusy = false;
-};
-
-/* =============================================================================
-   15) FORGOT PASSWORD
-   ============================================================================= */
-let forgotBusy = false;
-el("btnForgot").onclick = async () => {
-  if (forgotBusy) return;
-  forgotBusy = true;
-
-  const btn = el("btnForgot");
-  btn.disabled = true;
-
-  const email = el("email").value.trim();
-  if (!email) {
-    setAuthMessage("Please enter your email first.");
-    btn.disabled = false;
-    forgotBusy = false;
-    return;
-  }
-
-  setAuthMessage("Sending reset email…");
-
-  const { error } = await sb.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/?reset=1`
-  });
-
-  if (error) {
-    setAuthMessage("Error:\n" + error.message + "\n\nTip: if you see 'rate limit exceeded', wait a bit and try once.");
-  } else {
-    setAuthMessage("✅ Reset email sent.\nPlease close this window and check your inbox (and spam).");
-  }
-
-  setTimeout(() => { btn.disabled = false; forgotBusy = false; }, 15000);
-};
-
-/* =============================================================================
-   16) RESET PASSWORD
-   ============================================================================= */
-el("btnDoReset").onclick = async () => {
-  const p1 = el("newPassword1").value;
-  const p2 = el("newPassword2").value;
-
-  if(!p1 || p1.length < 6) { setResetMessage("Password must be at least 6 characters."); return; }
-  if(p1 !== p2) { setResetMessage("Passwords do not match."); return; }
-
-  setResetMessage("Checking session…");
-
-  await bootstrapAuthFromUrlIfNeeded();
-  const { data: sessData } = await sb.auth.getSession();
-
-  if (!sessData?.session) {
-    setResetMessage(
-      "Auth session missing!\n\n" +
-      "Please re-open the reset link from your email (the latest one).\n" +
-      "If it still fails, request a new reset email."
-    );
-    return;
-  }
-
-  setResetMessage("Updating password…");
-
-  const { error } = await sb.auth.updateUser({ password: p1 });
-  if (error) { setResetMessage("Error:\n" + error.message); return; }
-
-  setResetMessage("✅ Password updated.\nYou can now use the app.");
-  const cleanUrl = window.location.origin + window.location.pathname;
-  history.replaceState(null, "", cleanUrl);
-};
-
-el("btnResetCancel").onclick = () => {
-  showAuth();
-  setResetMessage("");
-  const cleanUrl = window.location.origin + window.location.pathname;
-  history.replaceState(null, "", cleanUrl);
-};
-
-/* =============================================================================
-   17) LOGOUT
-   ============================================================================= */
-async function doLogout(){
-  await sb.auth.signOut();
-  setAppMessage("");
-  showAuth();
-}
-el("btnLogout").onclick = doLogout;
-el("btnLogout2").onclick = doLogout;
-
-/* =============================================================================
-   18) Locate + Save + Refresh
-   ============================================================================= */
-let lastFix = null;
-
-el("btnSaveAll").onclick = async () => {
+el("btnSave").onclick = async () => {
   setAppMessage("Locating…");
-
-  const { data: { user } } = await sb.auth.getUser();
-  if (!user) { setAppMessage("You must be signed in."); return; }
+  el("btnSave").disabled = true;
 
   if (!navigator.geolocation) {
-    setAppMessage("Geolocation not supported.");
+    setAppMessage("Geolocation is not supported on this device.");
+    el("btnSave").disabled = false;
     return;
   }
 
   navigator.geolocation.getCurrentPosition(async (pos) => {
     const coords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
     const mood = parseInt(slider.value, 10);
+    const anonId = getAnonId();
 
-    lastFix = {
-      lat: coords.lat,
-      lon: coords.lon,
-      accuracy: pos.coords.accuracy
-    };
+    setAppMessage("Saving your mood…");
 
-    setAppMessage("Saving…");
-
-    const row = {
-      user_id: user.id,
-      mood,
-      lon: coords.lon,
-      lat: coords.lat,
-      location: `POINT(${coords.lon} ${coords.lat})`
-    };
+    const row = { anon_id: anonId, mood, lon: coords.lon, lat: coords.lat };
 
     const { error } = await sb
       .from("mood_entries")
-      .upsert(row, { onConflict: "user_id" });
+      .upsert(row, { onConflict: "anon_id" });
 
-    if (error) { setAppMessage("Save error:\n" + error.message); return; }
+    if (error) {
+      setAppMessage("Save failed: " + (error.message || "Unknown error"));
+      console.warn("SAVE error:", error);
+      el("btnSave").disabled = false;
+      return;
+    }
 
+    fadeOutMusic(2.6);
+    revealedThisSession = true;
+
+    setAppMessage("Thank you! Loading the world’s mood…");
     map.easeTo({ center: [coords.lon, coords.lat], zoom: Math.max(map.getZoom(), 8) });
 
-    setAppMessage("✅ Saved. Loading markers…");
-    await refreshPoints();
+    setTimeout(async () => {
+      await refreshPoints();
+      showCompact("✅ Saved. Thank you!");
+      el("btnSave").disabled = false;
+    }, 700);
 
-    showCompact("✅ Saved. Thank you!");
   }, (err) => {
     setAppMessage("Geolocation error: " + err.message);
+    el("btnSave").disabled = false;
   }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
 };
 
+el("btnExpand").onclick = () => {
+  showApp();
+  setAppMessage("");
+};
+
 /* =============================================================================
-   19) FEEDBACK MODAL → SAVE TO SUPABASE TABLE mood_feedback
+   9) FEEDBACK MODAL
    ============================================================================= */
+const FEEDBACK_MAX_WORDS = 250;
+function countWords(s){ return (s.trim().match(/\S+/g) || []).length; }
+
 const fbOverlay = el("fbOverlay");
 const fbText = el("fbText");
-const fbMeta = el("fbMeta");
 const fbMsg  = el("fbMsg");
 const fbCount = el("fbCount");
 const btnFbSend = el("btnFbSend");
@@ -986,10 +681,9 @@ function updateFbCounter(){
   fbCount.textContent = `${chars} / 5000 • ${words} / ${FEEDBACK_MAX_WORDS} words`;
 }
 
-function openFeedbackModal(metaText){
+function openFeedbackModal(){
   fbMsg.textContent = "";
   fbText.value = "";
-  fbMeta.textContent = metaText || "";
   fbOverlay.style.display = "flex";
   fbOverlay.setAttribute("aria-hidden", "false");
   updateFbCounter();
@@ -1001,115 +695,65 @@ function closeFeedbackModal(){
 }
 fbOverlay.addEventListener("click", (e) => { if (e.target === fbOverlay) closeFeedbackModal(); });
 el("btnFbCancel").onclick = closeFeedbackModal;
-
 fbText.addEventListener("input", updateFbCounter);
 
-el("btnFeedback").onclick = async () => {
-  const { data: { user } } = await sb.auth.getUser();
-  if (!user) {
-    alert("You must be signed in.");
-    return;
-  }
-  const email = user.email || "(unknown)";
-  const lf = lastFix;
-  const locLine = lf
-    ? `Last location: ${lf.lat.toFixed(6)}, ${lf.lon.toFixed(6)} (±${Math.round(lf.accuracy)}m)`
-    : `Last location: unknown (please tap "Locate + Save + Refresh" first)`;
+el("btnFeedback").onclick = () => openFeedbackModal();
 
-  openFeedbackModal(`User: ${email}\n${locLine}`);
-};
-
-let fbBusy = false;
 btnFbSend.onclick = async () => {
-  if (fbBusy) return;
-  fbBusy = true;
   btnFbSend.disabled = true;
-  fbMsg.textContent = "Saving…";
-
-  const { data: { user } } = await sb.auth.getUser();
-  if (!user) {
-    fbMsg.textContent = "You must be signed in.";
-    btnFbSend.disabled = false;
-    fbBusy = false;
-    return;
-  }
+  fbMsg.textContent = "Sending…";
 
   const message = fbText.value.trim();
   if (message.length < 2) {
     fbMsg.textContent = "Please write a message.";
     btnFbSend.disabled = false;
-    fbBusy = false;
     return;
   }
-
   const words = countWords(message);
   if (words > FEEDBACK_MAX_WORDS) {
     fbMsg.textContent = `Too many words (${words}). Max is ${FEEDBACK_MAX_WORDS}.`;
     btnFbSend.disabled = false;
-    fbBusy = false;
     return;
   }
 
-  const lf = lastFix || {};
-  const row = {
-    user_id: user.id,
-    user_email: user.email || null,
-    message,
-    lat: (typeof lf.lat === "number") ? lf.lat : null,
-    lon: (typeof lf.lon === "number") ? lf.lon : null,
-    accuracy_m: (typeof lf.accuracy === "number") ? Math.round(lf.accuracy) : null,
-    user_agent: navigator.userAgent
-  };
+  const { error } = await sb.from("mood_feedback").insert({
+    anon_id: getAnonId(),
+    message
+  });
 
-  const { error } = await sb.from("mood_feedback").insert(row);
+  if (error) {
+    const raw = (error.message || "") + " " + (error.details || "") + " " + (error.hint || "");
+    const isDuplicate =
+      error.code === "23505" ||
+      raw.includes("duplicate key value") ||
+      raw.toLowerCase().includes("one_per_day");
 
-if (error) {
-  // Supabase may return code=23505 or only a text message
-  const raw =
-    (error.message || "") +
-    " " +
-    (error.details || "") +
-    " " +
-    (error.hint || "");
+    fbMsg.textContent = isDuplicate
+      ? "Only one save per day please!"
+      : "Unable to send comment. Please try again.";
 
-  const isDuplicate =
-    error.code === "23505" ||
-    raw.includes("duplicate key value") ||
-    raw.includes("mood_feedback_one_per_day");
-
-  if (isDuplicate) {
-    fbMsg.textContent =
-      "You have already sent a comment today.\n\n" +
-      "To keep feedback meaningful and avoid spam, only one comment per day is allowed.\n" +
-      "Please come back tomorrow 🙂";
-  } else {
-    fbMsg.textContent =
-      "An unexpected error occurred.\n\n" +
-      (error.message || "Unknown error");
+    console.warn("FEEDBACK error:", error);
+    btnFbSend.disabled = false;
+    return;
   }
 
+  fbMsg.textContent = "✅ Thank you for your feedback!";
+  setTimeout(() => closeFeedbackModal(), 700);
   btnFbSend.disabled = false;
-  fbBusy = false;
-  return;
-}
-
-
-  fbMsg.textContent = "✅ Saved. Thank you!";
-  setTimeout(() => {
-    closeFeedbackModal();
-  }, 650);
-
-  btnFbSend.disabled = false;
-  fbBusy = false;
 };
 
 /* =============================================================================
-   20) MAP INIT
+   10) INIT
    ============================================================================= */
 map.on("load", async () => {
   ensureMoodImages();
   initPointsSourceAndLayers();
   clearMarkers();
+  revealedThisSession = false;
+
+  // Start with mood picker everywhere (phone + desktop)
+  panel.className = isPhone ? "panel-compact" : "panel-app";
+  showApp();
 });
 </script>
 </body>
