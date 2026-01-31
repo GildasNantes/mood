@@ -19,12 +19,8 @@
     box-shadow: 0 14px 36px rgba(0,0,0,.25);
     padding: 16px;
     transition: all .35s ease;
-  }
-
-  .panel-welcome{
-    left:50%; top:50%;
-    transform:translate(-50%,-50%);
-    width: min(440px, calc(100vw - 24px));
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+    padding-top: calc(16px + env(safe-area-inset-top));
   }
 
   .panel-app{
@@ -53,68 +49,19 @@
   textarea{ resize: vertical; min-height: 120px; }
   button{ background:#111; color:#fff; border:0; cursor:pointer; }
   button.secondary{ background:#eee; color:#111; }
-  button.link{
-    background: transparent;
-    color: #111;
-    border: 0;
-    padding: 0;
-    text-align: left;
-    text-decoration: underline;
-    cursor: pointer;
-    font-size: 14px;
-    opacity: .85;
-  }
   button:disabled { opacity: .55; cursor: not-allowed; }
-
-  #welcomeBox{
-    background: linear-gradient(135deg,#ffecd2,#fcb69f);
-    border-radius:14px;
-    padding:14px;
-  }
 
   .small{ font-size:13px; opacity:.75; }
   .msg{ white-space:pre-wrap; font-size:13px; }
 
-  #authView,#appView,#compactView,#resetView{ display:none; }
-
-  @media (max-width: 520px) {
-    .panel-welcome{ width: calc(100vw - 24px); }
-    .panel-app{ width: calc(100vw - 24px); left: 12px; right: 12px; }
-    button, input, textarea { padding: 14px; font-size: 16px; }
-    .panel-compact{ left: 12px; right: 12px; }
-  }
-
-  #panel{
-    padding-bottom: calc(16px + env(safe-area-inset-bottom));
-    padding-top: calc(16px + env(safe-area-inset-top));
-  }
-
   :root { --vh: 1vh; }
   #map { height: calc(var(--vh) * 100); }
 
-  /* ===========================
-     SIMPLE MODAL (signup)
-     =========================== */
-  #overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.45);
-    z-index: 50;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 12px;
+  @media (max-width: 520px) {
+    .panel-app{ width: calc(100vw - 24px); left: 12px; right: 12px; }
+    .panel-compact{ left: 12px; right: 12px; }
+    button, input, textarea { padding: 14px; font-size: 16px; }
   }
-  #modal {
-    width: min(520px, 100%);
-    background: rgba(255,255,255,0.98);
-    border-radius: 16px;
-    box-shadow: 0 14px 36px rgba(0,0,0,.25);
-    padding: 16px;
-  }
-  #modal h4 { margin: 0 0 10px; font-size: 17px; }
-  .modal-actions { display:flex; gap:10px; justify-content:flex-end; }
-  .warn { color:#b00020; font-size: 13px; white-space: pre-wrap; }
 
   /* ===========================
      FEEDBACK MODAL
@@ -146,63 +93,17 @@
     white-space: pre-wrap;
   }
   #fbCount{ font-size: 12px; opacity: .7; text-align:right; margin-top:6px; }
+  .modal-actions { display:flex; gap:10px; justify-content:flex-end; }
 </style>
 </head>
 
 <body>
 <div id="map"></div>
 
-<div id="panel" class="panel-welcome">
+<div id="panel" class="panel-app">
   <h3>Mood Map</h3>
 
-  <!-- AUTH VIEW -->
-  <div id="authView">
-    <div id="welcomeBox">
-      <b>Welcome 🌍</b><br><br>
-      Discover the mood of the world.<br>
-      Create an account to share how you feel and explore
-      how happy people are across different places.
-    </div>
-
-    <div class="row">
-      <input id="email" type="email" placeholder="Email" autocomplete="email">
-      <input id="password" type="password" placeholder="Password" autocomplete="current-password">
-    </div>
-
-    <div class="row" style="grid-template-columns:1fr 1fr">
-      <button id="btnLogin">Sign in</button>
-      <button id="btnOpenSignup" class="secondary">Create account</button>
-    </div>
-
-    <div class="row">
-      <button id="btnForgot" class="link" type="button">Forgot your password?</button>
-      <div class="small">We will email you a reset link.</div>
-    </div>
-
-    <div id="authMsg" class="msg"></div>
-  </div>
-
-  <!-- RESET VIEW -->
-  <div id="resetView">
-    <div id="welcomeBox">
-      <b>Reset your password</b><br><br>
-      Please choose a new password (enter it twice).
-    </div>
-
-    <div class="row">
-      <input id="newPassword1" type="password" placeholder="New password">
-      <input id="newPassword2" type="password" placeholder="Confirm new password">
-    </div>
-
-    <div class="row">
-      <button id="btnDoReset">Update password</button>
-      <button id="btnResetCancel" class="secondary" type="button">Back</button>
-    </div>
-
-    <div id="resetMsg" class="msg"></div>
-  </div>
-
-  <!-- APP VIEW -->
+  <!-- APP VIEW (NO LOGIN) -->
   <div id="appView">
     <div class="row">
       <label>Your mood: <b><span id="moodValue">5</span>/10</b></label>
@@ -213,47 +114,23 @@
       <button id="btnSaveAll">Locate + Save + Refresh</button>
     </div>
 
-    <div class="small">Markers appear after your first save.</div>
+    <div class="small">
+      1 save per day (per device). Markers appear after your first save.
+    </div>
     <div id="appMsg" class="msg"></div>
 
-    <div class="row">
-      <button id="btnLogout" class="secondary">Sign out</button>
+    <div class="row" style="margin-top:8px;">
+      <button id="btnFeedback" class="secondary" type="button">Any comments?</button>
     </div>
   </div>
 
   <!-- COMPACT VIEW -->
-  <div id="compactView">
+  <div id="compactView" style="display:none;">
     <div class="small" id="compactMsg">✅ Saved.</div>
 
     <div class="row" style="margin-top:8px; gap:8px;">
-      <button id="btnFeedback" class="secondary" type="button">Any comments?</button>
-      <button id="btnLogout2" class="secondary">Sign out</button>
-    </div>
-  </div>
-</div>
-
-<!-- SIGNUP MODAL -->
-<div id="overlay" aria-hidden="true">
-  <div id="modal" role="dialog" aria-modal="true">
-    <h4>Create your account</h4>
-
-    <div class="small">
-      You should receive a confirmation email.
-      Your account becomes active after you confirm.
-    <br><br>
-    </div>
-
-    <div class="row">
-      <input id="suEmail" type="email" placeholder="Email" autocomplete="email">
-      <input id="suPass1" type="password" placeholder="Password (min 6 chars)" autocomplete="new-password">
-      <input id="suPass2" type="password" placeholder="Confirm password" autocomplete="new-password">
-    </div>
-
-    <div id="suMsg" class="warn"></div>
-
-    <div class="modal-actions">
-      <button id="btnCloseSignup" class="secondary" type="button">Cancel</button>
-      <button id="btnSignup" type="button">Create account</button>
+      <button id="btnBack" class="secondary" type="button">Back</button>
+      <button id="btnFeedback2" class="secondary" type="button">Any comments?</button>
     </div>
   </div>
 </div>
@@ -515,418 +392,52 @@ async function refreshPoints(){
 const el = id => document.getElementById(id);
 const panel = el("panel");
 
-function setAuthMessage(msg){ el("authMsg").textContent = msg || ""; }
-function setResetMessage(msg){ el("resetMsg").textContent = msg || ""; }
 function setAppMessage(msg){ el("appMsg").textContent = msg || ""; }
+
+function showApp(){
+  panel.className = "panel-app";
+  el("appView").style.display = "block";
+  el("compactView").style.display = "none";
+}
+function showCompact(msg="✅ Saved."){
+  panel.className = "panel-compact";
+  el("compactMsg").textContent = msg;
+  el("appView").style.display = "none";
+  el("compactView").style.display = "block";
+}
 
 const slider = el("slider");
 slider.oninput = ()=> el("moodValue").textContent = slider.value;
 
-/* ===== Feedback limits + word count (ADDED) ===== */
-const FEEDBACK_MAX_WORDS = 250;
-function countWords(s) {
-  return (s.trim().match(/\S+/g) || []).length;
-}
-
 /* =============================================================================
-   5) MUSIC (fade out on login)
-   ============================================================================= */
-let audioCtx, masterGain, musicStarted = false;
-let musicNodes = [];
-let chordTimer = null;
-
-function stopLoopTimers() {
-  if (chordTimer) { clearTimeout(chordTimer); chordTimer = null; }
-}
-function fadeOutMusic(seconds = 2.5) {
-  if (!audioCtx || !masterGain) return;
-  const now = audioCtx.currentTime;
-  masterGain.gain.cancelScheduledValues(now);
-  masterGain.gain.setValueAtTime(masterGain.gain.value, now);
-  masterGain.gain.linearRampToValueAtTime(0.0001, now + seconds);
-
-  setTimeout(() => {
-    try { stopLoopTimers(); } catch {}
-    for (const n of musicNodes) {
-      try { n.stop && n.stop(); } catch {}
-      try { n.disconnect && n.disconnect(); } catch {}
-    }
-    musicNodes = [];
-  }, (seconds + 0.3) * 1000);
-}
-function playAmbientMusic() {
-  if (musicStarted) return;
-  musicStarted = true;
-
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  masterGain = audioCtx.createGain();
-  masterGain.gain.value = 0.22;
-  masterGain.connect(audioCtx.destination);
-
-  const lp = audioCtx.createBiquadFilter();
-  lp.type = "lowpass";
-  lp.frequency.value = 1200;
-  lp.connect(masterGain);
-
-  const chords = [
-    [261.63, 329.63, 392.00],
-    [220.00, 261.63, 329.63],
-    [174.61, 220.00, 261.63],
-    [196.00, 293.66, 392.00]
-  ];
-
-  function padChord(freqs, start, dur) {
-    for (const f of freqs) {
-      const o = audioCtx.createOscillator();
-      o.type = "sine";
-      o.frequency.value = f;
-
-      const g = audioCtx.createGain();
-      g.gain.setValueAtTime(0, start);
-      g.gain.linearRampToValueAtTime(0.12, start + 1.2);
-      g.gain.linearRampToValueAtTime(0.0, start + dur);
-
-      o.connect(g).connect(lp);
-      o.start(start);
-      o.stop(start + dur + 0.05);
-      musicNodes.push(o, g);
-    }
-  }
-
-  function arpeggio(freqs, start) {
-    const pattern = [0, 1, 2, 1];
-    for (let i = 0; i < 8; i++) {
-      const f = freqs[pattern[i % pattern.length]] * (i % 2 === 0 ? 2 : 1);
-      const o = audioCtx.createOscillator();
-      o.type = "triangle";
-      o.frequency.value = f;
-
-      const g = audioCtx.createGain();
-      const t = start + i * 0.5;
-      g.gain.setValueAtTime(0, t);
-      g.gain.linearRampToValueAtTime(0.05, t + 0.03);
-      g.gain.linearRampToValueAtTime(0, t + 0.45);
-
-      o.connect(g).connect(lp);
-      o.start(t);
-      o.stop(t + 0.5);
-      musicNodes.push(o, g);
-    }
-  }
-
-  let idx = 0;
-  function schedule() {
-    const now = audioCtx.currentTime;
-    const start = now + 0.02;
-    const dur = 7.5;
-    const freqs = chords[idx % chords.length];
-    padChord(freqs, start, dur);
-    arpeggio(freqs, start);
-    idx++;
-    chordTimer = setTimeout(schedule, dur * 1000);
-  }
-  schedule();
-}
-
-function autoStartMusicOnce() {
-  playAmbientMusic();
-  document.removeEventListener("pointerdown", autoStartMusicOnce);
-  document.removeEventListener("keydown", autoStartMusicOnce);
-}
-document.addEventListener("pointerdown", autoStartMusicOnce, { once: true });
-document.addEventListener("keydown", autoStartMusicOnce, { once: true });
-
-/* =============================================================================
-   6) SUPABASE CONFIG
+   5) SUPABASE CONFIG
    ============================================================================= */
 const SUPABASE_URL = "https://ugrmxzdhevqrgftlxfnp.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVncm14emRoZXZxcmdmdGx4Zm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyODQ3OTQsImV4cCI6MjA4NDg2MDc5NH0.WgTj-6ADFEMrCgPNxeQZvknBBJI1c9uDY9_8Qlkqu4w";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /* =============================================================================
-   7) VIEWS
+   6) ANON ID (local)
    ============================================================================= */
-function showAuth(){
-  panel.className = "panel-welcome";
-  el("authView").style.display="block";
-  el("appView").style.display="none";
-  el("compactView").style.display="none";
-  el("resetView").style.display="none";
-}
-function showReset(){
-  panel.className = "panel-welcome";
-  el("authView").style.display="none";
-  el("appView").style.display="none";
-  el("compactView").style.display="none";
-  el("resetView").style.display="block";
-}
-function showApp(){
-  panel.className = "panel-app";
-  el("authView").style.display="none";
-  el("appView").style.display="block";
-  el("compactView").style.display="none";
-  el("resetView").style.display="none";
-}
-function showCompact(msg="✅ Saved."){
-  panel.className = "panel-compact";
-  el("compactMsg").textContent = msg;
-  el("authView").style.display="none";
-  el("appView").style.display="none";
-  el("compactView").style.display="block";
-  el("resetView").style.display="none";
-}
-
-/* =============================================================================
-   8) SIGNUP MODAL
-   ============================================================================= */
-const overlay = el("overlay");
-function openSignupModal(){
-  el("suMsg").textContent = "";
-  el("suEmail").value = el("email").value.trim();
-  el("suPass1").value = "";
-  el("suPass2").value = "";
-  overlay.style.display = "flex";
-  overlay.setAttribute("aria-hidden", "false");
-}
-function closeSignupModal(){
-  overlay.style.display = "none";
-  overlay.setAttribute("aria-hidden", "true");
-}
-overlay.addEventListener("click", (e) => { if (e.target === overlay) closeSignupModal(); });
-el("btnOpenSignup").onclick = openSignupModal;
-el("btnCloseSignup").onclick = closeSignupModal;
-
-/* =============================================================================
-   9) URL + PKCE helpers
-   ============================================================================= */
-function getUrlParam(name) {
-  return new URLSearchParams(window.location.search).get(name);
-}
-function urlHasOtpExpiredError(){
-  const h = window.location.hash || "";
-  return h.includes("otp_expired") || h.includes("error=access_denied");
-}
-function urlHasRecoveryOrReset() {
-  const h = window.location.hash || "";
-  const s = window.location.search || "";
-  if (getUrlParam("reset") === "1") return true;
-  if (h.includes("type=recovery") || s.includes("type=recovery")) return true;
-  if (getUrlParam("code")) return true;
-  if (h.includes("access_token=")) return true;
-  return false;
-}
-async function bootstrapAuthFromUrlIfNeeded() {
-  const code = getUrlParam("code");
-  if (!code) return;
-  const { error } = await sb.auth.exchangeCodeForSession(code);
-  if (error) console.warn("exchangeCodeForSession error:", error.message);
-  const cleanUrl = window.location.origin + window.location.pathname + window.location.hash;
-  window.history.replaceState({}, document.title, cleanUrl);
-}
-
-/* =============================================================================
-   10) setConnected(user)
-   ============================================================================= */
-async function setConnected(user){
-  if(user){
-    showApp();
-    fadeOutMusic(2.8);
-    clearMarkers();
-  }else{
-    clearMarkers();
-    showAuth();
+function getAnonId(){
+  const key = "mood_anon_id";
+  let v = localStorage.getItem(key);
+  if(!v){
+    v = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "-" + Math.random());
+    localStorage.setItem(key, v);
   }
+  return v;
 }
 
 /* =============================================================================
-   11) AUTH STATE CHANGE
-   ============================================================================= */
-sb.auth.onAuthStateChange((event, session) => {
-  if (event === "PASSWORD_RECOVERY") {
-    showReset();
-    setResetMessage("Please choose a new password.");
-    clearMarkers();
-    return;
-  }
-  setConnected(session?.user || null);
-});
-
-/* =============================================================================
-   12) INITIAL BOOTSTRAP
-   ============================================================================= */
-(async () => {
-  await bootstrapAuthFromUrlIfNeeded();
-  const { data } = await sb.auth.getSession();
-
-  if (urlHasRecoveryOrReset()) {
-    showReset();
-    if (urlHasOtpExpiredError()) {
-      setResetMessage("This email link is invalid or has expired.\nPlease request a new reset email.");
-    } else {
-      setResetMessage("Please choose a new password.");
-    }
-    clearMarkers();
-  } else if (urlHasOtpExpiredError()) {
-    showAuth();
-    setAuthMessage("This email link is invalid or has expired.\nPlease request a new reset email.");
-  } else {
-    setConnected(data.session?.user || null);
-  }
-})();
-
-/* =============================================================================
-   13) LOGIN
-   ============================================================================= */
-el("btnLogin").onclick = async () => {
-  const email = el("email").value.trim();
-  const password = el("password").value;
-  if(!email) return setAuthMessage("Error: empty email");
-  if(!password) return setAuthMessage("Error: empty password");
-
-  setAuthMessage("Signing in…");
-  const { error } = await sb.auth.signInWithPassword({ email, password });
-  if(error) setAuthMessage("Error:\n" + error.message);
-  else setAuthMessage("");
-};
-
-/* =============================================================================
-   14) SIGN UP
-   ============================================================================= */
-let signupBusy = false;
-el("btnSignup").onclick = async () => {
-  if (signupBusy) return;
-  signupBusy = true;
-  const btn = el("btnSignup");
-  btn.disabled = true;
-
-  const email = el("suEmail").value.trim();
-  const p1 = el("suPass1").value;
-  const p2 = el("suPass2").value;
-
-  if(!email) { el("suMsg").textContent = "Please enter an email."; btn.disabled=false; signupBusy=false; return; }
-  if(!p1 || p1.length < 6) { el("suMsg").textContent = "Password must be at least 6 characters."; btn.disabled=false; signupBusy=false; return; }
-  if(p1 !== p2) { el("suMsg").textContent = "Passwords do not match."; btn.disabled=false; signupBusy=false; return; }
-
-  el("suMsg").textContent = "Creating account…";
-
-  const { error } = await sb.auth.signUp({
-    email,
-    password: p1,
-    options: { emailRedirectTo: window.location.origin }
-  });
-
-  if(error){
-    el("suMsg").textContent = "Error:\n" + error.message;
-    btn.disabled = false;
-    signupBusy = false;
-    return;
-  }
-
-  closeSignupModal();
-  showAuth();
-  el("email").value = email;
-  setAuthMessage("✅ Account created.\nPlease close this window and check your email to confirm your account.");
-
-  btn.disabled = false;
-  signupBusy = false;
-};
-
-/* =============================================================================
-   15) FORGOT PASSWORD
-   ============================================================================= */
-let forgotBusy = false;
-el("btnForgot").onclick = async () => {
-  if (forgotBusy) return;
-  forgotBusy = true;
-
-  const btn = el("btnForgot");
-  btn.disabled = true;
-
-  const email = el("email").value.trim();
-  if (!email) {
-    setAuthMessage("Please enter your email first.");
-    btn.disabled = false;
-    forgotBusy = false;
-    return;
-  }
-
-  setAuthMessage("Sending reset email…");
-
-  const { error } = await sb.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/?reset=1`
-  });
-
-  if (error) {
-    setAuthMessage("Error:\n" + error.message + "\n\nTip: if you see 'rate limit exceeded', wait a bit and try once.");
-  } else {
-    setAuthMessage("✅ Reset email sent.\nPlease close this window and check your inbox (and spam).");
-  }
-
-  setTimeout(() => { btn.disabled = false; forgotBusy = false; }, 15000);
-};
-
-/* =============================================================================
-   16) RESET PASSWORD
-   ============================================================================= */
-el("btnDoReset").onclick = async () => {
-  const p1 = el("newPassword1").value;
-  const p2 = el("newPassword2").value;
-
-  if(!p1 || p1.length < 6) { setResetMessage("Password must be at least 6 characters."); return; }
-  if(p1 !== p2) { setResetMessage("Passwords do not match."); return; }
-
-  setResetMessage("Checking session…");
-
-  await bootstrapAuthFromUrlIfNeeded();
-  const { data: sessData } = await sb.auth.getSession();
-
-  if (!sessData?.session) {
-    setResetMessage(
-      "Auth session missing!\n\n" +
-      "Please re-open the reset link from your email (the latest one).\n" +
-      "If it still fails, request a new reset email."
-    );
-    return;
-  }
-
-  setResetMessage("Updating password…");
-
-  const { error } = await sb.auth.updateUser({ password: p1 });
-  if (error) { setResetMessage("Error:\n" + error.message); return; }
-
-  setResetMessage("✅ Password updated.\nYou can now use the app.");
-  const cleanUrl = window.location.origin + window.location.pathname;
-  history.replaceState(null, "", cleanUrl);
-};
-
-el("btnResetCancel").onclick = () => {
-  showAuth();
-  setResetMessage("");
-  const cleanUrl = window.location.origin + window.location.pathname;
-  history.replaceState(null, "", cleanUrl);
-};
-
-/* =============================================================================
-   17) LOGOUT
-   ============================================================================= */
-async function doLogout(){
-  await sb.auth.signOut();
-  setAppMessage("");
-  showAuth();
-}
-el("btnLogout").onclick = doLogout;
-el("btnLogout2").onclick = doLogout;
-
-/* =============================================================================
-   18) Locate + Save + Refresh
+   7) SAVE (insert-only, 1/day via unique index on (anon_id, day))
    ============================================================================= */
 let lastFix = null;
 
 el("btnSaveAll").onclick = async () => {
   setAppMessage("Locating…");
 
-  const { data: { user } } = await sb.auth.getUser();
-  if (!user) { setAppMessage("You must be signed in."); return; }
+  const anonId = getAnonId();
 
   if (!navigator.geolocation) {
     setAppMessage("Geolocation not supported.");
@@ -937,30 +448,33 @@ el("btnSaveAll").onclick = async () => {
     const coords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
     const mood = parseInt(slider.value, 10);
 
-    lastFix = {
-      lat: coords.lat,
-      lon: coords.lon,
-      accuracy: pos.coords.accuracy
-    };
+    lastFix = { lat: coords.lat, lon: coords.lon, accuracy: pos.coords.accuracy };
 
     setAppMessage("Saving…");
 
     const row = {
-      user_id: user.id,
+      anon_id: anonId,
       mood,
       lon: coords.lon,
       lat: coords.lat,
       location: `POINT(${coords.lon} ${coords.lat})`
     };
 
-    const { error } = await sb
-      .from("mood_entries")
-      .upsert(row, { onConflict: "user_id" });
+    const { error } = await sb.from("mood_entries").insert(row);
 
-    if (error) { setAppMessage("Save error:\n" + error.message); return; }
+    if (error) {
+      const raw = (error.message || "") + " " + (error.details || "") + " " + (error.hint || "");
+      const isDup = raw.includes("mood_entries_one_per_day") || raw.includes("duplicate key value");
+      if (isDup) {
+        setAppMessage("✅ Already saved today 🙂 Come back tomorrow.");
+        showCompact("✅ Already saved today 🙂");
+      } else {
+        setAppMessage("Save error:\n" + error.message);
+      }
+      return;
+    }
 
     map.easeTo({ center: [coords.lon, coords.lat], zoom: Math.max(map.getZoom(), 8) });
-
     setAppMessage("✅ Saved. Loading markers…");
     await refreshPoints();
 
@@ -970,9 +484,17 @@ el("btnSaveAll").onclick = async () => {
   }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
 };
 
+el("btnBack").onclick = () => {
+  showApp();
+  setAppMessage("");
+};
+
 /* =============================================================================
-   19) FEEDBACK MODAL → SAVE TO SUPABASE TABLE mood_feedback
+   8) FEEDBACK (anonymous)
    ============================================================================= */
+const FEEDBACK_MAX_WORDS = 250;
+function countWords(s) { return (s.trim().match(/\S+/g) || []).length; }
+
 const fbOverlay = el("fbOverlay");
 const fbText = el("fbText");
 const fbMeta = el("fbMeta");
@@ -985,7 +507,6 @@ function updateFbCounter(){
   const words = countWords(fbText.value);
   fbCount.textContent = `${chars} / 5000 • ${words} / ${FEEDBACK_MAX_WORDS} words`;
 }
-
 function openFeedbackModal(metaText){
   fbMsg.textContent = "";
   fbText.value = "";
@@ -1001,23 +522,19 @@ function closeFeedbackModal(){
 }
 fbOverlay.addEventListener("click", (e) => { if (e.target === fbOverlay) closeFeedbackModal(); });
 el("btnFbCancel").onclick = closeFeedbackModal;
-
 fbText.addEventListener("input", updateFbCounter);
 
-el("btnFeedback").onclick = async () => {
-  const { data: { user } } = await sb.auth.getUser();
-  if (!user) {
-    alert("You must be signed in.");
-    return;
-  }
-  const email = user.email || "(unknown)";
+function feedbackMetaText(){
+  const anonId = getAnonId();
   const lf = lastFix;
   const locLine = lf
     ? `Last location: ${lf.lat.toFixed(6)}, ${lf.lon.toFixed(6)} (±${Math.round(lf.accuracy)}m)`
-    : `Last location: unknown (please tap "Locate + Save + Refresh" first)`;
+    : `Last location: unknown (tap "Locate + Save + Refresh" first)`;
+  return `Anon: ${anonId}\n${locLine}\nUA: ${navigator.userAgent}`;
+}
 
-  openFeedbackModal(`User: ${email}\n${locLine}`);
-};
+el("btnFeedback").onclick = () => openFeedbackModal(feedbackMetaText());
+el("btnFeedback2").onclick = () => openFeedbackModal(feedbackMetaText());
 
 let fbBusy = false;
 btnFbSend.onclick = async () => {
@@ -1025,14 +542,6 @@ btnFbSend.onclick = async () => {
   fbBusy = true;
   btnFbSend.disabled = true;
   fbMsg.textContent = "Saving…";
-
-  const { data: { user } } = await sb.auth.getUser();
-  if (!user) {
-    fbMsg.textContent = "You must be signed in.";
-    btnFbSend.disabled = false;
-    fbBusy = false;
-    return;
-  }
 
   const message = fbText.value.trim();
   if (message.length < 2) {
@@ -1050,10 +559,13 @@ btnFbSend.onclick = async () => {
     return;
   }
 
+  const anonId = getAnonId();
   const lf = lastFix || {};
+
+  // NOTE: this assumes your mood_feedback table can accept anon_id (text) and NULL user_id.
+  // If your table requires user_id (uuid NOT NULL), tell me and I’ll adapt the SQL.
   const row = {
-    user_id: user.id,
-    user_email: user.email || null,
+    anon_id: anonId,
     message,
     lat: (typeof lf.lat === "number") ? lf.lat : null,
     lon: (typeof lf.lon === "number") ? lf.lon : null,
@@ -1063,53 +575,48 @@ btnFbSend.onclick = async () => {
 
   const { error } = await sb.from("mood_feedback").insert(row);
 
-if (error) {
-  // Supabase may return code=23505 or only a text message
-  const raw =
-    (error.message || "") +
-    " " +
-    (error.details || "") +
-    " " +
-    (error.hint || "");
+  if (error) {
+    const raw = (error.message || "") + " " + (error.details || "") + " " + (error.hint || "");
+    const isDuplicate =
+      error.code === "23505" ||
+      raw.includes("duplicate key value") ||
+      raw.includes("mood_feedback_one_per_day");
 
-  const isDuplicate =
-    error.code === "23505" ||
-    raw.includes("duplicate key value") ||
-    raw.includes("mood_feedback_one_per_day");
+    if (isDuplicate) {
+      fbMsg.textContent =
+        "You have already sent a comment today.\n\n" +
+        "Only one comment per day is allowed.\n" +
+        "Please come back tomorrow 🙂";
+    } else {
+      fbMsg.textContent = "An unexpected error occurred.\n\n" + (error.message || "Unknown error");
+    }
 
-  if (isDuplicate) {
-    fbMsg.textContent =
-      "You have already sent a comment today.\n\n" +
-      "To keep feedback meaningful and avoid spam, only one comment per day is allowed.\n" +
-      "Please come back tomorrow 🙂";
-  } else {
-    fbMsg.textContent =
-      "An unexpected error occurred.\n\n" +
-      (error.message || "Unknown error");
+    btnFbSend.disabled = false;
+    fbBusy = false;
+    return;
   }
 
-  btnFbSend.disabled = false;
-  fbBusy = false;
-  return;
-}
-
-
   fbMsg.textContent = "✅ Saved. Thank you!";
-  setTimeout(() => {
-    closeFeedbackModal();
-  }, 650);
+  setTimeout(() => closeFeedbackModal(), 650);
 
   btnFbSend.disabled = false;
   fbBusy = false;
 };
 
 /* =============================================================================
-   20) MAP INIT
+   9) MAP INIT
    ============================================================================= */
 map.on("load", async () => {
   ensureMoodImages();
   initPointsSourceAndLayers();
   clearMarkers();
+
+  // Start directly in the app
+  showApp();
+  setAppMessage("Choose your mood 🙂");
+
+  // Optional: preload markers immediately
+  await refreshPoints();
 });
 </script>
 </body>
