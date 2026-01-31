@@ -8,70 +8,139 @@
 <link rel="stylesheet" href="./maplibre-gl.css">
 
 <style>
-html,body{margin:0;height:100%;font:16px system-ui;}
-#map{position:fixed;inset:0}
-#panel{
-  position:fixed;left:12px;top:12px;width:320px;
-  background:rgba(255,255,255,.96);
-  border-radius:16px;box-shadow:0 14px 36px rgba(0,0,0,.25);
-  padding:16px;z-index:10;
-}
-.row{margin:10px 0;display:grid;gap:10px}
-button,input,textarea{
-  font:inherit;padding:12px;border-radius:12px;border:1px solid rgba(0,0,0,.15)
-}
-button{background:#111;color:#fff;border:0;cursor:pointer}
-button.secondary{background:#eee;color:#111}
-button:disabled{opacity:.5}
-.small{font-size:13px;opacity:.75}
-.msg{font-size:13px;white-space:pre-wrap}
-#fbOverlay{
-  position:fixed;inset:0;background:rgba(0,0,0,.45);
-  display:none;align-items:center;justify-content:center;z-index:20
-}
-#fbModal{
-  width:min(520px,90vw);
-  background:#fff;border-radius:16px;padding:16px
-}
+  html, body { margin:0; height:100%; font:16px system-ui; }
+  #map { position:fixed; inset:0; }
+
+  #panel{
+    position: fixed;
+    z-index: 10;
+    background: rgba(255,255,255,0.96);
+    border-radius: 16px;
+    box-shadow: 0 14px 36px rgba(0,0,0,.25);
+    padding: 16px;
+    transition: all .35s ease;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+    padding-top: calc(16px + env(safe-area-inset-top));
+  }
+
+  /* Big panel (default) */
+  .panel-app{
+    left:12px; top:12px;
+    width: 320px;
+  }
+
+  /* Compact panel (after save) */
+  .panel-compact{
+    left:12px; top:12px;
+    width: auto;
+    padding: 10px 12px;
+    border-radius: 14px;
+  }
+
+  h3 { margin:0 0 10px; font-size:18px; }
+  .row { display:grid; gap:10px; margin:10px 0; }
+
+  input, button, textarea{
+    font:inherit;
+    padding:12px;
+    border-radius:12px;
+    border:1px solid rgba(0,0,0,.15);
+  }
+  textarea{ resize: vertical; min-height: 120px; }
+
+  button{ background:#111; color:#fff; border:0; cursor:pointer; }
+  button.secondary{ background:#eee; color:#111; }
+  button:disabled { opacity:.55; cursor: not-allowed; }
+
+  .small{ font-size:13px; opacity:.75; }
+  .msg{ white-space:pre-wrap; font-size:13px; }
+
+  #appView, #compactView { display:none; }
+
+  :root { --vh: 1vh; }
+  #map { height: calc(var(--vh) * 100); }
+
+  @media (max-width: 520px) {
+    .panel-app{ width: calc(100vw - 24px); left: 12px; right: 12px; }
+    .panel-compact{ left: 12px; right: 12px; }
+    button, input, textarea { padding: 14px; font-size: 16px; }
+  }
+
+  /* Feedback modal */
+  #fbOverlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 60;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+  }
+  #fbModal{
+    width: min(720px, 100%);
+    background: rgba(255,255,255,0.98);
+    border-radius: 16px;
+    box-shadow: 0 14px 36px rgba(0,0,0,.25);
+    padding: 16px;
+  }
+  #fbModal h4 { margin: 0 0 10px; font-size: 17px; }
+  #fbCount{ font-size: 12px; opacity: .7; text-align:right; margin-top:6px; }
+  .modal-actions { display:flex; gap:10px; justify-content:flex-end; }
 </style>
 </head>
 
 <body>
 <div id="map"></div>
 
-<div id="panel">
+<div id="panel" class="panel-app">
   <h3>Mood Map</h3>
 
-  <div class="row">
-    <label>Your mood: <b><span id="moodValue">5</span>/10</b></label>
-    <input id="slider" type="range" min="0" max="10" value="5">
+  <!-- APP VIEW (default) -->
+  <div id="appView">
+    <div class="row">
+      <label>Your mood: <b><span id="moodValue">5</span>/10</b></label>
+      <input id="slider" type="range" min="0" max="10" value="5">
+    </div>
+
+    <div class="row">
+      <button id="btnSave">Locate + Save</button>
+    </div>
+
+    <div class="small" id="hint">
+      Choose your mood, then tap “Locate + Save” to reveal the world’s mood 🌍
+    </div>
+
+    <div id="appMsg" class="msg"></div>
   </div>
 
-  <div class="row">
-    <button id="btnSave">Locate + Save</button>
-  </div>
-
-  <div class="small">
-    Choose your mood, then tap “Locate + Save” to reveal the world’s mood 🌍
-  </div>
-
-  <div id="msg" class="msg"></div>
-
-  <div class="row">
-    <button id="btnFeedback" class="secondary" disabled>Any comments?</button>
+  <!-- COMPACT VIEW (after save) -->
+  <div id="compactView">
+    <div class="small" id="compactMsg">✅ Saved.</div>
+    <div class="row" style="margin-top:8px; gap:8px;">
+      <button id="btnFeedback" class="secondary" type="button">Any comments?</button>
+      <button id="btnExpand" class="secondary" type="button">Change mood</button>
+    </div>
   </div>
 </div>
 
 <!-- FEEDBACK MODAL -->
-<div id="fbOverlay">
-  <div id="fbModal">
+<div id="fbOverlay" aria-hidden="true">
+  <div id="fbModal" role="dialog" aria-modal="true">
     <h4>Send a comment</h4>
-    <textarea id="fbText" placeholder="Write your comment here…" maxlength="5000"></textarea>
-    <div class="row">
-      <button id="fbCancel" class="secondary">Cancel</button>
-      <button id="fbSend">Send</button>
+    <div class="small">This message will be stored automatically.</div>
+    <div style="height:10px"></div>
+
+    <label class="small" for="fbText">Message</label>
+    <textarea id="fbText" maxlength="5000" placeholder="Write your comment here (max 5000 characters)…"></textarea>
+    <div id="fbCount">0 / 5000 • 0 / 250 words</div>
+
+    <div id="fbMsg" class="msg" style="margin-top:8px;"></div>
+
+    <div class="modal-actions" style="margin-top:12px;">
+      <button id="btnFbCancel" class="secondary" type="button">Cancel</button>
+      <button id="btnFbSend" type="button">Send</button>
     </div>
-    <div id="fbMsg" class="msg"></div>
   </div>
 </div>
 
@@ -79,80 +148,536 @@ button:disabled{opacity:.5}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
+/* =============================================================================
+   0) MOBILE VIEWPORT FIX (iOS)
+   ============================================================================= */
+function setVh() {
+  document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
+}
+window.addEventListener('resize', setVh);
+setVh();
+
+/* =============================================================================
+   1) MAP SETUP
+   ============================================================================= */
+const map = new maplibregl.Map({
+  container: "map",
+  style: {
+    version: 8,
+    sources: {
+      osm: {
+        type: "raster",
+        tiles: [
+          "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
+          "https://b.tile.openstreetmap.org/{z}/{x}/{y}.png",
+          "https://c.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        ],
+        tileSize: 256,
+        attribution: "© OpenStreetMap contributors"
+      }
+    },
+    layers: [{ id: "osm", type: "raster", source: "osm" }]
+  },
+  center: [0, 20],
+  zoom: 2
+});
+map.addControl(new maplibregl.NavigationControl(), "top-right");
+
+/* =============================================================================
+   2) MOOD ICONS (0..10)
+   ============================================================================= */
+function lerp(a,b,t){ return a + (b - a) * t; }
+function lerpColor(c1,c2,t){
+  const r = Math.round(lerp(c1[0], c2[0], t));
+  const g = Math.round(lerp(c1[1], c2[1], t));
+  const b = Math.round(lerp(c1[2], c2[2], t));
+  return `rgb(${r},${g},${b})`;
+}
+function moodImageData(level, size=96){
+  const t = Math.max(0, Math.min(1, level/10));
+  const red=[215,25,28], yellow=[255,255,191], green=[26,150,65];
+  const fill = (t < 0.5)
+    ? lerpColor(red, yellow, t/0.5)
+    : lerpColor(yellow, green, (t-0.5)/0.5);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext("2d");
+
+  const cx = size/2, cy = size/2, r = size*0.42;
+
+  ctx.beginPath(); ctx.arc(cx, cy+3, r, 0, Math.PI*2);
+  ctx.fillStyle="rgba(0,0,0,0.18)"; ctx.fill();
+
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
+  ctx.fillStyle = fill; ctx.fill();
+  ctx.lineWidth = Math.max(3, size*0.04);
+  ctx.strokeStyle = "rgba(0,0,0,0.25)";
+  ctx.stroke();
+
+  const eyeY = cy - size*0.10, eyeDX=size*0.14, eyeR=size*0.04;
+  ctx.beginPath();
+  ctx.arc(cx-eyeDX, eyeY, eyeR, 0, Math.PI*2);
+  ctx.arc(cx+eyeDX, eyeY, eyeR, 0, Math.PI*2);
+  ctx.fillStyle="rgba(0,0,0,0.75)";
+  ctx.fill();
+
+  const browY = eyeY - size*0.08;
+  const browTilt = lerp(0.20, -0.20, t);
+  ctx.lineWidth = Math.max(3, size*0.035);
+  ctx.strokeStyle="rgba(0,0,0,0.55)";
+  ctx.lineCap="round";
+
+  ctx.beginPath();
+  ctx.moveTo(cx-eyeDX-size*0.06, browY + browTilt*size*0.08);
+  ctx.lineTo(cx-eyeDX+size*0.06, browY - browTilt*size*0.08);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(cx+eyeDX-size*0.06, browY - browTilt*size*0.08);
+  ctx.lineTo(cx+eyeDX+size*0.06, browY + browTilt*size*0.08);
+  ctx.stroke();
+
+  const mouthY = cy + size*0.12, mouthW=size*0.26;
+  const curvature = lerp(-1, 1, t);
+  ctx.beginPath();
+  ctx.moveTo(cx-mouthW, mouthY);
+  ctx.quadraticCurveTo(cx, mouthY + curvature*size*0.12, cx+mouthW, mouthY);
+  ctx.strokeStyle="rgba(0,0,0,0.70)";
+  ctx.lineWidth=Math.max(4, size*0.05);
+  ctx.lineCap="round";
+  ctx.stroke();
+
+  const img = ctx.getImageData(0,0,size,size);
+  return { width: img.width, height: img.height, data: img.data };
+}
+function ensureMoodImages(){
+  for(let lvl=0; lvl<=10; lvl++){
+    const name = `mood-${lvl}`;
+    if(!map.hasImage(name)) map.addImage(name, moodImageData(lvl,96));
+  }
+}
+
+/* =============================================================================
+   3) POINTS SOURCE + LAYERS
+   ============================================================================= */
+function initPointsSourceAndLayers(){
+  if(map.getSource("points")) return;
+
+  map.addSource("points", {
+    type: "geojson",
+    data: { type:"FeatureCollection", features: [] },
+    cluster: true,
+    clusterRadius: 60,
+    clusterMaxZoom: 14,
+    clusterProperties: { sum: ["+", ["get", "value"]], count: ["+", 1] }
+  });
+
+  const avgRoundedClamped = [
+    "case",
+    ["<", ["round", ["/", ["get","sum"], ["get","count"]]], 0], 0,
+    [">", ["round", ["/", ["get","sum"], ["get","count"]]], 10], 10,
+    ["round", ["/", ["get","sum"], ["get","count"]]]
+  ];
+
+  map.addLayer({
+    id: "clusters-mood",
+    type: "symbol",
+    source: "points",
+    filter: ["has", "point_count"],
+    layout: {
+      "icon-image": ["concat","mood-", ["to-string", avgRoundedClamped]],
+      "icon-size": ["step", ["get","point_count"], 0.65, 10, 0.75, 50, 0.9, 200, 1.05, 1000, 1.2],
+      "icon-allow-overlap": true,
+      "text-field": ["to-string", ["get","point_count"]],
+      "text-size": 12,
+      "text-offset": [0, 1.55],
+      "text-allow-overlap": true,
+      "text-anchor": "top"
+    },
+    paint: {
+      "text-color": "rgba(0,0,0,0.75)",
+      "text-halo-color": "rgba(255,255,255,0.9)",
+      "text-halo-width": 1
+    }
+  });
+
+  map.addLayer({
+    id: "points-mood",
+    type: "symbol",
+    source: "points",
+    filter: ["!", ["has", "point_count"]],
+    layout: {
+      "icon-image": [
+        "concat","mood-",
+        ["to-string",
+          ["case",
+            ["<", ["round", ["get","value"]], 0], 0,
+            [">", ["round", ["get","value"]], 10], 10,
+            ["round", ["get","value"]]
+          ]
+        ]
+      ],
+      "icon-size": 0.55,
+      "icon-allow-overlap": true
+    }
+  });
+
+  map.on("click", "clusters-mood", (e) => {
+    const f = e.features[0];
+    map.getSource("points").getClusterExpansionZoom(
+      f.properties.cluster_id,
+      (err, zoom) => {
+        if (err) return;
+        map.easeTo({ center: f.geometry.coordinates, zoom });
+      }
+    );
+  });
+
+  map.on("mouseenter", "clusters-mood", () => map.getCanvas().style.cursor = "pointer");
+  map.on("mouseleave", "clusters-mood", () => map.getCanvas().style.cursor = "");
+}
+
+function clearMarkers(){
+  const source = map.getSource("points");
+  if(!source) return;
+  source.setData({ type:"FeatureCollection", features: [] });
+}
+
+/* Only reveal markers after first successful save (this session) */
+let revealedThisSession = false;
+
+async function refreshPoints(){
+  if (!revealedThisSession) return;
+
+  const source = map.getSource("points");
+  if(!source) return;
+
+  const { data, error } = await sb
+    .from("mood_entries")
+    .select("mood, lon, lat")
+    .order("created_at", { ascending:false })
+    .limit(20000);
+
+  if(error){
+    setAppMessage("Load failed: " + (error.message || "Unknown error"));
+    console.warn("LOAD error:", error);
+    return;
+  }
+
+  const features = (data || [])
+    .filter(r => typeof r.lon==="number" && typeof r.lat==="number")
+    .map(r => ({
+      type: "Feature",
+      properties: { value: r.mood },
+      geometry: { type:"Point", coordinates:[r.lon, r.lat] }
+    }));
+
+  source.setData({ type:"FeatureCollection", features });
+}
+
+/* =============================================================================
+   4) UI HELPERS + VIEWS
+   ============================================================================= */
+const el = id => document.getElementById(id);
+const panel = el("panel");
+
+function showApp(){
+  panel.className = "panel-app";
+  el("appView").style.display = "block";
+  el("compactView").style.display = "none";
+}
+function showCompact(msg="✅ Saved."){
+  panel.className = "panel-compact";
+  el("compactMsg").textContent = msg;
+  el("appView").style.display = "none";
+  el("compactView").style.display = "block";
+}
+
+function setAppMessage(msg){ el("appMsg").textContent = msg || ""; }
+
+const slider = el("slider");
+slider.oninput = ()=> el("moodValue").textContent = slider.value;
+
+/* =============================================================================
+   5) AMBIENT MUSIC (fade out on save)
+   ============================================================================= */
+let audioCtx, masterGain, musicStarted = false;
+let musicNodes = [];
+let chordTimer = null;
+
+function stopLoopTimers() {
+  if (chordTimer) { clearTimeout(chordTimer); chordTimer = null; }
+}
+function fadeOutMusic(seconds = 2.6) {
+  if (!audioCtx || !masterGain) return;
+  const now = audioCtx.currentTime;
+  masterGain.gain.cancelScheduledValues(now);
+  masterGain.gain.setValueAtTime(masterGain.gain.value, now);
+  masterGain.gain.linearRampToValueAtTime(0.0001, now + seconds);
+
+  setTimeout(() => {
+    try { stopLoopTimers(); } catch {}
+    for (const n of musicNodes) {
+      try { n.stop && n.stop(); } catch {}
+      try { n.disconnect && n.disconnect(); } catch {}
+    }
+    musicNodes = [];
+  }, (seconds + 0.3) * 1000);
+}
+
+function playAmbientMusic() {
+  if (musicStarted) return;
+  musicStarted = true;
+
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = 0.20;
+  masterGain.connect(audioCtx.destination);
+
+  const lp = audioCtx.createBiquadFilter();
+  lp.type = "lowpass";
+  lp.frequency.value = 1200;
+  lp.connect(masterGain);
+
+  const chords = [
+    [261.63, 329.63, 392.00],
+    [220.00, 261.63, 329.63],
+    [174.61, 220.00, 261.63],
+    [196.00, 293.66, 392.00]
+  ];
+
+  function padChord(freqs, start, dur) {
+    for (const f of freqs) {
+      const o = audioCtx.createOscillator();
+      o.type = "sine";
+      o.frequency.value = f;
+
+      const g = audioCtx.createGain();
+      g.gain.setValueAtTime(0, start);
+      g.gain.linearRampToValueAtTime(0.11, start + 1.2);
+      g.gain.linearRampToValueAtTime(0.0, start + dur);
+
+      o.connect(g).connect(lp);
+      o.start(start);
+      o.stop(start + dur + 0.05);
+      musicNodes.push(o, g);
+    }
+  }
+
+  function arpeggio(freqs, start) {
+    const pattern = [0, 1, 2, 1];
+    for (let i = 0; i < 8; i++) {
+      const f = freqs[pattern[i % pattern.length]] * (i % 2 === 0 ? 2 : 1);
+      const o = audioCtx.createOscillator();
+      o.type = "triangle";
+      o.frequency.value = f;
+
+      const g = audioCtx.createGain();
+      const t = start + i * 0.5;
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.05, t + 0.03);
+      g.gain.linearRampToValueAtTime(0, t + 0.45);
+
+      o.connect(g).connect(lp);
+      o.start(t);
+      o.stop(t + 0.5);
+      musicNodes.push(o, g);
+    }
+  }
+
+  let idx = 0;
+  function schedule() {
+    const now = audioCtx.currentTime;
+    const start = now + 0.02;
+    const dur = 7.5;
+    const freqs = chords[idx % chords.length];
+    padChord(freqs, start, dur);
+    arpeggio(freqs, start);
+    idx++;
+    chordTimer = setTimeout(schedule, dur * 1000);
+  }
+  schedule();
+}
+
+function autoStartMusicOnce() {
+  playAmbientMusic();
+  document.removeEventListener("pointerdown", autoStartMusicOnce);
+  document.removeEventListener("keydown", autoStartMusicOnce);
+}
+document.addEventListener("pointerdown", autoStartMusicOnce, { once: true });
+document.addEventListener("keydown", autoStartMusicOnce, { once: true });
+
+/* =============================================================================
+   6) SUPABASE CONFIG
+   ============================================================================= */
 const SUPABASE_URL = "https://ugrmxzdhevqrgftlxfnp.supabase.co";
-const SUPABASE_ANON_KEY = "YOUR_ANON_KEY_HERE";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVncm14emRoZXZxcmdmdGx4Zm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyODQ3OTQsImV4cCI6MjA4NDg2MDc5NH0.WgTj-6ADFEMrCgPNxeQZvknBBJI1c9uDY9_8Qlkqu4w";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const el=id=>document.getElementById(id);
-const slider=el("slider"), moodValue=el("moodValue");
-slider.oninput=()=>moodValue.textContent=slider.value;
-
-function anonId(){
-  let v=localStorage.getItem("anon_id");
-  if(!v){v=crypto.randomUUID();localStorage.setItem("anon_id",v);}
+/* anon_id stable per device */
+function getAnonId(){
+  const key = "mood_anon_id";
+  let v = localStorage.getItem(key);
+  if(!v){
+    v = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "-" + Math.random());
+    localStorage.setItem(key, v);
+  }
   return v;
 }
 
-let revealed=false;
+/* =============================================================================
+   7) SAVE (Locate + Save)
+   ============================================================================= */
+el("btnSave").onclick = async () => {
+  setAppMessage("Locating…");
+  el("btnSave").disabled = true;
 
-el("btnSave").onclick=()=>{
-  el("msg").textContent="Locating…";
-  navigator.geolocation.getCurrentPosition(async pos=>{
-    const row={
-      anon_id:anonId(),
-      mood:+slider.value,
-      lon:pos.coords.longitude,
-      lat:pos.coords.latitude
-    };
+  if (!navigator.geolocation) {
+    setAppMessage("Geolocation is not supported on this device.");
+    el("btnSave").disabled = false;
+    return;
+  }
 
-    el("msg").textContent="Saving…";
+  navigator.geolocation.getCurrentPosition(async (pos) => {
+    const coords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+    const mood = parseInt(slider.value, 10);
+    const anonId = getAnonId();
 
-    const {error}=await sb
+    setAppMessage("Saving your mood…");
+
+    // IMPORTANT: no "location" field sent
+    const row = { anon_id: anonId, mood, lon: coords.lon, lat: coords.lat };
+
+    const { error } = await sb
       .from("mood_entries")
-      .upsert(row,{onConflict:"anon_id"});
+      .upsert(row, { onConflict: "anon_id" });
 
-    if(error){
-      el("msg").textContent="Save failed. Please try again later.";
-      console.warn(error);
+    if (error) {
+      setAppMessage("Save failed: " + (error.message || "Unknown error"));
+      console.warn("SAVE error:", error);
+      el("btnSave").disabled = false;
       return;
     }
 
-    revealed=true;
-    el("msg").textContent="Thank you! The world’s mood is now visible 🌍";
-    el("btnFeedback").disabled=false;
-  });
+    // Fade out music AFTER user has saved their mood
+    fadeOutMusic(2.6);
+
+    // reveal markers only now
+    revealedThisSession = true;
+
+    setAppMessage("Thank you! Loading the world’s mood…");
+    map.easeTo({ center: [coords.lon, coords.lat], zoom: Math.max(map.getZoom(), 8) });
+
+    setTimeout(async () => {
+      await refreshPoints();
+      showCompact("✅ Saved. Thank you!");
+      el("btnSave").disabled = false;
+    }, 700);
+
+  }, (err) => {
+    setAppMessage("Geolocation error: " + err.message);
+    el("btnSave").disabled = false;
+  }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
 };
 
-// Feedback
-el("btnFeedback").onclick=()=>{
-  el("fbOverlay").style.display="flex";
-  el("fbMsg").textContent="";
-  el("fbText").value="";
+/* Expand panel to change mood */
+el("btnExpand").onclick = () => {
+  showApp();
+  setAppMessage("");
 };
 
-el("fbCancel").onclick=()=>el("fbOverlay").style.display="none";
+/* =============================================================================
+   8) FEEDBACK MODAL (anonymous)
+   ============================================================================= */
+const FEEDBACK_MAX_WORDS = 250;
+function countWords(s){ return (s.trim().match(/\S+/g) || []).length; }
 
-el("fbSend").onclick=async()=>{
-  const message=el("fbText").value.trim();
-  if(message.length<2){
-    el("fbMsg").textContent="Please write a message.";
+const fbOverlay = el("fbOverlay");
+const fbText = el("fbText");
+const fbMsg  = el("fbMsg");
+const fbCount = el("fbCount");
+const btnFbSend = el("btnFbSend");
+
+function updateFbCounter(){
+  const chars = fbText.value.length;
+  const words = countWords(fbText.value);
+  fbCount.textContent = `${chars} / 5000 • ${words} / ${FEEDBACK_MAX_WORDS} words`;
+}
+
+function openFeedbackModal(){
+  fbMsg.textContent = "";
+  fbText.value = "";
+  fbOverlay.style.display = "flex";
+  fbOverlay.setAttribute("aria-hidden", "false");
+  updateFbCounter();
+  setTimeout(() => fbText.focus(), 50);
+}
+function closeFeedbackModal(){
+  fbOverlay.style.display = "none";
+  fbOverlay.setAttribute("aria-hidden", "true");
+}
+fbOverlay.addEventListener("click", (e) => { if (e.target === fbOverlay) closeFeedbackModal(); });
+el("btnFbCancel").onclick = closeFeedbackModal;
+fbText.addEventListener("input", updateFbCounter);
+
+el("btnFeedback").onclick = () => openFeedbackModal();
+
+btnFbSend.onclick = async () => {
+  btnFbSend.disabled = true;
+  fbMsg.textContent = "Sending…";
+
+  const message = fbText.value.trim();
+  if (message.length < 2) {
+    fbMsg.textContent = "Please write a message.";
+    btnFbSend.disabled = false;
+    return;
+  }
+  const words = countWords(message);
+  if (words > FEEDBACK_MAX_WORDS) {
+    fbMsg.textContent = `Too many words (${words}). Max is ${FEEDBACK_MAX_WORDS}.`;
+    btnFbSend.disabled = false;
     return;
   }
 
-  const {error}=await sb.from("mood_feedback").insert({
-    anon_id:anonId(),
+  const { error } = await sb.from("mood_feedback").insert({
+    anon_id: getAnonId(),
     message
   });
 
-  if(error){
-    el("fbMsg").textContent="Unable to send comment.";
-    console.warn(error);
+  if (error) {
+    // Requested custom message:
+    // If your DB has a "one per day" unique constraint, we can detect duplicates
+    const raw = (error.message || "") + " " + (error.details || "") + " " + (error.hint || "");
+    const isDuplicate =
+      error.code === "23505" ||
+      raw.includes("duplicate key value") ||
+      raw.toLowerCase().includes("one_per_day");
+
+    fbMsg.textContent = isDuplicate
+      ? "Only one save per day please!"
+      : "Unable to send comment. Please try again.";
+
+    console.warn("FEEDBACK error:", error);
+    btnFbSend.disabled = false;
     return;
   }
 
-  el("fbMsg").textContent="Thank you for your feedback!";
-  setTimeout(()=>el("fbOverlay").style.display="none",800);
+  fbMsg.textContent = "✅ Thank you for your feedback!";
+  setTimeout(() => closeFeedbackModal(), 700);
+  btnFbSend.disabled = false;
 };
+
+/* =============================================================================
+   9) INIT
+   ============================================================================= */
+map.on("load", async () => {
+  ensureMoodImages();
+  initPointsSourceAndLayers();
+  clearMarkers();           // hidden at first
+  revealedThisSession = false;
+  showApp();
+});
 </script>
 </body>
 </html>
