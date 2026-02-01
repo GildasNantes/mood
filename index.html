@@ -14,6 +14,10 @@
 <meta property="og:description" content="The world’s first emotional weather report. Share your mood anonymously in one click and reveal the collective mood.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://mood2know.com/">
+<meta property="og:site_name" content="Mood2Know">
+<!-- ⚠️ Mets un vrai fichier image public (idéal: 1200x630) -->
+<meta property="og:image" content="https://mood2know.com/og.jpg">
+
 <link rel="canonical" href="https://mood2know.com/">
 
 <link rel="stylesheet" href="./maplibre-gl.css">
@@ -44,6 +48,9 @@
     max-height: calc(var(--vh) * 100 - 24px);
     overflow-y: auto;
     overscroll-behavior: contain;
+
+    /* ✅ avoid horizontal scrolling when language pills wrap */
+    overflow-x: hidden;
   }
 
   .panel-app{
@@ -160,11 +167,14 @@
     display:flex;
     gap:6px;
     opacity: .75;
+
+    /* ✅ helps EN/FR/ES/IT/DE/中文 stay inside panel */
+    flex-wrap: wrap;
   }
 
   /* ✅ fix: show EN/FR text (global button color was white) */
   .m2k-lang-btn{
-    color:#111; /* important */
+    color:#111;
     border: 1px solid rgba(0,0,0,.12);
     background: transparent;
     padding: 3px 8px;
@@ -257,10 +267,14 @@
         <span class="m2k-summary-icon" aria-hidden="true">▾</span>
       </summary>
 
-      <div class="m2k-lang" aria-label="Language">
-        <button type="button" class="m2k-lang-btn" data-set-lang="en">EN</button>
-        <button type="button" class="m2k-lang-btn" data-set-lang="fr">FR</button>
-      </div>
+<div class="m2k-lang" aria-label="Language">
+  <button type="button" class="m2k-lang-btn" data-set-lang="en">EN</button>
+  <button type="button" class="m2k-lang-btn" data-set-lang="fr">FR</button>
+  <button type="button" class="m2k-lang-btn" data-set-lang="es">ES</button>
+  <button type="button" class="m2k-lang-btn" data-set-lang="it">IT</button>
+  <button type="button" class="m2k-lang-btn" data-set-lang="de">DE</button>
+  <button type="button" class="m2k-lang-btn" data-set-lang="zh">中文</button>
+</div>
 
       <!-- English -->
       <div class="m2k-text" lang="en" data-lang="en">
@@ -283,6 +297,47 @@
         <p>Mood2Know n’est pas là pour analyser ou diagnostiquer. Le site se veut minimaliste, ouvert, et pensé pour la participation, la curiosité et la prise de conscience.</p>
         <p><strong>Mood a besoin de vous.</strong> Chaque réponse compte. Plus vous êtes nombreux, plus cette image émotionnelle partagée devient significative.</p>
       </div>
+
+<div class="m2k-text" lang="es" data-lang="es">
+  <p><strong>Mood2Know quiere convertirse en el primer clima emocional del mundo.</strong></p>
+  <p>Cada día, millones de personas sienten emociones que permanecen invisibles. Mood2Know nace para hacer visible ese estado emocional colectivo, de forma simple y anónima.</p>
+  <p>Con un solo clic, participas en una experiencia global. Sin cuenta, sin explicación, sin datos personales — solo un sentimiento del momento, compartido tal como es.</p>
+  <p>El objetivo es alcanzar <strong>10.000 participantes</strong>. Al llegar a este umbral, Mood2Know revelará una información única: una fotografía del estado emocional del mundo en un instante concreto.</p>
+  <p>Este “clima” emocional cambia constantemente. Observar su evolución ayuda a relativizar lo individual y a mostrar la diversidad de experiencias humanas.</p>
+  <p>Mood2Know no analiza ni diagnostica. Es un espacio minimalista, abierto, pensado para la participación y la conciencia colectiva.</p>
+  <p><strong>Mood te necesita.</strong> Cada respuesta cuenta.</p>
+</div>
+
+<div class="m2k-text" lang="it" data-lang="it">
+  <p><strong>Mood2Know vuole diventare la prima meteo emotiva del mondo.</strong></p>
+  <p>Ogni giorno, milioni di persone provano emozioni che restano invisibili. Mood2Know nasce per rendere visibile questo stato emotivo collettivo, in modo semplice e anonimo.</p>
+  <p>Con un solo clic partecipi a un’esperienza globale. Nessun account, nessuna spiegazione, nessun dato personale — solo un’emozione del momento, condivisa così com’è.</p>
+  <p>L’obiettivo è raggiungere <strong>10.000 partecipanti</strong>. Una volta superata questa soglia, Mood2Know mostrerà un’informazione unica: una fotografia dello stato emotivo del mondo in un dato momento.</p>
+  <p>Questa “meteo” emotiva cambia continuamente. Osservarne le variazioni aiuta a mettere in prospettiva ciò che proviamo.</p>
+  <p>Mood2Know non analizza né diagnostica. È uno spazio minimale, aperto e partecipativo.</p>
+  <p><strong>Mood ha bisogno di te.</strong> Ogni risposta è importante.</p>
+</div>
+
+<div class="m2k-text" lang="de" data-lang="de">
+  <p><strong>Mood2Know möchte der erste emotionale Wetterbericht der Welt werden.</strong></p>
+  <p>Jeden Tag erleben Millionen von Menschen Gefühle, die unsichtbar bleiben. Mood2Know wurde geschaffen, um diese kollektive Stimmung sichtbar zu machen — einfach und anonym.</p>
+  <p>Mit nur einem Klick nimmst du an einem weltweiten Experiment teil. Kein Konto, keine Erklärung, keine persönlichen Daten — nur ein momentanes Gefühl.</p>
+  <p>Das Ziel sind <strong>10.000 Teilnehmende</strong>. Wird diese Schwelle erreicht, zeigt Mood2Know eine einzigartige Momentaufnahme des emotionalen Zustands der Welt.</p>
+  <p>Dieses emotionale „Wetter“ verändert sich ständig. Es zu beobachten hilft, individuelle Gefühle einzuordnen.</p>
+  <p>Mood2Know analysiert oder diagnostiziert nicht. Es ist ein minimalistischer, offener Raum für Bewusstsein und Neugier.</p>
+  <p><strong>Mood braucht dich.</strong> Jede Teilnahme zählt.</p>
+</div>
+
+<div class="m2k-text" lang="zh" data-lang="zh">
+  <p><strong>Mood2Know 致力于成为世界上第一份情绪天气报告。</strong></p>
+  <p>每天，数百万人体验着难以被看见的情绪。Mood2Know 的诞生，是为了以简单、匿名的方式呈现这种集体情绪。</p>
+  <p>只需一次点击，你就能参与一项全球性的实验。无需账号、无需解释、无需个人信息 —— 只是当下的真实感受。</p>
+  <p>目标是达到 <strong>10,000 名参与者</strong>。一旦达成，Mood2Know 将展示一个独特的视角：某一时刻世界的情绪快照。</p>
+  <p>这种“情绪天气”不断变化。观察它，有助于理解个体情绪与世界之间的联系。</p>
+  <p>Mood2Know 不进行分析或诊断，而是一个极简、开放、鼓励参与的空间。</p>
+  <p><strong>Mood 需要你。</strong> 每一次参与都很重要。</p>
+</div>
+
     </details>
   </section>
 </div>
@@ -926,11 +981,9 @@ el("btnSave").onclick = async () => {
       return;
     }
 
-    // fade out music after save (as before)
     fadeOutMusic(2.6);
     revealedThisSession = true;
 
-    // ✅ collapse the accordion after a successful save
     collapseAbout();
 
     setAppMessage("Thank you! Loading the world’s mood…");
@@ -1058,7 +1111,6 @@ map.on("load", async () => {
   const summaryLabel = document.querySelector('[data-i18n="summary"]');
   const buttons = Array.from(document.querySelectorAll('.m2k-lang-btn[data-set-lang]'));
 
-  // ✅ EN by default (unless user previously chose a language)
   function pickDefaultLang() {
     const saved = localStorage.getItem('m2k_lang');
     return saved || 'en';
@@ -1068,7 +1120,15 @@ map.on("load", async () => {
     blocks.forEach(el => el.style.display = (el.dataset.lang === lang ? 'block' : 'none'));
 
     if (summaryLabel) {
-      summaryLabel.textContent = (lang === 'fr') ? 'Pourquoi Mood2Know ?' : 'Why Mood2Know?';
+      const titles = {
+        en: 'Why Mood2Know?',
+        fr: 'Pourquoi Mood2Know ?',
+        es: '¿Por qué Mood2Know?',
+        it: 'Perché Mood2Know?',
+        de: 'Warum Mood2Know?',
+        zh: '为什么选择 Mood2Know？'
+      };
+      summaryLabel.textContent = titles[lang] || titles.en;
     }
 
     buttons.forEach(btn => {
@@ -1080,7 +1140,6 @@ map.on("load", async () => {
   }
 
   buttons.forEach(btn => btn.addEventListener('click', () => setLang(btn.dataset.setLang)));
-
   setLang(pickDefaultLang());
 })();
 </script>
