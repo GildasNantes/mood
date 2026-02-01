@@ -498,8 +498,11 @@ function updateFeeling(){
 }
 slider.oninput = ()=> {
   el("moodValue").textContent = slider.value;
+  currentMood = Number(slider.value);   // NEW
   updateFeeling();
+  updateMusicParams();                  // NEW (live)
 };
+
 
 /* =============================================================================
    4.5) DRAGGABLE PANEL VIA HANDLE
@@ -540,13 +543,23 @@ panel.addEventListener("pointercancel", () => { dragging = false; });
 /* =============================================================================
    5) AMBIENT MUSIC (max browser compatibility) ✅ + fallback button
    ============================================================================= */
+/* =============================================================================
+   5) AMBIENT MUSIC (mood-adaptive) ✅ + hide button when enabled
+   ============================================================================= */
 let audioCtx, masterGain, musicStarted = false;
 let musicNodes = [];
 let chordTimer = null;
 
+// NEW: keep filter global so we can update it live
+let musicFilter = null;
+
+// NEW: mood state (0..10)
+let currentMood = 5;
+
 function stopLoopTimers() {
   if (chordTimer) { clearTimeout(chordTimer); chordTimer = null; }
 }
+
 function fadeOutMusic(seconds = 2.6) {
   if (!audioCtx || !masterGain) return;
   const now = audioCtx.currentTime;
@@ -564,6 +577,62 @@ function fadeOutMusic(seconds = 2.6) {
   }, (seconds + 0.3) * 1000);
 }
 
+// helpers
+function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+function lerp(a,b,t){ return a + (b-a)*t; }
+
+// NEW: smooth live parameters (filter + volume)
+function updateMusicParams() {
+  if (!audioCtx || !masterGain || !musicFilter) return;
+
+  const t = clamp(currentMood / 10, 0, 1);
+
+  // volume: slightly quieter when mood low, a bit more present when high
+  const targetVol = lerp(0.16, 0.24, t);
+
+  // filter: darker when low, brighter when high
+  const targetCutoff = lerp(700, 2000, t);
+
+  const now = audioCtx.currentTime;
+
+  masterGain.gain.cancelScheduledValues(now);
+  masterGain.gain.setTargetAtTime(targetVol, now, 0.12);
+
+  musicFilter.frequency.cancelScheduledValues(now);
+  musicFilter.frequency.setTargetAtTime(targetCutoff, now, 0.12);
+}
+
+// NEW: choose chord palette by mood (Hz)
+function getChordPalette() {
+  // low mood: minor / moody (Am, F, Dm, Em-ish)
+  const low = [
+    [220.00, 261.63, 329.63],     // A-C-E
+    [174.61, 220.00, 261.63],     // F-A-C
+    [146.83, 174.61, 220.00],     // D-F-A
+    [164.81, 246.94, 329.63]      // E-B-E-ish (color)
+  ];
+
+  // mid: neutral / balanced (C, Am, F, G)
+  const mid = [
+    [261.63, 329.63, 392.00],     // C-E-G
+    [220.00, 261.63, 329.63],     // A-C-E
+    [174.61, 220.00, 261.63],     // F-A-C
+    [196.00, 293.66, 392.00]      // G-D-G-ish (color)
+  ];
+
+  // high: brighter / open (C add color, G, Am, F but more airy)
+  const high = [
+    [261.63, 392.00, 523.25],     // C-G-C (open)
+    [196.00, 293.66, 392.00],     // G-D-G
+    [220.00, 329.63, 440.00],     // A-E-A-ish
+    [174.61, 261.63, 349.23]      // F-C-F-ish
+  ];
+
+  if (currentMood <= 3) return low;
+  if (currentMood <= 7) return mid;
+  return high;
+}
+
 function playAmbientMusic() {
   if (musicStarted) return;
   musicStarted = true;
@@ -575,53 +644,60 @@ function playAmbientMusic() {
   masterGain.gain.value = 0.20;
   masterGain.connect(audioCtx.destination);
 
-  const lp = audioCtx.createBiquadFilter();
-  lp.type = "lowpass";
-  lp.frequency.value = 1200;
-  lp.connect(masterGain);
+  musicFilter = audioCtx.createBiquadFilter();
+  musicFilter.type = "lowpass";
+  musicFilter.frequency.value = 1200;
+  musicFilter.connect(masterGain);
 
-  const chords = [
-    [261.63, 329.63, 392.00],
-    [220.00, 261.63, 329.63],
-    [174.61, 220.00, 261.63],
-    [196.00, 293.66, 392.00]
-  ];
+  // apply initial params based on current mood
+  updateMusicParams();
 
-  function padChord(freqs, start, dur) {
+  function padChord(freqs, start, dur, moodT) {
+    // pad louder when mood higher (subtle)
+    const padPeak = lerp(0.085, 0.13, moodT);
+
     for (const f of freqs) {
       const o = audioCtx.createOscillator();
-      o.type = "sine";
+      o.type = (moodT < 0.35) ? "sine" : "triangle"; // a touch brighter when happier
       o.frequency.value = f;
 
       const g = audioCtx.createGain();
       g.gain.setValueAtTime(0, start);
-      g.gain.linearRampToValueAtTime(0.11, start + 1.2);
+      g.gain.linearRampToValueAtTime(padPeak, start + 1.1);
       g.gain.linearRampToValueAtTime(0.0, start + dur);
 
-      o.connect(g).connect(lp);
+      o.connect(g).connect(musicFilter);
       o.start(start);
       o.stop(start + dur + 0.05);
       musicNodes.push(o, g);
     }
   }
 
-  function arpeggio(freqs, start) {
+  function arpeggio(freqs, start, moodT) {
+    // faster when mood is high
+    const step = lerp(0.62, 0.34, moodT); // seconds between notes
+    const notes = 8;
+
     const pattern = [0, 1, 2, 1];
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < notes; i++) {
       const f = freqs[pattern[i % pattern.length]] * (i % 2 === 0 ? 2 : 1);
+
       const o = audioCtx.createOscillator();
       o.type = "triangle";
       o.frequency.value = f;
 
       const g = audioCtx.createGain();
-      const t = start + i * 0.5;
-      g.gain.setValueAtTime(0, t);
-      g.gain.linearRampToValueAtTime(0.05, t + 0.03);
-      g.gain.linearRampToValueAtTime(0, t + 0.45);
+      const t = start + i * step;
 
-      o.connect(g).connect(lp);
+      const peak = lerp(0.035, 0.06, moodT);
+
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(peak, t + 0.03);
+      g.gain.linearRampToValueAtTime(0, t + step - 0.05);
+
+      o.connect(g).connect(musicFilter);
       o.start(t);
-      o.stop(t + 0.5);
+      o.stop(t + step);
       musicNodes.push(o, g);
     }
   }
@@ -629,17 +705,28 @@ function playAmbientMusic() {
   let idx = 0;
   function schedule() {
     const now = audioCtx.currentTime;
-    const start = now + 0.02;
-    const dur = 7.5;
+
+    const moodT = clamp(currentMood / 10, 0, 1);
+
+    // duration of each chord loop: slower when low mood, faster when high mood
+    const dur = lerp(9.0, 6.2, moodT);
+
+    // chord palette depends on mood at schedule time
+    const chords = getChordPalette();
     const freqs = chords[idx % chords.length];
-    padChord(freqs, start, dur);
-    arpeggio(freqs, start);
+
+    const start = now + 0.02;
+
+    padChord(freqs, start, dur, moodT);
+    arpeggio(freqs, start, moodT);
+
     idx++;
     chordTimer = setTimeout(schedule, dur * 1000);
   }
   schedule();
 }
 
+/* iOS unlock hack */
 function iosUnlockHack(ctx){
   try{
     const buffer = ctx.createBuffer(1, 1, 22050);
@@ -661,6 +748,7 @@ function showSoundButton(show){
   row.style.display = show ? "block" : "none";
 }
 
+/* single entry point to unlock + start */
 function unlockAndStartAudio(){
   try {
     if (!audioCtx) {
@@ -672,10 +760,15 @@ function unlockAndStartAudio(){
     if (!musicStarted) playAmbientMusic();
     try { audioCtx.resume && audioCtx.resume(); } catch(e){}
 
+    // If it worked, hide button
     if (audioCtx && audioCtx.state === "running") showSoundButton(false);
+
+    // always refresh params after unlock
+    updateMusicParams();
   } catch(e) {}
 }
 
+/* attach once: first user gesture */
 (function attachAudioUnlockOnce(){
   const opts = { capture: true, passive: true, once: true };
   document.addEventListener("touchstart", unlockAndStartAudio, opts);
@@ -683,22 +776,37 @@ function unlockAndStartAudio(){
   document.addEventListener("mousedown", unlockAndStartAudio, opts);
   document.addEventListener("keydown", unlockAndStartAudio, { capture:true, once:true });
 
+  // extra reliability: direct unlock on slider & save
   slider.addEventListener("touchstart", unlockAndStartAudio, { passive:true });
   slider.addEventListener("pointerdown", unlockAndStartAudio, { passive:true });
   el("btnSave").addEventListener("touchstart", unlockAndStartAudio, { passive:true });
   el("btnSave").addEventListener("pointerdown", unlockAndStartAudio, { passive:true });
 })();
 
+/* ✅ Hide immediately on click + then unlock */
 el("btnSound").addEventListener("click", () => {
+  // optimistic hide (feels instant)
+  showSoundButton(false);
   unlockAndStartAudio();
+
+  // if it still didn’t unlock, show it back after a moment
+  setTimeout(() => {
+    if (!isAudioRunning()) showSoundButton(true);
+  }, 800);
 });
 
+/* if after a short delay audio isn't running, show button */
 function soundWatchdog(){
   const likelyPhone = isPhone || window.matchMedia("(pointer: coarse)").matches;
   if (!likelyPhone) return;
 
-  setTimeout(() => { if (!isAudioRunning()) showSoundButton(true); }, 900);
-  setTimeout(() => { if (!isAudioRunning()) showSoundButton(true); }, 2500);
+  setTimeout(() => {
+    if (!isAudioRunning()) showSoundButton(true);
+  }, 900);
+
+  setTimeout(() => {
+    if (!isAudioRunning()) showSoundButton(true);
+  }, 2500);
 }
 
 /* =============================================================================
@@ -785,6 +893,7 @@ map.on("load", async () => {
 
   showApp();
   updateFeeling();
+currentMood = Number(slider.value);
   soundWatchdog();
 });
 </script>
