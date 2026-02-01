@@ -108,9 +108,6 @@
   }
 }
 
-
-
-
   /* =========================
      Feedback modal
      ========================= */
@@ -151,6 +148,9 @@
     <div class="row">
       <label>Your mood: <b><span id="moodValue">5</span>/10</b></label>
       <input id="slider" type="range" min="0" max="10" value="5">
+
+      <!-- ✅ NEW: TAGLINE JUST UNDER SLIDER -->
+      <div class="small" id="moodTagline"></div>
     </div>
 
     <div class="row">
@@ -451,7 +451,28 @@ function showCompact(msg="✅ Saved."){
 function setAppMessage(msg){ el("appMsg").textContent = msg || ""; }
 
 const slider = el("slider");
-slider.oninput = ()=> el("moodValue").textContent = slider.value;
+const moodTagline = el("moodTagline");
+
+/* ✅ NEW: dynamic tagline */
+function moodLabel(v){
+  v = Number(v);
+  if (v <= 2) return "low";
+  if (v <= 4) return "meh";
+  if (v <= 6) return "okay";
+  if (v <= 8) return "good";
+  return "great";
+}
+function updateTagline(){
+  const v = Number(slider.value);
+  moodTagline.textContent =
+    `You're feeling ${moodLabel(v)} — tap “Locate + Save” to reveal the world’s mood 🌍`;
+}
+
+/* keep your mood value update + add tagline update */
+slider.oninput = ()=> {
+  el("moodValue").textContent = slider.value;
+  updateTagline();
+};
 
 /* =============================================================================
    4.5) DRAGGABLE PANEL VIA HANDLE
@@ -490,7 +511,7 @@ panel.addEventListener("pointerup", () => { dragging = false; });
 panel.addEventListener("pointercancel", () => { dragging = false; });
 
 /* =============================================================================
-   5) AMBIENT MUSIC (max browser compatibility)
+   5) AMBIENT MUSIC (max browser compatibility) ✅ IMPROVED
    ============================================================================= */
 let audioCtx, masterGain, musicStarted = false;
 let musicNodes = [];
@@ -592,52 +613,47 @@ function playAmbientMusic() {
   schedule();
 }
 
+/* ✅ NEW: iOS unlock hack + "once" listeners (max compatibility) */
+function iosUnlockHack(ctx){
+  try{
+    const buffer = ctx.createBuffer(1, 1, 22050);
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    src.connect(ctx.destination);
+    src.start(0);
+    src.stop(0);
+  }catch(e){}
+}
+
 function unlockAndStartAudio() {
-  if (!musicStarted) playAmbientMusic();
-  try { audioCtx && audioCtx.resume && audioCtx.resume(); } catch(e){}
-  detachAudioUnlock();
+  try {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      iosUnlockHack(audioCtx);
+    }
+    try { audioCtx.resume && audioCtx.resume(); } catch(e){}
+
+    if (!musicStarted) {
+      playAmbientMusic(); // creates ctx too, but safe
+    }
+
+    try { audioCtx.resume && audioCtx.resume(); } catch(e){}
+  } catch(e) {}
 }
 
-function detachAudioUnlock() {
-  const optsCap = { capture: true };
-  const optsCapPassive = { capture: true, passive: true };
+/* attach once: first real user gesture anywhere */
+(function attachAudioUnlockOnce(){
+  const opts = { capture: true, passive: true, once: true };
+  document.addEventListener("touchstart", unlockAndStartAudio, opts);
+  document.addEventListener("pointerdown", unlockAndStartAudio, opts);
+  document.addEventListener("mousedown", unlockAndStartAudio, opts);
+  document.addEventListener("keydown", unlockAndStartAudio, { capture:true, once:true });
 
-  window.removeEventListener("pointerdown", unlockAndStartAudio, optsCap);
-  window.removeEventListener("touchstart", unlockAndStartAudio, optsCapPassive);
-  window.removeEventListener("touchend", unlockAndStartAudio, optsCapPassive);
-  window.removeEventListener("mousedown", unlockAndStartAudio, optsCap);
-  window.removeEventListener("click", unlockAndStartAudio, optsCap);
-  window.removeEventListener("keydown", unlockAndStartAudio, optsCap);
-  window.removeEventListener("wheel", unlockAndStartAudio, optsCapPassive);
-  window.removeEventListener("scroll", unlockAndStartAudio, optsCapPassive);
-
-  const mapEl = document.getElementById("map");
-  if (mapEl) {
-    mapEl.removeEventListener("pointerdown", unlockAndStartAudio, optsCap);
-    mapEl.removeEventListener("touchstart", unlockAndStartAudio, optsCapPassive);
-    mapEl.removeEventListener("click", unlockAndStartAudio, optsCap);
-  }
-}
-
-(function attachAudioUnlock() {
-  const optsCap = { capture: true };
-  const optsCapPassive = { capture: true, passive: true };
-
-  window.addEventListener("pointerdown", unlockAndStartAudio, optsCap);
-  window.addEventListener("touchstart", unlockAndStartAudio, optsCapPassive);
-  window.addEventListener("touchend", unlockAndStartAudio, optsCapPassive);
-  window.addEventListener("mousedown", unlockAndStartAudio, optsCap);
-  window.addEventListener("click", unlockAndStartAudio, optsCap);
-  window.addEventListener("keydown", unlockAndStartAudio, optsCap);
-  window.addEventListener("wheel", unlockAndStartAudio, optsCapPassive);
-  window.addEventListener("scroll", unlockAndStartAudio, optsCapPassive);
-
-  const mapEl = document.getElementById("map");
-  if (mapEl) {
-    mapEl.addEventListener("pointerdown", unlockAndStartAudio, optsCap);
-    mapEl.addEventListener("touchstart", unlockAndStartAudio, optsCapPassive);
-    mapEl.addEventListener("click", unlockAndStartAudio, optsCap);
-  }
+  /* extra reliability: direct unlock on slider & button touch */
+  slider.addEventListener("touchstart", unlockAndStartAudio, { passive:true });
+  slider.addEventListener("pointerdown", unlockAndStartAudio, { passive:true });
+  el("btnSave").addEventListener("touchstart", unlockAndStartAudio, { passive:true });
+  el("btnSave").addEventListener("pointerdown", unlockAndStartAudio, { passive:true });
 })();
 
 /* =============================================================================
@@ -803,11 +819,10 @@ map.on("load", async () => {
 
   // Start with the mood picker (NORMAL) everywhere
   showApp();
+
+  // ✅ init tagline once
+  updateTagline();
 });
 </script>
 </body>
 </html>
-
-
-
-
