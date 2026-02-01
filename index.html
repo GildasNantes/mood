@@ -120,9 +120,7 @@
     }
   }
 
-  /* =========================
-     Feedback modal
-     ========================= */
+  /* Feedback modal */
   #fbOverlay{
     position: fixed;
     inset: 0;
@@ -170,10 +168,8 @@
       Pick a mood, then save 🌍
     </div>
 
-    <!-- appears only if iPhone blocks autoplay -->
     <div class="row" id="soundRow" style="margin-top:0; display:none;">
       <button id="btnSound" class="secondary" type="button">🔊 Enable sound</button>
-      <!-- <div class="small" style="margin-top:-6px;">(Some phones require one explicit tap.)</div> -->
     </div>
 
     <div id="appMsg" class="msg"></div>
@@ -522,7 +518,7 @@ panel.addEventListener("pointerup", () => { dragging = false; });
 panel.addEventListener("pointercancel", () => { dragging = false; });
 
 /* =============================================================================
-   5) AMBIENT MUSIC (mood-adaptive) ✅ + hide button when enabled
+   5) AMBIENT MUSIC (mood-adaptive + transposition) ✅ + hide/restart
    ============================================================================= */
 let audioCtx, masterGain, musicStarted = false;
 let musicNodes = [];
@@ -533,8 +529,22 @@ function stopLoopTimers() {
   if (chordTimer) { clearTimeout(chordTimer); chordTimer = null; }
 }
 
+function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+
+/* NEW: pitch shift (semitones) based on mood */
+function getTransposeSemitones(){
+  const t = clamp(currentMood / 10, 0, 1);
+  // low mood => -4 semitones, high mood => +4 semitones
+  return Math.round(lerp(-4, 4, t));
+}
+function pitchShiftFactor(){
+  const st = getTransposeSemitones();
+  return Math.pow(2, st / 12);
+}
+
 function fadeOutMusic(seconds = 2.6) {
   if (!audioCtx || !masterGain) return;
+
   const now = audioCtx.currentTime;
   masterGain.gain.cancelScheduledValues(now);
   masterGain.gain.setValueAtTime(masterGain.gain.value, now);
@@ -547,18 +557,17 @@ function fadeOutMusic(seconds = 2.6) {
       try { n.disconnect && n.disconnect(); } catch {}
     }
     musicNodes = [];
+    // ✅ allow restart later (Change mood)
+    musicStarted = false;
   }, (seconds + 0.3) * 1000);
 }
-
-function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
 
 function updateMusicParams() {
   if (!audioCtx || !masterGain || !musicFilter) return;
 
   const t = clamp(currentMood / 10, 0, 1);
-
   const targetVol = lerp(0.16, 0.24, t);
-  const targetCutoff = lerp(700, 2000, t);
+  const targetCutoff = lerp(700, 2200, t);
 
   const now = audioCtx.currentTime;
 
@@ -616,8 +625,11 @@ function playAmbientMusic() {
 
   function padChord(freqs, start, dur, moodT) {
     const padPeak = lerp(0.085, 0.13, moodT);
+    const factor = pitchShiftFactor();
 
-    for (const f of freqs) {
+    for (const f0 of freqs) {
+      const f = f0 * factor;
+
       const o = audioCtx.createOscillator();
       o.type = (moodT < 0.35) ? "sine" : "triangle";
       o.frequency.value = f;
@@ -638,9 +650,11 @@ function playAmbientMusic() {
     const step = lerp(0.62, 0.34, moodT);
     const notes = 8;
     const pattern = [0, 1, 2, 1];
+    const factor = pitchShiftFactor();
 
     for (let i = 0; i < notes; i++) {
-      const f = freqs[pattern[i % pattern.length]] * (i % 2 === 0 ? 2 : 1);
+      const base = freqs[pattern[i % pattern.length]] * (i % 2 === 0 ? 2 : 1);
+      const f = base * factor;
 
       const o = audioCtx.createOscillator();
       o.type = "triangle";
@@ -715,6 +729,20 @@ function unlockAndStartAudio(){
     if (audioCtx && audioCtx.state === "running") showSoundButton(false);
     updateMusicParams();
   } catch(e) {}
+}
+
+/* NEW: when user clicks "Change mood", restart music if possible */
+function restartMusicIfPossible(){
+  // If audio already unlocked (running), start immediately.
+  if (audioCtx && audioCtx.state === "running") {
+    if (!musicStarted) playAmbientMusic();
+    showSoundButton(false);
+    updateMusicParams();
+    return;
+  }
+
+  // Otherwise: show the button to let them tap once.
+  if (isPhone) showSoundButton(true);
 }
 
 (function attachAudioUnlockOnce(){
@@ -796,6 +824,7 @@ el("btnSave").onclick = async () => {
       return;
     }
 
+    // fade out music after save (as before)
     fadeOutMusic(2.6);
     revealedThisSession = true;
 
@@ -817,10 +846,12 @@ el("btnSave").onclick = async () => {
 el("btnExpand").onclick = () => {
   showApp();
   setAppMessage("");
+  // ✅ bring music back when changing mood
+  restartMusicIfPossible();
 };
 
 /* =============================================================================
-   8) FEEDBACK MODAL ✅ (restored) — fixes "Any comments?"
+   8) FEEDBACK MODAL — "Any comments?" works
    ============================================================================= */
 const FEEDBACK_MAX_WORDS = 250;
 function countWords(s){ return (s.trim().match(/\S+/g) || []).length; }
@@ -900,7 +931,7 @@ btnFbSend.onclick = async () => {
 };
 
 /* =============================================================================
-   9) INIT ✅ (micro-improvements applied)
+   9) INIT
    ============================================================================= */
 map.on("load", async () => {
   ensureMoodImages();
@@ -909,9 +940,9 @@ map.on("load", async () => {
   revealedThisSession = false;
 
   showApp();
-  currentMood = Number(slider.value);  // ✅ set first
+  currentMood = Number(slider.value);
   updateFeeling();
-  updateMusicParams();                 // ✅ sync params (safe even if not started)
+  updateMusicParams();
   soundWatchdog();
 });
 </script>
