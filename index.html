@@ -3,19 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mood Map</title>
 
+<title>Mood2Know — the world’s emotional weather in one click</title>
 
 <meta name="description" content="Mood2Know — the world’s first emotional weather report. Share your mood in one click and discover the world’s mood. Anonymous, minimalist, global experiment.">
 <meta name="robots" content="index,follow">
 
-<!-- Open Graph (nice for sharing on social apps) -->
+<!-- Open Graph (sharing) -->
 <meta property="og:title" content="Mood2Know — the world’s mood in one click">
 <meta property="og:description" content="The world’s first emotional weather report. Share your mood anonymously in one click and reveal the collective mood.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://mood2know.com/">
 <link rel="canonical" href="https://mood2know.com/">
-
 
 <link rel="stylesheet" href="./maplibre-gl.css">
 
@@ -40,6 +39,11 @@
     padding-top: calc(16px + env(safe-area-inset-top));
     left: 12px;
     top: 12px;
+
+    /* ✅ keep panel within viewport + allow internal scroll if content is long */
+    max-height: calc(var(--vh) * 100 - 24px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   .panel-app{
@@ -132,56 +136,55 @@
     }
   }
 
+  /* About accordion (minimal + discreet) */
+  .m2k-about{ margin-top: 10px; }
+  .m2k-details{ border-top: 1px solid rgba(0,0,0,0.08); padding-top: 10px; }
 
+  .m2k-summary{
+    cursor:pointer;
+    list-style:none;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    user-select:none;
+    font-size: 12.5px;
+    opacity: .72;
+  }
+  .m2k-summary::-webkit-details-marker{ display:none; }
+  .m2k-summary:hover{ opacity: .95; }
 
-/* About accordion (minimal + discreet) */
-.m2k-about{ margin-top: 10px; }
-.m2k-details{ border-top: 1px solid rgba(0,0,0,0.08); padding-top: 10px; }
+  .m2k-summary-icon{ margin-left:auto; opacity: .6; }
 
-.m2k-summary{
-  cursor:pointer;
-  list-style:none;
-  display:flex;
-  align-items:center;
-  gap:8px;
-  user-select:none;
-  font-size: 12.5px;
-  opacity: .72;
-}
-.m2k-summary::-webkit-details-marker{ display:none; }
-.m2k-summary:hover{ opacity: .95; }
+  .m2k-lang{
+    margin-top: 8px;
+    display:flex;
+    gap:6px;
+    opacity: .75;
+  }
 
-.m2k-summary-icon{ margin-left:auto; opacity: .6; }
+  /* ✅ fix: show EN/FR text (global button color was white) */
+  .m2k-lang-btn{
+    color:#111; /* important */
+    border: 1px solid rgba(0,0,0,.12);
+    background: transparent;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    cursor: pointer;
+  }
+  .m2k-lang-btn[aria-pressed="true"]{
+    background: rgba(0,0,0,0.06);
+    border-color: rgba(0,0,0,.28);
+    opacity: 1;
+  }
 
-.m2k-lang{
-  margin-top: 8px;
-  display:flex;
-  gap:6px;
-  opacity: .75;
-}
-.m2k-lang-btn{
-  border: 1px solid rgba(0,0,0,.12);
-  background: transparent;
-  padding: 3px 8px;
-  border-radius: 999px;
-  font-size: 11.5px;
-  cursor: pointer;
-}
-.m2k-lang-btn[aria-pressed="true"]{
-  border-color: rgba(0,0,0,.28);
-  opacity: 1;
-}
-
-.m2k-text{
-  margin-top: 10px;
-  font-size: 13px;
-  line-height: 1.55;
-  opacity: .88;
-}
-.m2k-text p{ margin: 0 0 10px; }
-
-
-
+  .m2k-text{
+    margin-top: 10px;
+    font-size: 13px;
+    line-height: 1.55;
+    opacity: .88;
+  }
+  .m2k-text p{ margin: 0 0 10px; }
 
   /* Feedback modal */
   #fbOverlay{
@@ -211,9 +214,8 @@
 <div id="map"></div>
 
 <div id="panel" class="panel-app">
-<h3>Mood2Know</h3>
-<div class="titleSub">the world’s emotional weather in one click</div>
-
+  <h3>Mood2Know</h3>
+  <div class="titleSub">the world’s emotional weather in one click</div>
 
   <div id="dragHandle" title="Drag panel" aria-label="Drag panel"></div>
 
@@ -229,7 +231,7 @@
     </div>
 
     <div class="small" id="hint">
-      Pick a mood, then save 
+      Pick a mood, then save
     </div>
 
     <div class="row" id="soundRow" style="margin-top:0; display:none;">
@@ -284,7 +286,6 @@
     </details>
   </section>
 </div>
-
 
 <!-- FEEDBACK MODAL -->
 <div id="fbOverlay" aria-hidden="true">
@@ -545,6 +546,11 @@ const panel = el("panel");
 
 const isPhone = window.matchMedia("(pointer: coarse)").matches || window.matchMedia("(max-width: 520px)").matches;
 
+function collapseAbout() {
+  const d = el("m2kDetails");
+  if (d) d.open = false;
+}
+
 function showApp(){
   panel.className = "panel-app";
   el("appView").style.display = "block";
@@ -633,10 +639,9 @@ function stopLoopTimers() {
 
 function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
 
-/* NEW: pitch shift (semitones) based on mood */
+/* pitch shift (semitones) based on mood */
 function getTransposeSemitones(){
   const t = clamp(currentMood / 10, 0, 1);
-  // low mood => -4 semitones, high mood => +4 semitones
   return Math.round(lerp(-4, 4, t));
 }
 function pitchShiftFactor(){
@@ -659,7 +664,6 @@ function fadeOutMusic(seconds = 2.6) {
       try { n.disconnect && n.disconnect(); } catch {}
     }
     musicNodes = [];
-    // ✅ allow restart later (Change mood)
     musicStarted = false;
   }, (seconds + 0.3) * 1000);
 }
@@ -833,17 +837,13 @@ function unlockAndStartAudio(){
   } catch(e) {}
 }
 
-/* NEW: when user clicks "Change mood", restart music if possible */
 function restartMusicIfPossible(){
-  // If audio already unlocked (running), start immediately.
   if (audioCtx && audioCtx.state === "running") {
     if (!musicStarted) playAmbientMusic();
     showSoundButton(false);
     updateMusicParams();
     return;
   }
-
-  // Otherwise: show the button to let them tap once.
   if (isPhone) showSoundButton(true);
 }
 
@@ -930,6 +930,9 @@ el("btnSave").onclick = async () => {
     fadeOutMusic(2.6);
     revealedThisSession = true;
 
+    // ✅ collapse the accordion after a successful save
+    collapseAbout();
+
     setAppMessage("Thank you! Loading the world’s mood…");
     map.easeTo({ center: [coords.lon, coords.lat], zoom: Math.max(map.getZoom(), 8) });
 
@@ -948,7 +951,6 @@ el("btnSave").onclick = async () => {
 el("btnExpand").onclick = () => {
   showApp();
   setAppMessage("");
-  // ✅ bring music back when changing mood
   restartMusicIfPossible();
 };
 
@@ -1049,18 +1051,17 @@ map.on("load", async () => {
 });
 </script>
 
+<!-- ✅ Language switcher script (EN default) -->
 <script>
 (function () {
   const blocks = Array.from(document.querySelectorAll('.m2k-text[data-lang]'));
   const summaryLabel = document.querySelector('[data-i18n="summary"]');
   const buttons = Array.from(document.querySelectorAll('.m2k-lang-btn[data-set-lang]'));
 
+  // ✅ EN by default (unless user previously chose a language)
   function pickDefaultLang() {
     const saved = localStorage.getItem('m2k_lang');
-    if (saved) return saved;
-    const nav = (navigator.language || 'en').toLowerCase();
-    if (nav.startsWith('fr')) return 'fr';
-    return 'en';
+    return saved || 'en';
   }
 
   function setLang(lang) {
