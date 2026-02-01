@@ -48,7 +48,17 @@
     border-radius: 14px;
   }
 
-  h3 { margin:0 0 10px; font-size:18px; }
+  h3 { margin:0; font-size:18px; }
+
+  /* ✅ Subtitle same size as title */
+  .titleSub{
+    font-size: 18px;     /* same as h3 */
+    font-weight: 600;
+    line-height: 1.15;
+    margin-top: 2px;
+    margin-bottom: 10px;
+    opacity: 0.75;
+  }
 
   /* DRAG HANDLE */
   #dragHandle{
@@ -156,17 +166,6 @@
   <h3>Mood Map</h3>
   <div class="titleSub">the world’s mood in one click</div>
 
-
-.titleSub{
-  font-size: 18px;        /* même taille que Mood Map */
-  font-weight: 600;
-  line-height: 1.15;
-  margin-top: -6px;       /* rapproche du titre */
-  margin-bottom: 10px;
-  opacity: 0.75;          /* plus doux que le titre */
-}
-
-
   <!-- HANDLE -->
   <div id="dragHandle" title="Drag panel" aria-label="Drag panel"></div>
 
@@ -175,9 +174,6 @@
     <div class="row">
       <label>Your mood: <b><span id="moodValue">5</span>/10</b></label>
       <input id="slider" type="range" min="0" max="10" value="5">
-
-      <!-- ✅ Accroche (hook) -->
-      <div class="small" id="moodHook">The world’s mood, in one click.</div>
 
       <!-- ✅ “You’re feeling …” bigger, no more extra instruction -->
       <div class="feelBig" id="moodFeeling"></div>
@@ -193,7 +189,6 @@
       <button id="btnSave">Locate + Save</button>
     </div>
 
-    <!-- ✅ shorter line under the button -->
     <div class="small" id="hint">
       Pick a mood, then save 🌍
     </div>
@@ -431,7 +426,6 @@ function clearMarkers(){
   source.setData({ type:"FeatureCollection", features: [] });
 }
 
-/* Only reveal markers after first successful save (this session) */
 let revealedThisSession = false;
 
 async function refreshPoints(){
@@ -571,7 +565,6 @@ function playAmbientMusic() {
   if (musicStarted) return;
   musicStarted = true;
 
-  // if audioCtx already exists, reuse it
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   try { audioCtx.resume && audioCtx.resume(); } catch(e){}
 
@@ -644,7 +637,6 @@ function playAmbientMusic() {
   schedule();
 }
 
-/* iOS unlock hack */
 function iosUnlockHack(ctx){
   try{
     const buffer = ctx.createBuffer(1, 1, 22050);
@@ -666,7 +658,6 @@ function showSoundButton(show){
   row.style.display = show ? "block" : "none";
 }
 
-/* single entry point to unlock + start */
 function unlockAndStartAudio(){
   try {
     if (!audioCtx) {
@@ -678,12 +669,10 @@ function unlockAndStartAudio(){
     if (!musicStarted) playAmbientMusic();
     try { audioCtx.resume && audioCtx.resume(); } catch(e){}
 
-    // If it worked, hide button
     if (audioCtx && audioCtx.state === "running") showSoundButton(false);
   } catch(e) {}
 }
 
-/* attach once: first user gesture */
 (function attachAudioUnlockOnce(){
   const opts = { capture: true, passive: true, once: true };
   document.addEventListener("touchstart", unlockAndStartAudio, opts);
@@ -691,32 +680,22 @@ function unlockAndStartAudio(){
   document.addEventListener("mousedown", unlockAndStartAudio, opts);
   document.addEventListener("keydown", unlockAndStartAudio, { capture:true, once:true });
 
-  // extra reliability: direct unlock on slider & save
   slider.addEventListener("touchstart", unlockAndStartAudio, { passive:true });
   slider.addEventListener("pointerdown", unlockAndStartAudio, { passive:true });
   el("btnSave").addEventListener("touchstart", unlockAndStartAudio, { passive:true });
   el("btnSave").addEventListener("pointerdown", unlockAndStartAudio, { passive:true });
 })();
 
-/* fallback button */
 el("btnSound").addEventListener("click", () => {
   unlockAndStartAudio();
-  // if still blocked, keep visible; otherwise it hides
 });
 
-/* if after a short delay audio isn't running, show button */
 function soundWatchdog(){
-  // show the button only if the user is on a touch device AND audio didn't start
   const likelyPhone = isPhone || window.matchMedia("(pointer: coarse)").matches;
   if (!likelyPhone) return;
 
-  setTimeout(() => {
-    if (!isAudioRunning()) showSoundButton(true);
-  }, 900);
-
-  setTimeout(() => {
-    if (!isAudioRunning()) showSoundButton(true);
-  }, 2500);
+  setTimeout(() => { if (!isAudioRunning()) showSoundButton(true); }, 900);
+  setTimeout(() => { if (!isAudioRunning()) showSoundButton(true); }, 2500);
 }
 
 /* =============================================================================
@@ -793,85 +772,6 @@ el("btnExpand").onclick = () => {
 };
 
 /* =============================================================================
-   8) FEEDBACK MODAL
-   ============================================================================= */
-const FEEDBACK_MAX_WORDS = 250;
-function countWords(s){ return (s.trim().match(/\S+/g) || []).length; }
-
-const fbOverlay = el("fbOverlay");
-const fbText = el("fbText");
-const fbMsg  = el("fbMsg");
-const fbCount = el("fbCount");
-const btnFbSend = el("btnFbSend");
-
-function updateFbCounter(){
-  const chars = fbText.value.length;
-  const words = countWords(fbText.value);
-  fbCount.textContent = `${chars} / 5000 • ${words} / ${FEEDBACK_MAX_WORDS} words`;
-}
-
-function openFeedbackModal(){
-  fbMsg.textContent = "";
-  fbText.value = "";
-  fbOverlay.style.display = "flex";
-  fbOverlay.setAttribute("aria-hidden", "false");
-  updateFbCounter();
-  setTimeout(() => fbText.focus(), 50);
-}
-function closeFeedbackModal(){
-  fbOverlay.style.display = "none";
-  fbOverlay.setAttribute("aria-hidden", "true");
-}
-fbOverlay.addEventListener("click", (e) => { if (e.target === fbOverlay) closeFeedbackModal(); });
-el("btnFbCancel").onclick = closeFeedbackModal;
-fbText.addEventListener("input", updateFbCounter);
-
-el("btnFeedback").onclick = () => openFeedbackModal();
-
-btnFbSend.onclick = async () => {
-  btnFbSend.disabled = true;
-  fbMsg.textContent = "Sending…";
-
-  const message = fbText.value.trim();
-  if (message.length < 2) {
-    fbMsg.textContent = "Please write a message.";
-    btnFbSend.disabled = false;
-    return;
-  }
-  const words = countWords(message);
-  if (words > FEEDBACK_MAX_WORDS) {
-    fbMsg.textContent = `Too many words (${words}). Max is ${FEEDBACK_MAX_WORDS}.`;
-    btnFbSend.disabled = false;
-    return;
-  }
-
-  const { error } = await sb.from("mood_feedback").insert({
-    anon_id: getAnonId(),
-    message
-  });
-
-  if (error) {
-    const raw = (error.message || "") + " " + (error.details || "") + " " + (error.hint || "");
-    const isDuplicate =
-      error.code === "23505" ||
-      raw.includes("duplicate key value") ||
-      raw.toLowerCase().includes("one_per_day");
-
-    fbMsg.textContent = isDuplicate
-      ? "Only one save per day please!"
-      : "Unable to send comment. Please try again.";
-
-    console.warn("FEEDBACK error:", error);
-    btnFbSend.disabled = false;
-    return;
-  }
-
-  fbMsg.textContent = "✅ Thank you for your feedback!";
-  setTimeout(() => closeFeedbackModal(), 700);
-  btnFbSend.disabled = false;
-};
-
-/* =============================================================================
    9) INIT
    ============================================================================= */
 map.on("load", async () => {
@@ -881,11 +781,7 @@ map.on("load", async () => {
   revealedThisSession = false;
 
   showApp();
-
-  // init feeling text
   updateFeeling();
-
-  // show fallback sound button if needed
   soundWatchdog();
 });
 </script>
