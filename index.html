@@ -76,6 +76,12 @@
     opacity: 0.75;
   }
 
+/* ✅ hide subtitle in compact panel */
+.panel-compact .titleSub {
+  display: none;
+}
+
+
   #dragHandle{
     width: 54px;
     height: 6px;
@@ -644,6 +650,14 @@ slider.oninput = ()=> {
   updateMusicParams(); // live update if music started
 };
 
+// ✅ iOS Safari fix: ensure slider value sync on first touch
+slider.addEventListener("touchstart", () => {
+  el("moodValue").textContent = slider.value;
+  currentMood = Number(slider.value);
+  updateFeeling();
+}, { passive: true });
+
+
 /* =============================================================================
    4.5) DRAGGABLE PANEL VIA HANDLE
    ============================================================================= */
@@ -1097,9 +1111,18 @@ map.on("load", async () => {
   revealedThisSession = false;
 
   showApp();
+
+// ✅ iOS fix: force range repaint + sync displayed value
+requestAnimationFrame(() => {
+  slider.value = slider.value; // triggers a repaint in iOS Safari
+  el("moodValue").textContent = slider.value;
   currentMood = Number(slider.value);
   updateFeeling();
   updateMusicParams();
+});
+
+
+
   soundWatchdog();
 });
 </script>
