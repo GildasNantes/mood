@@ -293,7 +293,7 @@
   </div>
 
   <!-- ABOUT (accordion, multilingual, SEO-friendly) -->
-  <section class="m2k-about" aria-label="About Mood2Know">
+  <section id="about" class="m2k-about" aria-label="About Mood2Know">
     <details class="m2k-details" id="m2kDetails">
       <summary class="m2k-summary">
         <span class="m2k-summary-label" data-i18n="summary">Why Mood2Know?</span>
@@ -372,8 +372,8 @@
 </div>
 
 <p class="small" style="margin-top:12px;">
-  Learn more about the project:
-  <a href="/emotional-weather-map.html">Emotional Weather Map</a>
+  Learn more:
+  <a href="/emotional-weather-map.html">Emotional weather map of the world</a>
 </p>
 
 
@@ -1199,6 +1199,19 @@ requestAnimationFrame(() => {
   setLang(pickDefaultLang());
 })();
 </script>
+
+<script>
+(function () {
+  if (location.hash === '#about') {
+    const details = document.getElementById('m2kDetails');
+    if (details) {
+      details.open = true;
+      details.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+})();
+</script>
+
 
 </body>
 </html>
