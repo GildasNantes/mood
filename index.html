@@ -34,7 +34,7 @@
      PANEL 1: NORMAL (Mood)
      ========================= */
   .panel-app{
-    width: 340px;              /* normal desktop */
+    width: 340px;
     max-width: calc(100vw - 24px);
   }
 
@@ -42,7 +42,7 @@
      PANEL 2: COMPACT (Any comments panel state)
      ========================= */
   .panel-compact{
-    width: 260px;              /* compact desktop */
+    width: 260px;
     max-width: calc(100vw - 24px);
     padding: 10px 12px;
     border-radius: 14px;
@@ -79,34 +79,49 @@
   .small{ font-size:13px; opacity:.75; }
   .msg{ white-space:pre-wrap; font-size:13px; }
 
+  /* ✅ Bigger "You're feeling..." */
+  .feelBig{
+    font-size: 16px;
+    line-height: 1.25;
+    font-weight: 650;
+    opacity: .95;
+  }
+
+  /* ✅ Sound button a bit more “important” */
+  #btnSound{
+    width: 100%;
+    font-weight: 650;
+  }
+
   #appView, #compactView { display:none; }
 
   /* =========================
      MOBILE (iPhone)
-     - Mood panel = normal width (comfortable)
-     - Compact panel stays compact
      ========================= */
-@media (max-width: 520px) {
-  .panel-compact{
-    width: 150px;
-    max-width: 150px;
-    padding: 9px 10px;
+  @media (max-width: 520px) {
+    .panel-compact{
+      width: 150px;
+      max-width: 150px;
+      padding: 9px 10px;
+    }
+
+    button, input, textarea {
+      padding: 14px;
+      font-size: 16px;
+    }
+
+    .feelBig{
+      font-size: 17px;
+    }
   }
 
-  /* garde tes gros boutons sur iPhone */
-  button, input, textarea {
-    padding: 14px;
-    font-size: 16px;
+  @media (max-width: 520px) {
+    #btnFeedback,
+    #btnExpand {
+      padding: 10px 8px;
+      font-size: 13px;
+    }
   }
-}
-
-@media (max-width: 520px) {
-  #btnFeedback,
-  #btnExpand {
-    padding: 10px 8px;
-    font-size: 13px;
-  }
-}
 
   /* =========================
      Feedback modal
@@ -149,16 +164,26 @@
       <label>Your mood: <b><span id="moodValue">5</span>/10</b></label>
       <input id="slider" type="range" min="0" max="10" value="5">
 
-      <!-- ✅ NEW: TAGLINE JUST UNDER SLIDER -->
-      <div class="small" id="moodTagline"></div>
+      <!-- ✅ Accroche (hook) -->
+      <div class="small" id="moodHook">The world’s mood, in one click.</div>
+
+      <!-- ✅ “You’re feeling …” bigger, no more extra instruction -->
+      <div class="feelBig" id="moodFeeling"></div>
+    </div>
+
+    <!-- ✅ NEW: appears only if iPhone blocks autoplay -->
+    <div class="row" id="soundRow" style="margin-top:0; display:none;">
+      <button id="btnSound" class="secondary" type="button">🔊 Enable sound</button>
+      <div class="small" style="margin-top:-6px;">(Some phones require one explicit tap.)</div>
     </div>
 
     <div class="row">
       <button id="btnSave">Locate + Save</button>
     </div>
 
+    <!-- ✅ shorter line under the button -->
     <div class="small" id="hint">
-      Choose your mood, then tap “Locate + Save” to reveal the world’s mood 🌍
+      Pick a mood, then save 🌍
     </div>
 
     <div id="appMsg" class="msg"></div>
@@ -432,17 +457,14 @@ async function refreshPoints(){
 const el = id => document.getElementById(id);
 const panel = el("panel");
 
-/* Better mobile detection than only width */
 const isPhone = window.matchMedia("(pointer: coarse)").matches || window.matchMedia("(max-width: 520px)").matches;
 
 function showApp(){
-  // Mood view should be NORMAL on both desktop and phone
   panel.className = "panel-app";
   el("appView").style.display = "block";
   el("compactView").style.display = "none";
 }
 function showCompact(msg="✅ Saved."){
-  // Compact view should be COMPACT on both desktop and phone
   panel.className = "panel-compact";
   el("compactMsg").textContent = msg;
   el("appView").style.display = "none";
@@ -451,9 +473,8 @@ function showCompact(msg="✅ Saved."){
 function setAppMessage(msg){ el("appMsg").textContent = msg || ""; }
 
 const slider = el("slider");
-const moodTagline = el("moodTagline");
+const moodFeeling = el("moodFeeling");
 
-/* ✅ NEW: dynamic tagline */
 function moodLabel(v){
   v = Number(v);
   if (v <= 2) return "low";
@@ -462,16 +483,13 @@ function moodLabel(v){
   if (v <= 8) return "good";
   return "great";
 }
-function updateTagline(){
+function updateFeeling(){
   const v = Number(slider.value);
-  moodTagline.textContent =
-    `You're feeling ${moodLabel(v)} — tap “Locate + Save” to reveal the world’s mood 🌍`;
+  moodFeeling.textContent = `You're feeling ${moodLabel(v)}.`;
 }
-
-/* keep your mood value update + add tagline update */
 slider.oninput = ()=> {
   el("moodValue").textContent = slider.value;
-  updateTagline();
+  updateFeeling();
 };
 
 /* =============================================================================
@@ -511,7 +529,7 @@ panel.addEventListener("pointerup", () => { dragging = false; });
 panel.addEventListener("pointercancel", () => { dragging = false; });
 
 /* =============================================================================
-   5) AMBIENT MUSIC (max browser compatibility) ✅ IMPROVED
+   5) AMBIENT MUSIC (max browser compatibility) ✅ + fallback button
    ============================================================================= */
 let audioCtx, masterGain, musicStarted = false;
 let musicNodes = [];
@@ -541,7 +559,8 @@ function playAmbientMusic() {
   if (musicStarted) return;
   musicStarted = true;
 
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  // if audioCtx already exists, reuse it
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   try { audioCtx.resume && audioCtx.resume(); } catch(e){}
 
   masterGain = audioCtx.createGain();
@@ -613,7 +632,7 @@ function playAmbientMusic() {
   schedule();
 }
 
-/* ✅ NEW: iOS unlock hack + "once" listeners (max compatibility) */
+/* iOS unlock hack */
 function iosUnlockHack(ctx){
   try{
     const buffer = ctx.createBuffer(1, 1, 22050);
@@ -625,7 +644,18 @@ function iosUnlockHack(ctx){
   }catch(e){}
 }
 
-function unlockAndStartAudio() {
+function isAudioRunning(){
+  return !!(audioCtx && audioCtx.state === "running" && musicStarted);
+}
+
+function showSoundButton(show){
+  const row = el("soundRow");
+  if (!row) return;
+  row.style.display = show ? "block" : "none";
+}
+
+/* single entry point to unlock + start */
+function unlockAndStartAudio(){
   try {
     if (!audioCtx) {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -633,15 +663,15 @@ function unlockAndStartAudio() {
     }
     try { audioCtx.resume && audioCtx.resume(); } catch(e){}
 
-    if (!musicStarted) {
-      playAmbientMusic(); // creates ctx too, but safe
-    }
-
+    if (!musicStarted) playAmbientMusic();
     try { audioCtx.resume && audioCtx.resume(); } catch(e){}
+
+    // If it worked, hide button
+    if (audioCtx && audioCtx.state === "running") showSoundButton(false);
   } catch(e) {}
 }
 
-/* attach once: first real user gesture anywhere */
+/* attach once: first user gesture */
 (function attachAudioUnlockOnce(){
   const opts = { capture: true, passive: true, once: true };
   document.addEventListener("touchstart", unlockAndStartAudio, opts);
@@ -649,12 +679,33 @@ function unlockAndStartAudio() {
   document.addEventListener("mousedown", unlockAndStartAudio, opts);
   document.addEventListener("keydown", unlockAndStartAudio, { capture:true, once:true });
 
-  /* extra reliability: direct unlock on slider & button touch */
+  // extra reliability: direct unlock on slider & save
   slider.addEventListener("touchstart", unlockAndStartAudio, { passive:true });
   slider.addEventListener("pointerdown", unlockAndStartAudio, { passive:true });
   el("btnSave").addEventListener("touchstart", unlockAndStartAudio, { passive:true });
   el("btnSave").addEventListener("pointerdown", unlockAndStartAudio, { passive:true });
 })();
+
+/* fallback button */
+el("btnSound").addEventListener("click", () => {
+  unlockAndStartAudio();
+  // if still blocked, keep visible; otherwise it hides
+});
+
+/* if after a short delay audio isn't running, show button */
+function soundWatchdog(){
+  // show the button only if the user is on a touch device AND audio didn't start
+  const likelyPhone = isPhone || window.matchMedia("(pointer: coarse)").matches;
+  if (!likelyPhone) return;
+
+  setTimeout(() => {
+    if (!isAudioRunning()) showSoundButton(true);
+  }, 900);
+
+  setTimeout(() => {
+    if (!isAudioRunning()) showSoundButton(true);
+  }, 2500);
+}
 
 /* =============================================================================
    6) SUPABASE CONFIG
@@ -817,11 +868,13 @@ map.on("load", async () => {
   clearMarkers();
   revealedThisSession = false;
 
-  // Start with the mood picker (NORMAL) everywhere
   showApp();
 
-  // ✅ init tagline once
-  updateTagline();
+  // init feeling text
+  updateFeeling();
+
+  // show fallback sound button if needed
+  soundWatchdog();
 });
 </script>
 </body>
