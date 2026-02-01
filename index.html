@@ -5,6 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mood Map</title>
 
+
+<meta name="description" content="Mood2Know — the world’s first emotional weather report. Share your mood in one click and discover the world’s mood. Anonymous, minimalist, global experiment.">
+<meta name="robots" content="index,follow">
+
+<!-- Open Graph (nice for sharing on social apps) -->
+<meta property="og:title" content="Mood2Know — the world’s mood in one click">
+<meta property="og:description" content="The world’s first emotional weather report. Share your mood anonymously in one click and reveal the collective mood.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://mood2know.com/">
+<link rel="canonical" href="https://mood2know.com/">
+
+
 <link rel="stylesheet" href="./maplibre-gl.css">
 
 <style>
@@ -120,6 +132,57 @@
     }
   }
 
+
+
+/* About accordion (minimal + discreet) */
+.m2k-about{ margin-top: 10px; }
+.m2k-details{ border-top: 1px solid rgba(0,0,0,0.08); padding-top: 10px; }
+
+.m2k-summary{
+  cursor:pointer;
+  list-style:none;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  user-select:none;
+  font-size: 12.5px;
+  opacity: .72;
+}
+.m2k-summary::-webkit-details-marker{ display:none; }
+.m2k-summary:hover{ opacity: .95; }
+
+.m2k-summary-icon{ margin-left:auto; opacity: .6; }
+
+.m2k-lang{
+  margin-top: 8px;
+  display:flex;
+  gap:6px;
+  opacity: .75;
+}
+.m2k-lang-btn{
+  border: 1px solid rgba(0,0,0,.12);
+  background: transparent;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+.m2k-lang-btn[aria-pressed="true"]{
+  border-color: rgba(0,0,0,.28);
+  opacity: 1;
+}
+
+.m2k-text{
+  margin-top: 10px;
+  font-size: 13px;
+  line-height: 1.55;
+  opacity: .88;
+}
+.m2k-text p{ margin: 0 0 10px; }
+
+
+
+
   /* Feedback modal */
   #fbOverlay{
     position: fixed;
@@ -148,8 +211,9 @@
 <div id="map"></div>
 
 <div id="panel" class="panel-app">
-  <h3>Mood Map</h3>
-  <div class="titleSub">the world’s mood in one click</div>
+<h3>Mood2Know</h3>
+<div class="titleSub">the world’s emotional weather in one click</div>
+
 
   <div id="dragHandle" title="Drag panel" aria-label="Drag panel"></div>
 
@@ -182,7 +246,45 @@
       <button id="btnExpand" class="secondary" type="button">Change mood</button>
     </div>
   </div>
+
+  <!-- ABOUT (accordion, multilingual, SEO-friendly) -->
+  <section class="m2k-about" aria-label="About Mood2Know">
+    <details class="m2k-details" id="m2kDetails">
+      <summary class="m2k-summary">
+        <span class="m2k-summary-label" data-i18n="summary">Why Mood2Know?</span>
+        <span class="m2k-summary-icon" aria-hidden="true">▾</span>
+      </summary>
+
+      <div class="m2k-lang" aria-label="Language">
+        <button type="button" class="m2k-lang-btn" data-set-lang="en">EN</button>
+        <button type="button" class="m2k-lang-btn" data-set-lang="fr">FR</button>
+      </div>
+
+      <!-- English -->
+      <div class="m2k-text" lang="en" data-lang="en">
+        <p><strong>Mood2Know aims to become the world’s first emotional weather report.</strong></p>
+        <p>Every day, millions of people experience emotions that remain invisible. Mood2Know was created to make this collective mood visible, in a simple and anonymous way.</p>
+        <p>By answering in just one click, you take part in a global experiment. No account, no explanation, no personal data — just a momentary feeling, shared as it is.</p>
+        <p>The goal is to reach <strong>10,000 participants</strong>. Once this threshold is reached, Mood2Know will reveal a unique insight: a snapshot of the world’s emotional state at a given moment.</p>
+        <p>This emotional “weather” evolves constantly. Observing its changes helps put individual feelings into perspective and highlights the diversity of human experiences across places and time.</p>
+        <p>Mood2Know is not about analysis or diagnosis. It is a minimalist, open space designed for participation, curiosity, and awareness.</p>
+        <p><strong>Mood needs you.</strong> Every response matters. The more people take part, the more meaningful this shared emotional picture becomes.</p>
+      </div>
+
+      <!-- Français -->
+      <div class="m2k-text" lang="fr" data-lang="fr">
+        <p><strong>Mood2Know veut devenir la première météo émotionnelle du monde.</strong></p>
+        <p>Chaque jour, des millions de personnes ressentent des émotions qui restent invisibles. Mood2Know est né pour rendre cette humeur collective visible, simplement et anonymement.</p>
+        <p>En répondant en un clic, vous participez à une expérience mondiale. Pas de compte, pas d’explication, pas de données personnelles — juste un ressenti du moment, partagé tel qu’il est.</p>
+        <p>L’objectif est d’atteindre <strong>10 000 participants</strong>. Une fois ce seuil franchi, Mood2Know pourra révéler une information unique : une photographie de l’état émotionnel du monde à un instant donné.</p>
+        <p>Cette “météo” émotionnelle évolue en permanence. Observer ses variations aide à prendre du recul sur ce que l’on ressent et montre la diversité des expériences humaines, selon les lieux et les périodes.</p>
+        <p>Mood2Know n’est pas là pour analyser ou diagnostiquer. Le site se veut minimaliste, ouvert, et pensé pour la participation, la curiosité et la prise de conscience.</p>
+        <p><strong>Mood a besoin de vous.</strong> Chaque réponse compte. Plus vous êtes nombreux, plus cette image émotionnelle partagée devient significative.</p>
+      </div>
+    </details>
+  </section>
 </div>
+
 
 <!-- FEEDBACK MODAL -->
 <div id="fbOverlay" aria-hidden="true">
@@ -946,5 +1048,41 @@ map.on("load", async () => {
   soundWatchdog();
 });
 </script>
+
+<script>
+(function () {
+  const blocks = Array.from(document.querySelectorAll('.m2k-text[data-lang]'));
+  const summaryLabel = document.querySelector('[data-i18n="summary"]');
+  const buttons = Array.from(document.querySelectorAll('.m2k-lang-btn[data-set-lang]'));
+
+  function pickDefaultLang() {
+    const saved = localStorage.getItem('m2k_lang');
+    if (saved) return saved;
+    const nav = (navigator.language || 'en').toLowerCase();
+    if (nav.startsWith('fr')) return 'fr';
+    return 'en';
+  }
+
+  function setLang(lang) {
+    blocks.forEach(el => el.style.display = (el.dataset.lang === lang ? 'block' : 'none'));
+
+    if (summaryLabel) {
+      summaryLabel.textContent = (lang === 'fr') ? 'Pourquoi Mood2Know ?' : 'Why Mood2Know?';
+    }
+
+    buttons.forEach(btn => {
+      const on = btn.dataset.setLang === lang;
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+
+    localStorage.setItem('m2k_lang', lang);
+  }
+
+  buttons.forEach(btn => btn.addEventListener('click', () => setLang(btn.dataset.setLang)));
+
+  setLang(pickDefaultLang());
+})();
+</script>
+
 </body>
 </html>
