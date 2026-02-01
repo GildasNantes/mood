@@ -86,25 +86,21 @@
      - Mood panel = normal width (comfortable)
      - Compact panel stays compact
      ========================= */
-  @media (max-width: 520px) {
-    #panel{
-      left: 12px;
-      top: 12px;
-      right: auto;
-      bottom: auto;
-    }
+@media (max-width: 520px) {
+  .panel-app{
+    width: min(420px, calc(100vw - 24px)); /* normal mood */
+    padding: 14px;
+    border-radius: 16px;
+  }
 
-    .panel-app{
-      width: min(420px, calc(100vw - 24px)); /* normal on iPhone */
-      padding: 14px;
-      border-radius: 16px;
-    }
+  .panel-compact{
+    width: min(240px, calc(100vw - 24px)); /* ✅ plus étroit */
+    max-width: 240px;                      /* ✅ force le côté compact */
+    padding: 10px 12px;
+    border-radius: 14px;
+  }
+}
 
-    .panel-compact{
-      width: min(320px, calc(100vw - 24px)); /* compact on iPhone */
-      padding: 10px 12px;
-      border-radius: 14px;
-    }
 
     button, input, textarea {
       padding: 14px;
@@ -808,3 +804,4 @@ map.on("load", async () => {
 </script>
 </body>
 </html>
+
