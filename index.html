@@ -87,19 +87,13 @@
      - Compact panel stays compact
      ========================= */
 @media (max-width: 520px) {
-  .panel-app{
-    width: min(420px, calc(100vw - 24px)); /* normal mood */
-    padding: 14px;
-    border-radius: 16px;
-  }
-
   .panel-compact{
-    width: min(240px, calc(100vw - 24px)); /* ✅ plus étroit */
-    max-width: 240px;                      /* ✅ force le côté compact */
-    padding: 10px 12px;
-    border-radius: 14px;
+    width: 210px;
+    max-width: 210px;
+    padding: 9px 10px;
   }
 }
+
 
 
     button, input, textarea {
@@ -804,4 +798,5 @@ map.on("load", async () => {
 </script>
 </body>
 </html>
+
 
