@@ -10,7 +10,6 @@
 <meta name="description" content="Mood2Know — the world’s first emotional weather report. Share your mood in one click and discover the world’s mood. Anonymous, minimalist, global experiment.">
 <meta name="robots" content="index,follow">
 
-<!-- Open Graph (sharing) -->
 <meta property="og:title" content="Mood2Know — the world’s mood in one click">
 <meta property="og:description" content="The world’s first emotional weather report. Share your mood anonymously in one click and reveal the collective mood.">
 <meta property="og:type" content="website">
@@ -52,12 +51,9 @@
     left: 12px;
     top: 12px;
 
-    /* ✅ keep panel within viewport + allow internal scroll if content is long */
     max-height: calc(var(--vh) * 100 - 24px);
     overflow-y: auto;
     overscroll-behavior: contain;
-
-    /* ✅ avoid horizontal scrolling when language pills wrap */
     overflow-x: hidden;
   }
 
@@ -73,6 +69,24 @@
     border-radius: 14px;
   }
 
+  /* ✅ ultra micro panel during manual selection: ONLY ONE BUTTON visible */
+  .panel-manual-micro{
+    width: 170px;
+    max-width: 170px;
+    padding: 10px 10px;
+    border-radius: 14px;
+  }
+  .panel-manual-micro .titleSub,
+  .panel-manual-micro #dragHandle,
+  .panel-manual-micro #hint,
+  .panel-manual-micro #soundRow,
+  .panel-manual-micro #appMsg,
+  .panel-manual-micro #about,
+  .panel-manual-micro #btnSave,
+  .panel-manual-micro .moodRow {
+    display:none !important;
+  }
+
   h3 { margin:0; font-size:18px; }
 
   .titleSub{
@@ -84,7 +98,6 @@
     opacity: 0.75;
   }
 
-  /* ✅ hide subtitle in compact panel */
   .panel-compact .titleSub { display: none; }
 
   #dragHandle{
@@ -135,24 +148,14 @@
       max-width: 150px;
       padding: 9px 10px;
     }
-
-    button, input, textarea {
-      padding: 14px;
-      font-size: 16px;
-    }
-
+    button, input, textarea { padding: 14px; font-size: 16px; }
     .feelBig{ font-size: 17px; }
   }
 
   @media (max-width: 520px) {
-    #btnFeedback,
-    #btnExpand {
-      padding: 10px 8px;
-      font-size: 13px;
-    }
+    #btnFeedback, #btnExpand { padding: 10px 8px; font-size: 13px; }
   }
 
-  /* Screen-reader only (SEO + accessibility) */
   .sr-only{
     position:absolute;
     width:1px; height:1px;
@@ -163,7 +166,7 @@
     border:0;
   }
 
-  /* About accordion (minimal + discreet) */
+  /* About accordion */
   .m2k-about{ margin-top: 10px; }
   .m2k-details{ border-top: 1px solid rgba(0,0,0,0.08); padding-top: 10px; }
 
@@ -188,8 +191,6 @@
     opacity: .75;
     flex-wrap: wrap;
   }
-
-  /* ✅ fix: show EN/FR text (global button color was white) */
   .m2k-lang-btn{
     color:#111;
     border: 1px solid rgba(0,0,0,.12);
@@ -239,9 +240,7 @@
 
 <body>
 
-<h1 class="sr-only">
-  Mood2Know – The world’s emotional weather map
-</h1>
+<h1 class="sr-only">Mood2Know – The world’s emotional weather map</h1>
 
 <div id="map"></div>
 
@@ -252,7 +251,7 @@
   <div id="dragHandle" title="Drag panel" aria-label="Drag panel"></div>
 
   <div id="appView">
-    <div class="row">
+    <div class="row moodRow">
       <label>Your mood: <b><span id="moodValue">5</span>/10</b></label>
       <input id="slider" type="range" min="0" max="10" value="5">
       <div class="feelBig" id="moodFeeling"></div>
@@ -261,15 +260,16 @@
     <div class="row">
       <button id="btnSave">Locate + Save</button>
 
-      <!-- ✅ Hidden by default; shown only if geo fails -->
+      <!-- ✅ single button used for manual mode.
+           - hidden normally
+           - shown if geo fails
+           - grey until marker is placed, then black and acts as "validate" -->
       <button id="btnManual" class="secondary" type="button" style="display:none;">
         Set position manually
       </button>
     </div>
 
-    <div class="small" id="hint">
-      Pick a mood, then save
-    </div>
+    <div class="small" id="hint">Pick a mood, then save</div>
 
     <div class="row" id="soundRow" style="margin-top:0; display:none;">
       <button id="btnSound" class="secondary" type="button">🔊 Enable sound</button>
@@ -294,14 +294,14 @@
         <span class="m2k-summary-icon" aria-hidden="true">▾</span>
       </summary>
 
-<div class="m2k-lang" aria-label="Language">
-  <button type="button" class="m2k-lang-btn" data-set-lang="en">EN</button>
-  <button type="button" class="m2k-lang-btn" data-set-lang="fr">FR</button>
-  <button type="button" class="m2k-lang-btn" data-set-lang="es">ES</button>
-  <button type="button" class="m2k-lang-btn" data-set-lang="it">IT</button>
-  <button type="button" class="m2k-lang-btn" data-set-lang="de">DE</button>
-  <button type="button" class="m2k-lang-btn" data-set-lang="zh">中文</button>
-</div>
+      <div class="m2k-lang" aria-label="Language">
+        <button type="button" class="m2k-lang-btn" data-set-lang="en">EN</button>
+        <button type="button" class="m2k-lang-btn" data-set-lang="fr">FR</button>
+        <button type="button" class="m2k-lang-btn" data-set-lang="es">ES</button>
+        <button type="button" class="m2k-lang-btn" data-set-lang="it">IT</button>
+        <button type="button" class="m2k-lang-btn" data-set-lang="de">DE</button>
+        <button type="button" class="m2k-lang-btn" data-set-lang="zh">中文</button>
+      </div>
 
       <!-- English -->
       <div class="m2k-text" lang="en" data-lang="en">
@@ -325,51 +325,50 @@
         <p><strong>Mood a besoin de vous.</strong> Chaque réponse compte. Plus vous êtes nombreux, plus cette image émotionnelle partagée devient significative.</p>
       </div>
 
-<div class="m2k-text" lang="es" data-lang="es">
-  <p><strong>Mood2Know quiere convertirse en el primer clima emocional del mundo.</strong></p>
-  <p>Cada día, millones de personas sienten emociones que permanecen invisibles. Mood2Know nace para hacer visible ese estado emocional colectivo, de forma simple y anónima.</p>
-  <p>Con un solo clic, participas en una experiencia global. Sin cuenta, sin explicación, sin datos personales — solo un sentimiento del momento, compartido tal como es.</p>
-  <p>El objetivo es alcanzar <strong>10.000 participantes</strong>. Al llegar a este umbral, Mood2Know revelará una información única: una fotografía del estado emocional del mundo en un instante concreto.</p>
-  <p>Este “clima” emocional cambia constantemente. Observar su evolución ayuda a relativizar lo individual y a mostrar la diversidad de experiencias humanas.</p>
-  <p>Mood2Know no analiza ni diagnostica. Es un espacio minimalista, abierto, pensado para la participación y la conciencia colectiva.</p>
-  <p><strong>Mood te necesita.</strong> Cada respuesta cuenta.</p>
-</div>
+      <div class="m2k-text" lang="es" data-lang="es">
+        <p><strong>Mood2Know quiere convertirse en el primer clima emocional del mundo.</strong></p>
+        <p>Cada día, millones de personas sienten emociones que permanecen invisibles. Mood2Know nace para hacer visible ese estado emocional colectivo, de forma simple y anónima.</p>
+        <p>Con un solo clic, participas en una experiencia global. Sin cuenta, sin explicación, sin datos personales — solo un sentimiento del momento, compartido tal como es.</p>
+        <p>El objetivo es alcanzar <strong>10.000 participantes</strong>. Al llegar a este umbral, Mood2Know revelará una información única: una fotografía del estado emocional del mundo en un instante concreto.</p>
+        <p>Este “clima” emocional cambia constantemente. Observar su evolución ayuda a relativizar lo individual y a mostrar la diversidad de experiencias humanas.</p>
+        <p>Mood2Know no analiza ni diagnostica. Es un espacio minimalista, abierto, pensado para la participación y la conciencia colectiva.</p>
+        <p><strong>Mood te necesita.</strong> Cada respuesta cuenta.</p>
+      </div>
 
-<div class="m2k-text" lang="it" data-lang="it">
-  <p><strong>Mood2Know vuole diventare la prima meteo emotiva del mondo.</strong></p>
-  <p>Ogni giorno, milioni di persone provano emozioni che restano invisibili. Mood2Know nasce per rendere visibile questo stato emotivo collettivo, in modo semplice e anonimo.</p>
-  <p>Con un solo clic partecipi a un’esperienza globale. Nessun account, nessuna spiegazione, nessun dato personale — solo un’emozione del momento, condivisa così com’è.</p>
-  <p>L’obiettivo è raggiungere <strong>10.000 partecipanti</strong>. Una volta superata questa soglia, Mood2Know mostrerà un’informazione unica: una fotografia dello stato emotivo del mondo in un dato momento.</p>
-  <p>Questa “meteo” emotiva cambia continuamente. Osservarne le variazioni aiuta a mettere in prospettiva ciò che proviamo.</p>
-  <p>Mood2Know non analizza né diagnostica. È uno spazio minimale, aperto e partecipativo.</p>
-  <p><strong>Mood ha bisogno di te.</strong> Ogni risposta è importante.</p>
-</div>
+      <div class="m2k-text" lang="it" data-lang="it">
+        <p><strong>Mood2Know vuole diventare la prima meteo emotiva del mondo.</strong></p>
+        <p>Ogni giorno, milioni di persone provano emozioni che restano invisibili. Mood2Know nasce per rendere visibile questo stato emotivo collettivo, in modo semplice e anonimo.</p>
+        <p>Con un solo clic partecipi a un’esperienza globale. Nessun account, nessuna spiegazione, nessun dato personale — solo un’emozione del momento, condivisa così com’è.</p>
+        <p>L’obiettivo è raggiungere <strong>10.000 partecipanti</strong>. Una volta superata questa soglia, Mood2Know mostrerà un’informazione unica: una fotografia dello stato emotivo del mondo in un dato momento.</p>
+        <p>Questa “meteo” emotiva cambia continuamente. Osservarne le variazioni aiuta a mettere in prospettiva ciò che proviamo.</p>
+        <p>Mood2Know non analizza né diagnostica. È uno spazio minimale, aperto e partecipativo.</p>
+        <p><strong>Mood ha bisogno di te.</strong> Ogni risposta è importante.</p>
+      </div>
 
-<div class="m2k-text" lang="de" data-lang="de">
-  <p><strong>Mood2Know möchte der erste emotionale Wetterbericht der Welt werden.</strong></p>
-  <p>Jeden Tag erleben Millionen von Menschen Gefühle, die unsichtbar bleiben. Mood2Know wurde geschaffen, um diese kollektive Stimmung sichtbar zu machen — einfach und anonym.</p>
-  <p>Mit nur einem Klick nimmst du an einem weltweiten Experiment teil. Kein Konto, keine Erklärung, keine persönlichen Daten — nur ein momentanes Gefühl.</p>
-  <p>Das Ziel sind <strong>10.000 Teilnehmende</strong>. Wird diese Schwelle erreicht, zeigt Mood2Know eine einzigartige Momentaufnahme des emotionalen Zustands der Welt.</p>
-  <p>Dieses emotionale „Wetter“ verändert sich ständig. Es zu beobachten hilft, individuelle Gefühle einzuordnen.</p>
-  <p>Mood2Know analysiert oder diagnostiziert nicht. Es ist ein minimalistischer, offener Raum für Bewusstsein und Neugier.</p>
-  <p><strong>Mood braucht dich.</strong> Jede Teilnahme zählt.</p>
-</div>
+      <div class="m2k-text" lang="de" data-lang="de">
+        <p><strong>Mood2Know möchte der erste emotionale Wetterbericht der Welt werden.</strong></p>
+        <p>Jeden Tag erleben Millionen von Menschen Gefühle, die unsichtbar bleiben. Mood2Know wurde geschaffen, um diese kollektive Stimmung sichtbar zu machen — einfach und anonym.</p>
+        <p>Mit nur einem Klick nimmst du an einem weltweiten Experiment teil. Kein Konto, keine Erklärung, keine persönlichen Daten — nur ein momentanes Gefühl.</p>
+        <p>Das Ziel sind <strong>10.000 Teilnehmende</strong>. Wird diese Schwelle erreicht, zeigt Mood2Know eine einzigartige Momentaufnahme des emotionalen Zustands der Welt.</p>
+        <p>Dieses emotionale „Wetter“ verändert sich ständig. Es zu beobachten hilft, individuelle Gefühle einzuordnen.</p>
+        <p>Mood2Know analysiert oder diagnostiziert nicht. Es ist ein minimalistischer, offener Raum für Bewusstsein und Neugier.</p>
+        <p><strong>Mood braucht dich.</strong> Jede Teilnahme zählt.</p>
+      </div>
 
-<div class="m2k-text" lang="zh" data-lang="zh">
-  <p><strong>Mood2Know 致力于成为世界上第一份情绪天气报告。</strong></p>
-  <p>每天，数百万人体验着难以被看见的情绪。Mood2Know 的诞生，是为了以简单、匿名的方式呈现这种集体情绪。</p>
-  <p>只需一次点击，你就能参与一项全球性的实验。无需账号、无需解释、无需个人信息 —— 只是当下的真实感受。</p>
-  <p>目标是达到 <strong>10,000 名参与者</strong>。一旦达成，Mood2Know 将展示一个独特的视角：某一时刻世界的情绪快照。</p>
-  <p>这种“情绪天气”不断变化。观察它，有助于理解个体情绪与世界之间的联系。</p>
-  <p>Mood2Know 不进行分析或诊断，而是一个极简、开放、鼓励参与的空间。</p>
-  <p><strong>Mood 需要你。</strong> 每一次参与都很重要。</p>
-</div>
+      <div class="m2k-text" lang="zh" data-lang="zh">
+        <p><strong>Mood2Know 致力于成为世界上第一份情绪天气报告。</strong></p>
+        <p>每天，数百万人体验着难以被看见的情绪。Mood2Know 的诞生，是为了以简单、匿名的方式呈现这种集体情绪。</p>
+        <p>只需一次点击，你就能参与一项全球性的实验。无需账号、无需解释、无需个人信息 —— 只是当下的真实感受。</p>
+        <p>目标是达到 <strong>10,000 名参与者</strong>。一旦达成，Mood2Know 将展示一个独特的视角：某一时刻世界的情绪快照。</p>
+        <p>这种“情绪天气”不断变化。观察它，有助于理解个体情绪与世界之间的联系。</p>
+        <p>Mood2Know 不进行分析或诊断，而是一个极简、开放、鼓励参与的空间。</p>
+        <p><strong>Mood 需要你。</strong> 每一次参与都很重要。</p>
+      </div>
 
-<p class="small" style="margin-top:12px;">
-  Learn more:
-  <a href="/emotional-weather-map.html">Emotional weather map of the world</a>
-</p>
-
+      <p class="small" style="margin-top:12px;">
+        Learn more:
+        <a href="/emotional-weather-map.html">Emotional weather map of the world</a>
+      </p>
     </details>
   </section>
 </div>
@@ -660,8 +659,6 @@ function showManualButton(show){
 /* mood slider */
 const slider = el("slider");
 const moodFeeling = el("moodFeeling");
-
-/* mood value used by music */
 let currentMood = Number(slider.value);
 
 function moodLabel(v){
@@ -680,15 +677,43 @@ slider.oninput = ()=> {
   el("moodValue").textContent = slider.value;
   currentMood = Number(slider.value);
   updateFeeling();
-  updateMusicParams(); // live update if music started
+  updateMusicParams();
 };
-
-// ✅ iOS Safari fix: ensure slider value sync on first touch
 slider.addEventListener("touchstart", () => {
   el("moodValue").textContent = slider.value;
   currentMood = Number(slider.value);
   updateFeeling();
 }, { passive: true });
+
+/* =============================================================================
+   4.2) LAST KNOWN LOCATION (localStorage)
+   ============================================================================= */
+const LAST_LOC_KEY = "m2k_last_loc";
+
+function saveLastLoc(coords){
+  try {
+    localStorage.setItem(LAST_LOC_KEY, JSON.stringify({
+      lon: coords.lon,
+      lat: coords.lat,
+      ts: Date.now()
+    }));
+  } catch {}
+}
+function loadLastLoc(){
+  try {
+    const raw = localStorage.getItem(LAST_LOC_KEY);
+    if (!raw) return null;
+    const v = JSON.parse(raw);
+    if (!v || typeof v.lon !== "number" || typeof v.lat !== "number") return null;
+    return { lon: v.lon, lat: v.lat, ts: v.ts || 0 };
+  } catch { return null; }
+}
+function zoomToLastLocIfAny(){
+  const last = loadLastLoc();
+  if (!last) return false;
+  map.easeTo({ center: [last.lon, last.lat], zoom: Math.max(map.getZoom(), 8) });
+  return true;
+}
 
 /* =============================================================================
    4.5) DRAGGABLE PANEL VIA HANDLE
@@ -727,7 +752,7 @@ panel.addEventListener("pointerup", () => { dragging = false; });
 panel.addEventListener("pointercancel", () => { dragging = false; });
 
 /* =============================================================================
-   5) AMBIENT MUSIC (mood-adaptive + transposition) ✅ + hide/restart
+   5) AMBIENT MUSIC
    ============================================================================= */
 let audioCtx, masterGain, musicStarted = false;
 let musicNodes = [];
@@ -737,10 +762,8 @@ let musicFilter = null;
 function stopLoopTimers() {
   if (chordTimer) { clearTimeout(chordTimer); chordTimer = null; }
 }
-
 function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
 
-/* pitch shift (semitones) based on mood */
 function getTransposeSemitones(){
   const t = clamp(currentMood / 10, 0, 1);
   return Math.round(lerp(-4, 4, t));
@@ -792,21 +815,18 @@ function getChordPalette() {
     [146.83, 174.61, 220.00],
     [164.81, 246.94, 329.63]
   ];
-
   const mid = [
     [261.63, 329.63, 392.00],
     [220.00, 261.63, 329.63],
     [174.61, 220.00, 261.63],
     [196.00, 293.66, 392.00]
   ];
-
   const high = [
     [261.63, 392.00, 523.25],
     [196.00, 293.66, 392.00],
     [220.00, 329.63, 440.00],
     [174.61, 261.63, 349.23]
   ];
-
   if (currentMood <= 3) return low;
   if (currentMood <= 7) return mid;
   return high;
@@ -964,9 +984,7 @@ function restartMusicIfPossible(){
 el("btnSound").addEventListener("click", () => {
   showSoundButton(false);
   unlockAndStartAudio();
-  setTimeout(() => {
-    if (!isAudioRunning()) showSoundButton(true);
-  }, 800);
+  setTimeout(() => { if (!isAudioRunning()) showSoundButton(true); }, 800);
 });
 
 function soundWatchdog(){
@@ -995,33 +1013,56 @@ function getAnonId(){
 }
 
 /* =============================================================================
-   7) SAVE (Locate + Save) + Manual fallback ✅
+   7) SAVE + Manual fallback (AUTO + last loc + ONE BUTTON)
    ============================================================================= */
-
-/* --- Manual pick state --- */
 let manualPickActive = false;
 let manualMarker = null;
+let pendingManualCoords = null;
+
+/* button style: grey (secondary) until coords chosen; black when ready */
+function setManualReady(isReady){
+  const btn = el("btnManual");
+  if (!btn) return;
+  if (isReady) btn.classList.remove("secondary");
+  else btn.classList.add("secondary");
+}
 
 function stopManualPick() {
   manualPickActive = false;
   map.getCanvas().style.cursor = "";
   map.off("click", onManualMapClick);
+
+  pendingManualCoords = null;
+  setManualReady(false);
+
+  if (panel.className === "panel-manual-micro") panel.className = "panel-app";
 }
 
 function startManualPick() {
   showManualButton(true);
-  if (manualPickActive) return;
 
+  // micro panel
+  panel.className = "panel-manual-micro";
+
+  // ready state false until user clicks map
+  pendingManualCoords = null;
+  setManualReady(false);
+
+  // zoom near last location if any
+  const didZoom = zoomToLastLocIfAny();
+  if (!didZoom) map.easeTo({ zoom: Math.max(map.getZoom(), 3) });
+
+  if (manualPickActive) return;
   manualPickActive = true;
-  setAppMessage("Click on the map to set your position, then confirm.");
+
   map.getCanvas().style.cursor = "crosshair";
   map.on("click", onManualMapClick);
 }
 
 function onManualMapClick(e) {
   const coords = { lon: e.lngLat.lng, lat: e.lngLat.lat };
+  pendingManualCoords = coords;
 
-  // place / move marker
   if (!manualMarker) {
     manualMarker = new maplibregl.Marker({ color: "#111" })
       .setLngLat([coords.lon, coords.lat])
@@ -1030,20 +1071,10 @@ function onManualMapClick(e) {
     manualMarker.setLngLat([coords.lon, coords.lat]);
   }
 
-  const ok = window.confirm(
-    `Use this location?\n\nLatitude: ${coords.lat.toFixed(6)}\nLongitude: ${coords.lon.toFixed(6)}`
-  );
-
-  if (!ok) {
-    setAppMessage("Ok — click somewhere else on the map.");
-    return;
-  }
-
-  stopManualPick();
-  saveMoodAtCoords(coords);
+  // now the single button becomes "ready" (black)
+  setManualReady(true);
 }
 
-/* --- Single save function (used by geo OR manual) --- */
 async function saveMoodAtCoords(coords) {
   const mood = parseInt(slider.value, 10);
   const anonId = getAnonId();
@@ -1063,6 +1094,8 @@ async function saveMoodAtCoords(coords) {
     return;
   }
 
+  saveLastLoc(coords);
+
   fadeOutMusic(2.6);
   revealedThisSession = true;
 
@@ -1078,23 +1111,34 @@ async function saveMoodAtCoords(coords) {
   }, 700);
 }
 
-/* --- Geo button --- */
+/* ✅ Single button behavior:
+   - if manual mode not active -> start manual mode
+   - if active and coords chosen -> validate/save
+   - if active but no coords yet -> do nothing (user must click map) */
+el("btnManual").onclick = async () => {
+  if (!manualPickActive) {
+    startManualPick();
+    return;
+  }
+  if (!pendingManualCoords) return;
+
+  const coords = pendingManualCoords;
+  stopManualPick();
+  await saveMoodAtCoords(coords);
+};
+
 el("btnSave").onclick = async () => {
   setAppMessage("Locating…");
   el("btnSave").disabled = true;
 
-  // Hide manual button unless needed
+  // reset manual UI unless geo fails
   showManualButton(false);
   stopManualPick();
 
   if (!navigator.geolocation) {
     setAppMessage("Geolocation is not supported on this device.");
     el("btnSave").disabled = false;
-
-    // show manual option only now
-    showManualButton(true);
-    const wantManual = window.confirm("Do you want to set your position manually on the map?");
-    if (wantManual) startManualPick();
+    startManualPick(); // auto
     return;
   }
 
@@ -1106,23 +1150,13 @@ el("btnSave").onclick = async () => {
     (err) => {
       setAppMessage("Geolocation error: " + err.message);
       el("btnSave").disabled = false;
-
-      // Show manual option only on geo error
-      showManualButton(true);
-      const wantManual = window.confirm("Geolocation failed. Do you want to set your position manually on the map?");
-      if (wantManual) startManualPick();
+      startManualPick(); // ✅ auto + zoom to last loc + micro + one button
     },
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
   );
 };
 
-/* --- Manual button (only visible after geo failure) --- */
-el("btnManual").onclick = () => {
-  startManualPick();
-};
-
 el("btnExpand").onclick = () => {
-  // cleanup manual state when returning to app view
   stopManualPick();
   if (manualMarker) { manualMarker.remove(); manualMarker = null; }
 
@@ -1132,7 +1166,7 @@ el("btnExpand").onclick = () => {
 };
 
 /* =============================================================================
-   8) FEEDBACK MODAL — "Any comments?" works
+   8) FEEDBACK MODAL
    ============================================================================= */
 const FEEDBACK_MAX_WORDS = 250;
 function countWords(s){ return (s.trim().match(/\S+/g) || []).length; }
@@ -1221,13 +1255,11 @@ map.on("load", async () => {
   revealedThisSession = false;
 
   showApp();
-
-  // Hide manual button at startup
   showManualButton(false);
+  setManualReady(false);
 
-  // ✅ iOS fix: force range repaint + sync displayed value
   requestAnimationFrame(() => {
-    slider.value = slider.value; // triggers a repaint in iOS Safari
+    slider.value = slider.value;
     el("moodValue").textContent = slider.value;
     currentMood = Number(slider.value);
     updateFeeling();
