@@ -27,9 +27,7 @@
 <meta name="twitter:image" content="https://mood2know.com/og.jpg">
 <meta name="twitter:image:alt" content="Mood2Know — The world’s emotional weather map">
 
-
 <link rel="canonical" href="https://mood2know.com/">
-
 <link rel="stylesheet" href="./maplibre-gl.css">
 
 <style>
@@ -86,11 +84,8 @@
     opacity: 0.75;
   }
 
-/* ✅ hide subtitle in compact panel */
-.panel-compact .titleSub {
-  display: none;
-}
-
+  /* ✅ hide subtitle in compact panel */
+  .panel-compact .titleSub { display: none; }
 
   #dragHandle{
     width: 54px;
@@ -146,9 +141,7 @@
       font-size: 16px;
     }
 
-    .feelBig{
-      font-size: 17px;
-    }
+    .feelBig{ font-size: 17px; }
   }
 
   @media (max-width: 520px) {
@@ -159,17 +152,16 @@
     }
   }
 
-/* Screen-reader only (SEO + accessibility) */
-.sr-only{
-  position:absolute;
-  width:1px; height:1px;
-  padding:0; margin:-1px;
-  overflow:hidden;
-  clip: rect(0,0,0,0);
-  white-space: nowrap;
-  border:0;
-}
-
+  /* Screen-reader only (SEO + accessibility) */
+  .sr-only{
+    position:absolute;
+    width:1px; height:1px;
+    padding:0; margin:-1px;
+    overflow:hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    border:0;
+  }
 
   /* About accordion (minimal + discreet) */
   .m2k-about{ margin-top: 10px; }
@@ -187,7 +179,6 @@
   }
   .m2k-summary::-webkit-details-marker{ display:none; }
   .m2k-summary:hover{ opacity: .95; }
-
   .m2k-summary-icon{ margin-left:auto; opacity: .6; }
 
   .m2k-lang{
@@ -195,8 +186,6 @@
     display:flex;
     gap:6px;
     opacity: .75;
-
-    /* ✅ helps EN/FR/ES/IT/DE/中文 stay inside panel */
     flex-wrap: wrap;
   }
 
@@ -254,7 +243,6 @@
   Mood2Know – The world’s emotional weather map
 </h1>
 
-
 <div id="map"></div>
 
 <div id="panel" class="panel-app">
@@ -272,6 +260,11 @@
 
     <div class="row">
       <button id="btnSave">Locate + Save</button>
+
+      <!-- ✅ Hidden by default; shown only if geo fails -->
+      <button id="btnManual" class="secondary" type="button" style="display:none;">
+        Set position manually
+      </button>
     </div>
 
     <div class="small" id="hint">
@@ -376,7 +369,6 @@
   Learn more:
   <a href="/emotional-weather-map.html">Emotional weather map of the world</a>
 </p>
-
 
     </details>
   </section>
@@ -659,6 +651,13 @@ function showCompact(msg="✅ Saved."){
 }
 function setAppMessage(msg){ el("appMsg").textContent = msg || ""; }
 
+function showManualButton(show){
+  const btn = el("btnManual");
+  if(!btn) return;
+  btn.style.display = show ? "block" : "none";
+}
+
+/* mood slider */
 const slider = el("slider");
 const moodFeeling = el("moodFeeling");
 
@@ -690,7 +689,6 @@ slider.addEventListener("touchstart", () => {
   currentMood = Number(slider.value);
   updateFeeling();
 }, { passive: true });
-
 
 /* =============================================================================
    4.5) DRAGGABLE PANEL VIA HANDLE
@@ -997,59 +995,137 @@ function getAnonId(){
 }
 
 /* =============================================================================
-   7) SAVE (Locate + Save)
+   7) SAVE (Locate + Save) + Manual fallback ✅
    ============================================================================= */
-el("btnSave").onclick = async () => {
-  setAppMessage("Locating…");
-  el("btnSave").disabled = true;
 
-  if (!navigator.geolocation) {
-    setAppMessage("Geolocation is not supported on this device.");
+/* --- Manual pick state --- */
+let manualPickActive = false;
+let manualMarker = null;
+
+function stopManualPick() {
+  manualPickActive = false;
+  map.getCanvas().style.cursor = "";
+  map.off("click", onManualMapClick);
+}
+
+function startManualPick() {
+  showManualButton(true);
+  if (manualPickActive) return;
+
+  manualPickActive = true;
+  setAppMessage("Click on the map to set your position, then confirm.");
+  map.getCanvas().style.cursor = "crosshair";
+  map.on("click", onManualMapClick);
+}
+
+function onManualMapClick(e) {
+  const coords = { lon: e.lngLat.lng, lat: e.lngLat.lat };
+
+  // place / move marker
+  if (!manualMarker) {
+    manualMarker = new maplibregl.Marker({ color: "#111" })
+      .setLngLat([coords.lon, coords.lat])
+      .addTo(map);
+  } else {
+    manualMarker.setLngLat([coords.lon, coords.lat]);
+  }
+
+  const ok = window.confirm(
+    `Use this location?\n\nLatitude: ${coords.lat.toFixed(6)}\nLongitude: ${coords.lon.toFixed(6)}`
+  );
+
+  if (!ok) {
+    setAppMessage("Ok — click somewhere else on the map.");
+    return;
+  }
+
+  stopManualPick();
+  saveMoodAtCoords(coords);
+}
+
+/* --- Single save function (used by geo OR manual) --- */
+async function saveMoodAtCoords(coords) {
+  const mood = parseInt(slider.value, 10);
+  const anonId = getAnonId();
+
+  setAppMessage("Saving your mood…");
+
+  const row = { anon_id: anonId, mood, lon: coords.lon, lat: coords.lat };
+
+  const { error } = await sb
+    .from("mood_entries")
+    .upsert(row, { onConflict: "anon_id" });
+
+  if (error) {
+    setAppMessage("Save failed: " + (error.message || "Unknown error"));
+    console.warn("SAVE error:", error);
     el("btnSave").disabled = false;
     return;
   }
 
-  navigator.geolocation.getCurrentPosition(async (pos) => {
-    const coords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-    const mood = parseInt(slider.value, 10);
-    const anonId = getAnonId();
+  fadeOutMusic(2.6);
+  revealedThisSession = true;
 
-    setAppMessage("Saving your mood…");
+  collapseAbout();
 
-    const row = { anon_id: anonId, mood, lon: coords.lon, lat: coords.lat };
+  setAppMessage("Thank you! Loading the world’s mood…");
+  map.easeTo({ center: [coords.lon, coords.lat], zoom: Math.max(map.getZoom(), 8) });
 
-    const { error } = await sb
-      .from("mood_entries")
-      .upsert(row, { onConflict: "anon_id" });
-
-    if (error) {
-      setAppMessage("Save failed: " + (error.message || "Unknown error"));
-      console.warn("SAVE error:", error);
-      el("btnSave").disabled = false;
-      return;
-    }
-
-    fadeOutMusic(2.6);
-    revealedThisSession = true;
-
-    collapseAbout();
-
-    setAppMessage("Thank you! Loading the world’s mood…");
-    map.easeTo({ center: [coords.lon, coords.lat], zoom: Math.max(map.getZoom(), 8) });
-
-    setTimeout(async () => {
-      await refreshPoints();
-      showCompact("✅ Saved. Thank you!");
-      el("btnSave").disabled = false;
-    }, 700);
-
-  }, (err) => {
-    setAppMessage("Geolocation error: " + err.message);
+  setTimeout(async () => {
+    await refreshPoints();
+    showCompact("✅ Saved. Thank you!");
     el("btnSave").disabled = false;
-  }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+  }, 700);
+}
+
+/* --- Geo button --- */
+el("btnSave").onclick = async () => {
+  setAppMessage("Locating…");
+  el("btnSave").disabled = true;
+
+  // Hide manual button unless needed
+  showManualButton(false);
+  stopManualPick();
+
+  if (!navigator.geolocation) {
+    setAppMessage("Geolocation is not supported on this device.");
+    el("btnSave").disabled = false;
+
+    // show manual option only now
+    showManualButton(true);
+    const wantManual = window.confirm("Do you want to set your position manually on the map?");
+    if (wantManual) startManualPick();
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      const coords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+      await saveMoodAtCoords(coords);
+    },
+    (err) => {
+      setAppMessage("Geolocation error: " + err.message);
+      el("btnSave").disabled = false;
+
+      // Show manual option only on geo error
+      showManualButton(true);
+      const wantManual = window.confirm("Geolocation failed. Do you want to set your position manually on the map?");
+      if (wantManual) startManualPick();
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+  );
+};
+
+/* --- Manual button (only visible after geo failure) --- */
+el("btnManual").onclick = () => {
+  startManualPick();
 };
 
 el("btnExpand").onclick = () => {
+  // cleanup manual state when returning to app view
+  stopManualPick();
+  if (manualMarker) { manualMarker.remove(); manualMarker = null; }
+
   showApp();
   setAppMessage("");
   restartMusicIfPossible();
@@ -1146,16 +1222,17 @@ map.on("load", async () => {
 
   showApp();
 
-// ✅ iOS fix: force range repaint + sync displayed value
-requestAnimationFrame(() => {
-  slider.value = slider.value; // triggers a repaint in iOS Safari
-  el("moodValue").textContent = slider.value;
-  currentMood = Number(slider.value);
-  updateFeeling();
-  updateMusicParams();
-});
+  // Hide manual button at startup
+  showManualButton(false);
 
-
+  // ✅ iOS fix: force range repaint + sync displayed value
+  requestAnimationFrame(() => {
+    slider.value = slider.value; // triggers a repaint in iOS Safari
+    el("moodValue").textContent = slider.value;
+    currentMood = Number(slider.value);
+    updateFeeling();
+    updateMusicParams();
+  });
 
   soundWatchdog();
 });
@@ -1212,7 +1289,6 @@ requestAnimationFrame(() => {
   }
 })();
 </script>
-
 
 </body>
 </html>
