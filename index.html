@@ -717,7 +717,7 @@ async function refreshPoints(){
   if(!source) return;
 
   const { data, error } = await sb
-    .from("mood_entries")
+    .from("mood_latest")
     .select("mood, lon, lat")
     .order("created_at", { ascending:false })
     .limit(20000);
@@ -1252,7 +1252,7 @@ async function saveMoodAtCoords(coords) {
 
   const { error } = await sb
     .from("mood_entries")
-    .upsert(row, { onConflict: "anon_id" });
+    .insert([{ anon_id: anonId, mood, lon: coords.lon, lat: coords.lat }]);
 
   if (error) {
     setAppMessage("Save failed: " + (error.message || "Unknown error"));
