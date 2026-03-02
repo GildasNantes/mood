@@ -82,8 +82,8 @@
   .panel-manual-micro #soundRow,
   .panel-manual-micro #appMsg,
   .panel-manual-micro #about,
-  .panel-manual-micro #btnSave,
-  .panel-manual-micro .moodRow {
+  .panel-manual-micro .moodRow,
+  .panel-manual-micro #trendBox {
     display:none !important;
   }
 
@@ -202,9 +202,38 @@
     margin-top: 6px;
     line-height: 1.35;
   }
-  .panel-compact .topStats{ display:none; }        /* hide in compact (optional) */
-  .panel-manual-micro .topStats{ display:none !important; } /* hide in micro */
+  .panel-compact .topStats{ display:none; }
+  .panel-manual-micro .topStats{ display:none !important; }
   /* =========================== */
+
+  /* ✅ Mood buttons (1..10) */
+  .moodButtons{
+    display:grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap:8px;
+  }
+  @media (max-width: 520px){
+    .moodButtons{ gap:6px; }
+  }
+  .moodBtn{
+    background: transparent; /* injected by JS (mood gradient) */
+    color: #111;
+    border: 1px solid rgba(0,0,0,.12);
+    border-radius: 12px;
+    padding: 10px 0;
+    cursor: pointer;
+    font-weight: 750;
+    font-variant-numeric: tabular-nums;
+    transition: transform .08s ease, filter .12s ease, box-shadow .12s ease, border-color .12s ease;
+  }
+  .moodBtn:hover{
+    filter: brightness(1.03);
+  }
+  .moodBtn:active{ transform: translateY(1px); }
+  .moodBtn[aria-pressed="true"]{
+    border-color: rgba(0,0,0,.55);
+    box-shadow: 0 8px 18px rgba(0,0,0,.18);
+  }
 
   /* About accordion */
   .m2k-about{ margin-top: 10px; }
@@ -326,7 +355,7 @@
   <h3>Mood2Know</h3>
   <div class="titleSub">the world’s emotional weather in one click</div>
 
-  <!-- ✅ NEW: top minimal stats -->
+  <!-- ✅ top minimal stats -->
   <div id="topStats" class="topStats" aria-label="Mood stats">
     <div class="topStatsLine">
       <span class="topStatsLeft">🌍 moods recorded</span>
@@ -344,23 +373,27 @@
   <div id="appView">
     <div class="row moodRow">
       <label>Your mood: <b><span id="moodValue">5</span>/10</b></label>
-      <input id="slider" type="range" min="0" max="10" value="5">
+
+      <div id="moodButtons" class="moodButtons" role="group" aria-label="Mood from 1 to 10"></div>
+
       <div class="feelBig" id="moodFeeling"></div>
     </div>
 
     <div class="row">
-      <button id="btnSave">Locate + Save</button>
-
-      <!-- ✅ single button used for manual mode.
-           - hidden normally
-           - shown if geo fails
-           - grey until marker is placed, then black and acts as "validate" -->
+      <!-- shown only if geo fails or user wants -->
       <button id="btnManual" class="secondary" type="button" style="display:none;">
         Set position manually
       </button>
     </div>
 
-    <div class="small" id="hint">Pick a mood, then save</div>
+    <div class="small" id="hint">Pick a mood — it saves automatically</div>
+
+    <!-- ✅ NEW: 7-day trend -->
+    <div class="row" id="trendBox" style="margin-top:6px;">
+      <div class="small" style="opacity:.8; font-weight:650;">Your 7-Day Mood Trend</div>
+      <canvas id="trendCanvas" width="320" height="90" style="width:100%; height:auto; border-radius:14px; border:1px solid rgba(0,0,0,0.08); background: rgba(0,0,0,0.02);"></canvas>
+      <div class="small" id="trendNote" style="opacity:.75;">—</div>
+    </div>
 
     <div class="row" id="soundRow" style="margin-top:0; display:none;">
       <button id="btnSound" class="secondary" type="button">🔊 Enable sound</button>
@@ -372,7 +405,6 @@
   <div id="compactView">
     <div class="small" id="compactMsg">✅ Saved.</div>
 
-    <!-- ✅ changed: split Any comments? into Comments? + Share (same space) -->
     <div class="row" style="margin-top:8px; gap:8px;">
       <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
         <button id="btnComments" class="secondary" type="button">Comments?</button>
@@ -425,7 +457,7 @@
         <p><strong>Mood2Know quiere convertirse en el primer clima emocional del mundo.</strong></p>
         <p>Cada día, millones de personas sienten emociones que permanecen invisibles. Mood2Know nace para hacer visible ese estado emocional colectivo, de forma simple y anónima.</p>
         <p>Con un solo clic, participas en una experiencia global. Sin cuenta, sin explicación, sin datos personales — solo un sentimiento del momento, compartido tal como es.</p>
-        <p>El objetivo es alcanzar <strong>10.000 participantes</strong>. Al llegar a este umbral, Mood2Know revelará una información única: una fotografía del estado emocional del mundo en un instante concreto.</p>
+        <p>El objetivo es alcanzar <strong>10.000 participants</strong>. Al llegar a este umbral, Mood2Know revelará una información única: una fotografía del estado emocional del mundo en un instante concreto.</p>
         <p>Este “clima” emocional cambia constantemente. Observar su evolución ayuda a relativizar lo individual y a mostrar la diversidad de experiencias humanas.</p>
         <p>Mood2Know no analiza ni diagnostica. Es un espacio minimalista, abierto, pensado para la participación y la conciencia colectiva.</p>
         <p><strong>Mood te necesita.</strong> Cada respuesta cuenta.</p>
@@ -548,7 +580,7 @@ const map = new maplibregl.Map({
 map.addControl(new maplibregl.NavigationControl(), "top-right");
 
 /* =============================================================================
-   2) MOOD ICONS (0..10)
+   2) MOOD ICONS (0..10) + shared color lerp
    ============================================================================= */
 function lerp(a,b,t){ return a + (b - a) * t; }
 function lerpColor(c1,c2,t){
@@ -557,12 +589,25 @@ function lerpColor(c1,c2,t){
   const b = Math.round(lerp(c1[2], c2[2], t));
   return `rgb(${r},${g},${b})`;
 }
-function moodImageData(level, size=96){
-  const t = Math.max(0, Math.min(1, level/10));
+
+/* ✅ shared mood fill color for map icons + buttons */
+function moodFillColor(v){
+  const t = Math.max(0, Math.min(1, v/10));
   const red=[215,25,28], yellow=[255,255,191], green=[26,150,65];
-  const fill = (t < 0.5)
+  return (t < 0.5)
     ? lerpColor(red, yellow, t/0.5)
     : lerpColor(yellow, green, (t-0.5)/0.5);
+}
+function textColorForBg(rgbStr){
+  const m = rgbStr.match(/rgb\((\d+),(\d+),(\d+)\)/);
+  if(!m) return "#111";
+  const r = Number(m[1]), g = Number(m[2]), b = Number(m[3]);
+  const luminance = (0.2126*r + 0.7152*g + 0.0722*b); // 0..255
+  return luminance < 140 ? "#fff" : "#111";
+}
+
+function moodImageData(level, size=96){
+  const fill = moodFillColor(level);
 
   const canvas = document.createElement("canvas");
   canvas.width = size; canvas.height = size;
@@ -578,6 +623,8 @@ function moodImageData(level, size=96){
   ctx.lineWidth = Math.max(3, size*0.04);
   ctx.strokeStyle = "rgba(0,0,0,0.25)";
   ctx.stroke();
+
+  const t = Math.max(0, Math.min(1, level/10));
 
   const eyeY = cy - size*0.10, eyeDX=size*0.14, eyeR=size*0.04;
   ctx.beginPath();
@@ -771,35 +818,6 @@ function showManualButton(show){
   btn.style.display = show ? "block" : "none";
 }
 
-/* mood slider */
-const slider = el("slider");
-const moodFeeling = el("moodFeeling");
-let currentMood = Number(slider.value);
-
-function moodLabel(v){
-  v = Number(v);
-  if (v <= 2) return "low";
-  if (v <= 4) return "meh";
-  if (v <= 6) return "okay";
-  if (v <= 8) return "good";
-  return "great";
-}
-function updateFeeling(){
-  const v = Number(slider.value);
-  moodFeeling.textContent = `You're feeling ${moodLabel(v)}.`;
-}
-slider.oninput = ()=> {
-  el("moodValue").textContent = slider.value;
-  currentMood = Number(slider.value);
-  updateFeeling();
-  updateMusicParams();
-};
-slider.addEventListener("touchstart", () => {
-  el("moodValue").textContent = slider.value;
-  currentMood = Number(slider.value);
-  updateFeeling();
-}, { passive: true });
-
 /* =============================================================================
    4.2) LAST KNOWN LOCATION (localStorage)
    ============================================================================= */
@@ -878,6 +896,10 @@ function stopLoopTimers() {
   if (chordTimer) { clearTimeout(chordTimer); chordTimer = null; }
 }
 function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+
+/* mood state */
+let currentMood = 5;
+let selectedMood = 5;
 
 function getTransposeSemitones(){
   const t = clamp(currentMood / 10, 0, 1);
@@ -1090,10 +1112,16 @@ function restartMusicIfPossible(){
   document.addEventListener("mousedown", unlockAndStartAudio, opts);
   document.addEventListener("keydown", unlockAndStartAudio, { capture:true, once:true });
 
-  slider.addEventListener("touchstart", unlockAndStartAudio, { passive:true });
-  slider.addEventListener("pointerdown", unlockAndStartAudio, { passive:true });
-  el("btnSave").addEventListener("touchstart", unlockAndStartAudio, { passive:true });
-  el("btnSave").addEventListener("pointerdown", unlockAndStartAudio, { passive:true });
+  const mb = el("moodButtons");
+  if (mb) {
+    mb.addEventListener("touchstart", unlockAndStartAudio, { passive:true });
+    mb.addEventListener("pointerdown", unlockAndStartAudio, { passive:true });
+  }
+  const bm = el("btnManual");
+  if (bm) {
+    bm.addEventListener("touchstart", unlockAndStartAudio, { passive:true });
+    bm.addEventListener("pointerdown", unlockAndStartAudio, { passive:true });
+  }
 })();
 
 el("btnSound").addEventListener("click", () => {
@@ -1118,8 +1146,7 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /* =============================================================================
-   ✅ NEW: TOP STATS (COUNT rows + avg today)
-   - total moods recorded = number of rows in mood_entries
+   ✅ TOP STATS (COUNT rows + avg today)
    ============================================================================= */
 function fmtInt(n){
   try { return new Intl.NumberFormat().format(n); }
@@ -1182,13 +1209,198 @@ function getAnonId(){
 }
 
 /* =============================================================================
-   7) SAVE + Manual fallback (AUTO + last loc + ONE BUTTON)
+   ✅ 7-DAY MOOD TREND (per anon_id)
+   ============================================================================= */
+function dayKeyUTC(d){
+  const x = new Date(d);
+  x.setUTCHours(0,0,0,0);
+  return x.toISOString().slice(0,10); // YYYY-MM-DD
+}
+
+function drawTrend(labels, values){
+  const c = el("trendCanvas");
+  const note = el("trendNote");
+  if (!c || !note) return;
+
+  const ctx = c.getContext("2d");
+  const w = c.width, h = c.height;
+  ctx.clearRect(0,0,w,h);
+
+  // subtle grid
+  ctx.globalAlpha = 0.12;
+  for(let i=1;i<=4;i++){
+    const y = (h*i)/5;
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  const pts = values
+    .map((v,i) => ({ i, v }))
+    .filter(p => Number.isFinite(p.v));
+
+  if (pts.length < 2){
+    note.textContent = "Not enough data yet. Come back tomorrow 🙂";
+    return;
+  }
+
+  const minV = 1, maxV = 10;
+  const padX = 10, padY = 10;
+  const xStep = (w - padX*2) / (labels.length - 1);
+
+  const yOf = (v) => {
+    const t = (v - minV) / (maxV - minV);
+    return (h - padY) - t * (h - padY*2);
+  };
+
+  // line
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  let started = false;
+  for(let i=0;i<labels.length;i++){
+    const v = values[i];
+    if (!Number.isFinite(v)) { started = false; continue; }
+    const x = padX + i*xStep;
+    const y = yOf(v);
+    if (!started) { ctx.moveTo(x,y); started = true; }
+    else ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+
+  // points
+  for(let i=0;i<labels.length;i++){
+    const v = values[i];
+    if (!Number.isFinite(v)) continue;
+    const x = padX + i*xStep;
+    const y = yOf(v);
+    ctx.beginPath();
+    ctx.arc(x,y,4.2,0,Math.PI*2);
+    ctx.fill();
+  }
+
+  const last = pts[pts.length-1].v;
+  const first = pts[0].v;
+  const delta = (last - first);
+  const arrow = delta > 0.2 ? "↗" : delta < -0.2 ? "↘" : "→";
+  note.textContent = `7-day change: ${delta.toFixed(1)} ${arrow}`;
+}
+
+async function updateTrend(){
+  const note = el("trendNote");
+  try{
+    const anonId = getAnonId();
+    const now = new Date();
+    const start = new Date(now);
+    start.setUTCDate(start.getUTCDate() - 6);
+    start.setUTCHours(0,0,0,0);
+
+    const { data, error } = await sb
+      .from("mood_entries")
+      .select("mood, created_at")
+      .eq("anon_id", anonId)
+      .gte("created_at", start.toISOString())
+      .order("created_at", { ascending: true })
+      .limit(5000);
+
+    if (error) throw error;
+
+    // labels (MM-DD)
+    const labels = [];
+    const dayKeys = [];
+    for(let i=0;i<7;i++){
+      const d = new Date(start);
+      d.setUTCDate(start.getUTCDate() + i);
+      labels.push(d.toISOString().slice(5,10));
+      dayKeys.push(d.toISOString().slice(0,10));
+    }
+
+    // avg per UTC day
+    const byDay = new Map();
+    for (const r of (data || [])){
+      if (!r.created_at) continue;
+      const k = dayKeyUTC(r.created_at);
+      const v = Number(r.mood);
+      if (!Number.isFinite(v)) continue;
+      const cur = byDay.get(k) || { sum:0, count:0 };
+      cur.sum += v; cur.count += 1;
+      byDay.set(k, cur);
+    }
+
+    const values = dayKeys.map(k => {
+      const agg = byDay.get(k);
+      return agg ? (agg.sum / agg.count) : NaN;
+    });
+
+    drawTrend(labels, values);
+  }catch(e){
+    if (note) note.textContent = "Trend unavailable.";
+  }
+}
+
+/* =============================================================================
+   7) SAVE + Manual fallback (AUTO) + hover message
    ============================================================================= */
 let manualPickActive = false;
 let manualMarker = null;
 let pendingManualCoords = null;
 
-/* button style: grey (secondary) until coords chosen; black when ready */
+let isSaving = false;
+let lastSaveAt = 0;
+
+/* ✅ hover/click message */
+function moodPhrase(v){
+  v = Number(v);
+  if (v <= 2) return "I feel bad.";
+  if (v <= 4) return "I feel low.";
+  if (v <= 6) return "I feel OK.";
+  if (v <= 8) return "I feel good.";
+  return "I feel great.";
+}
+function updateFeeling(v = selectedMood){
+  el("moodFeeling").textContent = moodPhrase(v);
+}
+
+/* render mood buttons (with gradient colors + hover text) */
+function renderMoodButtons(){
+  const wrap = el("moodButtons");
+  if (!wrap) return;
+
+  wrap.innerHTML = "";
+  for (let v = 1; v <= 10; v++){
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "moodBtn";
+    b.textContent = String(v);
+    b.setAttribute("aria-pressed", v === selectedMood ? "true" : "false");
+
+    const bg = moodFillColor(v);
+    b.style.background = bg;
+    b.style.color = textColorForBg(bg);
+
+    b.addEventListener("mouseenter", () => updateFeeling(v));
+    b.addEventListener("mouseleave", () => updateFeeling(selectedMood));
+    b.addEventListener("focus", () => updateFeeling(v));
+    b.addEventListener("blur", () => updateFeeling(selectedMood));
+
+    b.addEventListener("click", () => {
+      selectedMood = v;
+      currentMood = v;
+
+      el("moodValue").textContent = String(v);
+      updateFeeling(v);
+      updateMusicParams();
+
+      wrap.querySelectorAll(".moodBtn").forEach(btn => {
+        btn.setAttribute("aria-pressed", btn.textContent === String(v) ? "true" : "false");
+      });
+
+      autoSaveWithGeoOrManual();
+    });
+
+    wrap.appendChild(b);
+  }
+}
+
+/* manual micro button state: grey until coords chosen */
 function setManualReady(isReady){
   const btn = el("btnManual");
   if (!btn) return;
@@ -1211,7 +1423,6 @@ function startManualPick() {
   // micro panel
   panel.className = "panel-manual-micro";
 
-  // ready state false until user clicks map
   pendingManualCoords = null;
   setManualReady(false);
 
@@ -1224,6 +1435,8 @@ function startManualPick() {
 
   map.getCanvas().style.cursor = "crosshair";
   map.on("click", onManualMapClick);
+
+  setAppMessage("Click on the map to set your position.");
 }
 
 function onManualMapClick(e) {
@@ -1238,17 +1451,15 @@ function onManualMapClick(e) {
     manualMarker.setLngLat([coords.lon, coords.lat]);
   }
 
-  // now the single button becomes "ready" (black)
   setManualReady(true);
+  setAppMessage("Tap the button to confirm this location.");
 }
 
 async function saveMoodAtCoords(coords) {
-  const mood = parseInt(slider.value, 10);
+  const mood = Number(selectedMood);
   const anonId = getAnonId();
 
   setAppMessage("Saving your mood…");
-
-  const row = { anon_id: anonId, mood, lon: coords.lon, lat: coords.lat };
 
   const { error } = await sb
     .from("mood_entries")
@@ -1257,8 +1468,7 @@ async function saveMoodAtCoords(coords) {
   if (error) {
     setAppMessage("Save failed: " + (error.message || "Unknown error"));
     console.warn("SAVE error:", error);
-    el("btnSave").disabled = false;
-    return;
+    return false;
   }
 
   saveLastLoc(coords);
@@ -1273,16 +1483,51 @@ async function saveMoodAtCoords(coords) {
 
   setTimeout(async () => {
     await refreshPoints();
-    updateTopStats(); /* ✅ NEW: refresh stats after save */
+    updateTopStats();
+    updateTrend();
     showCompact("✅ Saved. Thank you!");
-    el("btnSave").disabled = false;
   }, 700);
+
+  return true;
 }
 
-/* ✅ Single button behavior:
-   - if manual mode not active -> start manual mode
-   - if active and coords chosen -> validate/save
-   - if active but no coords yet -> do nothing (user must click map) */
+/* AUTO SAVE: on mood click */
+async function autoSaveWithGeoOrManual(){
+  const now = Date.now();
+  if (isSaving) return;
+  if (now - lastSaveAt < 650) return;
+
+  isSaving = true;
+  lastSaveAt = now;
+
+  showManualButton(false);
+  stopManualPick();
+
+  setAppMessage("Locating…");
+
+  if (!navigator.geolocation) {
+    setAppMessage("Geolocation not supported. Please set position manually.");
+    startManualPick();
+    isSaving = false;
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      const coords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+      await saveMoodAtCoords(coords);
+      isSaving = false;
+    },
+    (err) => {
+      setAppMessage("Geolocation error: " + err.message);
+      startManualPick();
+      isSaving = false;
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+  );
+}
+
+/* ✅ Single manual button behavior */
 el("btnManual").onclick = async () => {
   if (!manualPickActive) {
     startManualPick();
@@ -1293,35 +1538,6 @@ el("btnManual").onclick = async () => {
   const coords = pendingManualCoords;
   stopManualPick();
   await saveMoodAtCoords(coords);
-};
-
-el("btnSave").onclick = async () => {
-  setAppMessage("Locating…");
-  el("btnSave").disabled = true;
-
-  // reset manual UI unless geo fails
-  showManualButton(false);
-  stopManualPick();
-
-  if (!navigator.geolocation) {
-    setAppMessage("Geolocation is not supported on this device.");
-    el("btnSave").disabled = false;
-    startManualPick(); // auto
-    return;
-  }
-
-  navigator.geolocation.getCurrentPosition(
-    async (pos) => {
-      const coords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-      await saveMoodAtCoords(coords);
-    },
-    (err) => {
-      setAppMessage("Geolocation error: " + err.message);
-      el("btnSave").disabled = false;
-      startManualPick(); // ✅ auto + zoom to last loc + micro + one button
-    },
-    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-  );
 };
 
 el("btnExpand").onclick = () => {
@@ -1368,7 +1584,6 @@ fbOverlay.addEventListener("click", (e) => { if (e.target === fbOverlay) closeFe
 el("btnFbCancel").onclick = closeFeedbackModal;
 fbText.addEventListener("input", updateFbCounter);
 
-/* ✅ renamed button */
 el("btnComments").onclick = () => openFeedbackModal();
 
 btnFbSend.onclick = async () => {
@@ -1415,7 +1630,7 @@ btnFbSend.onclick = async () => {
 };
 
 /* =============================================================================
-   8.5) SHARE MODAL + LINKS (URL fixed to https://mood2know.com/)
+   8.5) SHARE MODAL + LINKS
    ============================================================================= */
 const shareOverlay = el("shareOverlay");
 
@@ -1453,7 +1668,7 @@ async function tryNativeShare(){
     await navigator.share({ title: "Mood2Know", text, url });
     return true;
   }catch(e){
-    return false; // cancel/fail -> fallback modal
+    return false;
   }
 }
 
@@ -1476,17 +1691,18 @@ map.on("load", async () => {
   showManualButton(false);
   setManualReady(false);
 
-  requestAnimationFrame(() => {
-    slider.value = slider.value;
-    el("moodValue").textContent = slider.value;
-    currentMood = Number(slider.value);
-    updateFeeling();
-    updateMusicParams();
-  });
+  // default mood
+  selectedMood = 5;
+  currentMood = 5;
+  el("moodValue").textContent = "5";
+  updateFeeling(5);
+  renderMoodButtons();
+  updateMusicParams();
 
   soundWatchdog();
 
-  updateTopStats(); /* ✅ NEW: show stats on first load */
+  updateTopStats();
+  updateTrend();
 });
 </script>
 
