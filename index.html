@@ -1,4 +1,3 @@
-
 ```html
 <!doctype html>
 <html lang="en">
@@ -344,8 +343,20 @@
     color:#111;
   }
   .share-grid a:active{ transform: translateY(1px); }
+
+@keyframes m2kBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+.blink {
+  animation: m2kBlink 0.9s ease-in-out infinite;
+}
+
 </style>
 </head>
+
+
+
 
 <body>
 
@@ -1165,9 +1176,17 @@ async function getCountryFromCoords(lat, lon){
       }
     });
     if (!r.ok) return null;
+
     const j = await r.json();
-    const cc = j?.address?.country_code;
-    return cc ? cc.toUpperCase() : null;
+
+    const code = j?.address?.country_code
+      ? j.address.country_code.toUpperCase()
+      : null;
+
+    const name = j?.address?.country || null;
+
+    return { code, name };
+
   }catch{
     return null;
   }
@@ -1239,13 +1258,14 @@ async function updateHappiestCountryToday(){
 
     const { data, error } = await sb
       .from("mood_entries")
-      .select("country, mood, created_at")
+      .select("country, country_name, mood, created_at")
       .gte("created_at", startUTC.toISOString())
       .not("country", "is", null)
       .limit(50000);
 
     if (error || !data || data.length === 0){
       elHappy.textContent = "—";
+      elHappy.classList.remove("blink");
       return;
     }
 
@@ -1255,35 +1275,43 @@ async function updateHappiestCountryToday(){
       const v = Number(r.mood);
       if (!Number.isFinite(v)) continue;
 
-      const c = r.country;
-      if (!c) continue;
+      const code = r.country;
+      if (!code) continue;
 
-      const cur = byCountry.get(c) || { sum: 0, count: 0 };
+      const label = (r.country_name && r.country_name.trim())
+        ? r.country_name.trim()
+        : code;
+
+      const cur = byCountry.get(code) || { sum: 0, count: 0, label };
       cur.sum += v;
       cur.count += 1;
-      byCountry.set(c, cur);
+
+      // garde le nom complet si on le voit
+      if (r.country_name && r.country_name.trim()) cur.label = r.country_name.trim();
+
+      byCountry.set(code, cur);
     }
 
-    let bestCountry = null;
-    let bestAvg = -Infinity;
-
-    for (const [country, agg] of byCountry.entries()){
-      // ✅ optional anti-noise (enable if you want a minimum number of votes)
-      // if (agg.count < 5) continue;
-
+    let best = null;
+    for (const [code, agg] of byCountry.entries()){
       const avg = agg.sum / agg.count;
-      if (avg > bestAvg){
-        bestAvg = avg;
-        bestCountry = country;
+      if (!best || avg > best.avg){
+        best = { code, label: agg.label, avg };
       }
     }
 
-    elHappy.textContent = bestCountry
-      ? `${bestCountry} (${bestAvg.toFixed(1)})`
-      : "—";
+    if (!best){
+      elHappy.textContent = "—";
+      elHappy.classList.remove("blink");
+      return;
+    }
+
+    elHappy.textContent = `${best.label} (${best.avg.toFixed(1)})`;
+    elHappy.classList.add("blink"); // ✅ clignote
 
   }catch{
     elHappy.textContent = "—";
+    elHappy.classList.remove("blink");
   }
 }
 
@@ -1568,11 +1596,21 @@ async function saveMoodAtCoords(coords) {
   setAppMessage("Saving your mood…");
 
   // ✅ NEW: compute country from coords (best-effort)
-  const country = await getCountryFromCoords(coords.lat, coords.lon);
+const c = await getCountryFromCoords(coords.lat, coords.lon);
 
-  const { error } = await sb
-    .from("mood_entries")
-    .insert([{ anon_id: anonId, mood, lon: coords.lon, lat: coords.lat, country }]);
+const country = c?.code || null;
+const country_name = c?.name || null;
+
+const { error } = await sb
+  .from("mood_entries")
+  .insert([{
+    anon_id: anonId,
+    mood,
+    lon: coords.lon,
+    lat: coords.lat,
+    country,
+    country_name
+  }]);
 
   if (error) {
     setAppMessage("Save failed: " + (error.message || "Unknown error"));
