@@ -381,7 +381,7 @@
 
     <!-- ✅ NEW -->
     <div class="topStatsLine">
-      <span class="topStatsLeft">😊 happiest country today</span>
+      <span class="topStatsLeft">😊 happiest country in the world</span>
       <span class="topStatsRight"><b><span id="statHappiest">—</span></b></span>
     </div>
 
@@ -1246,22 +1246,21 @@ async function updateTopStats(){
 }
 
 /* =============================================================================
-   ✅ NEW: HAPPIEST COUNTRY TODAY (requires mood_entries.country)
+   ✅ HAPPIEST COUNTRY (among the last 5 countries with entries)
    ============================================================================= */
 async function updateHappiestCountryToday(){
   const elHappy = document.getElementById("statHappiest");
   if (!elHappy) return;
 
   try{
-    const startUTC = new Date();
-    startUTC.setUTCHours(0,0,0,0);
+    const FETCH_LIMIT = 5000;
 
     const { data, error } = await sb
       .from("mood_entries")
       .select("country, country_name, mood, created_at")
-      .gte("created_at", startUTC.toISOString())
       .not("country", "is", null)
-      .limit(50000);
+      .order("created_at", { ascending: false })
+      .limit(FETCH_LIMIT);
 
     if (error || !data || data.length === 0){
       elHappy.textContent = "—";
@@ -1269,14 +1268,36 @@ async function updateHappiestCountryToday(){
       return;
     }
 
+    // 1) last 5 distinct countries (most recent)
+    const lastCountries = [];
+    const seen = new Set();
+
+    for (const r of data){
+      const code = r.country;
+      if (!code) continue;
+      if (!seen.has(code)){
+        seen.add(code);
+        lastCountries.push(code);
+        if (lastCountries.length >= 5) break;
+      }
+    }
+
+    if (lastCountries.length === 0){
+      elHappy.textContent = "—";
+      elHappy.classList.remove("blink");
+      return;
+    }
+
+    // 2) avg mood per country restricted to those 5 countries
+    const allowed = new Set(lastCountries);
     const byCountry = new Map();
 
     for (const r of data){
+      const code = r.country;
+      if (!allowed.has(code)) continue;
+
       const v = Number(r.mood);
       if (!Number.isFinite(v)) continue;
-
-      const code = r.country;
-      if (!code) continue;
 
       const label = (r.country_name && r.country_name.trim())
         ? r.country_name.trim()
@@ -1285,19 +1306,16 @@ async function updateHappiestCountryToday(){
       const cur = byCountry.get(code) || { sum: 0, count: 0, label };
       cur.sum += v;
       cur.count += 1;
-
-      // garde le nom complet si on le voit
       if (r.country_name && r.country_name.trim()) cur.label = r.country_name.trim();
-
       byCountry.set(code, cur);
     }
 
+    // 3) pick best avg
     let best = null;
     for (const [code, agg] of byCountry.entries()){
+      if (!agg.count) continue;
       const avg = agg.sum / agg.count;
-      if (!best || avg > best.avg){
-        best = { code, label: agg.label, avg };
-      }
+      if (!best || avg > best.avg) best = { code, label: agg.label, avg };
     }
 
     if (!best){
@@ -1307,14 +1325,13 @@ async function updateHappiestCountryToday(){
     }
 
     elHappy.textContent = `${best.label} (${best.avg.toFixed(1)})`;
-    elHappy.classList.add("blink"); // ✅ clignote
+    elHappy.classList.add("blink");
 
   }catch{
     elHappy.textContent = "—";
     elHappy.classList.remove("blink");
   }
 }
-
 function getAnonId(){
   const key = "mood_anon_id";
   let v = localStorage.getItem(key);
