@@ -1206,6 +1206,7 @@ async function updateTopStats(){
 
   if (!elAvg || !elTodayCount || !elCountryCount) return;
 
+  // 1) moyenne du jour
   try{
     const startUTC = new Date();
     startUTC.setUTCHours(0,0,0,0);
@@ -1213,42 +1214,57 @@ async function updateTopStats(){
 
     const { data, error } = await sb
       .from("mood_entries")
-      .select("mood, country, created_at")
+      .select("mood")
       .gte("created_at", iso)
       .limit(50000);
 
     if (error || !data || data.length === 0) {
       elAvg.textContent = "—";
-      elTodayCount.textContent = "0";
-      elCountryCount.textContent = "0";
+    } else {
+      let sum = 0;
+      let n = 0;
+
+      for (const r of data){
+        const v = Number(r.mood);
+        if (Number.isFinite(v)) {
+          sum += v;
+          n++;
+        }
+      }
+
+      elAvg.textContent = n ? (sum / n).toFixed(1) : "—";
+    }
+  }catch{
+    elAvg.textContent = "—";
+  }
+
+  // 2) stats totales : nombre total de moods + nombre total de pays
+  try{
+    const { data, error } = await sb
+      .from("mood_entries")
+      .select("country")
+      .limit(50000);
+
+    if (error || !data) {
+      elTodayCount.textContent = "—";
+      elCountryCount.textContent = "—";
       return;
     }
 
-    let sum = 0;
-    let n = 0;
     const countries = new Set();
 
     for (const r of data){
-      const v = Number(r.mood);
-      if (Number.isFinite(v)) {
-        sum += v;
-        n++;
-      }
-
       if (r.country) countries.add(r.country);
     }
 
-    elAvg.textContent = n ? (sum / n).toFixed(1) : "—";
-    elTodayCount.textContent = fmtInt(n);
+    elTodayCount.textContent = fmtInt(data.length);
     elCountryCount.textContent = fmtInt(countries.size);
 
   }catch{
-    elAvg.textContent = "—";
     elTodayCount.textContent = "—";
     elCountryCount.textContent = "—";
   }
 }
-
 async function updateHappiestCountryToday(){
   const elHappy = document.getElementById("statHappiest");
   if (!elHappy) return;
