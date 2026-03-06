@@ -405,22 +405,22 @@
   <div class="titleSub">the world’s emotional weather in one click</div>
 
   <div id="topStats" class="topStats" aria-label="Mood stats">
-    <div class="topStatsLine">
-      <span class="topStatsLeft">🌍 moods recorded</span>
-      <span class="topStatsRight"><b><span id="statTotal">—</span></b></span>
-    </div>
-    <div class="topStatsLine">
-      <span class="topStatsLeft">📊 average mood today</span>
-      <span class="topStatsRight"><b><span id="statAvgToday">—</span></b></span>
-    </div>
-
-    <div class="topStatsLine">
-      <span class="topStatsLeft">😊 happiest country in the world</span>
-      <span class="topStatsRight"><b><span id="statHappiest">—</span></b></span>
-    </div>
-
-    <div class="topStatsNote">🔒 No signup • Anonymous • Optional location</div>
+  <div class="topStatsLine">
+    <span class="topStatsLeft">🌍 Global mood today:</span>
+    <span class="topStatsRight"><b><span id="statAvgToday">—</span> / 10</b></span>
   </div>
+
+  <div class="topStatsLine">
+    <span class="topStatsLeft">📍 <span id="statTodayCount">—</span> moods from <span id="statCountryCount">—</span> countries</span>
+  </div>
+
+  <div class="topStatsLine">
+    <span class="topStatsLeft">😊 Happiest country today:</span>
+    <span class="topStatsRight"><b><span id="statHappiest">—</span></b></span>
+  </div>
+
+  <div class="topStatsNote">🔒 No signup • Anonymous • Optional location</div>
+</div>
 
   <div id="dragHandle" title="Drag panel" aria-label="Drag panel"></div>
 
@@ -1200,20 +1200,11 @@ function fmtInt(n){
 }
 
 async function updateTopStats(){
-  const elTotal = document.getElementById("statTotal");
-  const elAvg   = document.getElementById("statAvgToday");
-  if (!elTotal || !elAvg) return;
+  const elAvg = document.getElementById("statAvgToday");
+  const elTodayCount = document.getElementById("statTodayCount");
+  const elCountryCount = document.getElementById("statCountryCount");
 
-  try{
-    const { count, error } = await sb
-      .from("mood_entries")
-      .select("*", { count: "exact", head: true });
-
-    if (!error && typeof count === "number") elTotal.textContent = fmtInt(count);
-    else elTotal.textContent = "—";
-  }catch{
-    elTotal.textContent = "—";
-  }
+  if (!elAvg || !elTodayCount || !elCountryCount) return;
 
   try{
     const startUTC = new Date();
@@ -1222,23 +1213,39 @@ async function updateTopStats(){
 
     const { data, error } = await sb
       .from("mood_entries")
-      .select("mood, created_at")
+      .select("mood, country, created_at")
       .gte("created_at", iso)
       .limit(50000);
 
     if (error || !data || data.length === 0) {
       elAvg.textContent = "—";
+      elTodayCount.textContent = "0";
+      elCountryCount.textContent = "0";
       return;
     }
 
-    let sum = 0, n = 0;
+    let sum = 0;
+    let n = 0;
+    const countries = new Set();
+
     for (const r of data){
       const v = Number(r.mood);
-      if (Number.isFinite(v)) { sum += v; n++; }
+      if (Number.isFinite(v)) {
+        sum += v;
+        n++;
+      }
+
+      if (r.country) countries.add(r.country);
     }
+
     elAvg.textContent = n ? (sum / n).toFixed(1) : "—";
+    elTodayCount.textContent = fmtInt(n);
+    elCountryCount.textContent = fmtInt(countries.size);
+
   }catch{
     elAvg.textContent = "—";
+    elTodayCount.textContent = "—";
+    elCountryCount.textContent = "—";
   }
 }
 
@@ -1247,14 +1254,16 @@ async function updateHappiestCountryToday(){
   if (!elHappy) return;
 
   try{
-    const FETCH_LIMIT = 5000;
+    const startUTC = new Date();
+    startUTC.setUTCHours(0,0,0,0);
+    const iso = startUTC.toISOString();
 
     const { data, error } = await sb
       .from("mood_entries")
       .select("country, country_name, mood, created_at")
       .not("country", "is", null)
-      .order("created_at", { ascending: false })
-      .limit(FETCH_LIMIT);
+      .gte("created_at", iso)
+      .limit(50000);
 
     if (error || !data || data.length === 0){
       elHappy.textContent = "—";
@@ -1262,34 +1271,12 @@ async function updateHappiestCountryToday(){
       return;
     }
 
-    const lastCountries = [];
-    const seen = new Set();
-
-    for (const r of data){
-      const code = r.country;
-      if (!code) continue;
-      if (!seen.has(code)){
-        seen.add(code);
-        lastCountries.push(code);
-        if (lastCountries.length >= 5) break;
-      }
-    }
-
-    if (lastCountries.length === 0){
-      elHappy.textContent = "—";
-      elHappy.classList.remove("blink");
-      return;
-    }
-
-    const allowed = new Set(lastCountries);
     const byCountry = new Map();
 
     for (const r of data){
       const code = r.country;
-      if (!allowed.has(code)) continue;
-
       const v = Number(r.mood);
-      if (!Number.isFinite(v)) continue;
+      if (!code || !Number.isFinite(v)) continue;
 
       const label = (r.country_name && r.country_name.trim())
         ? r.country_name.trim()
@@ -1306,7 +1293,9 @@ async function updateHappiestCountryToday(){
     for (const [code, agg] of byCountry.entries()){
       if (!agg.count) continue;
       const avg = agg.sum / agg.count;
-      if (!best || avg > best.avg) best = { code, label: agg.label, avg };
+      if (!best || avg > best.avg) {
+        best = { code, label: agg.label, avg };
+      }
     }
 
     if (!best){
@@ -1315,7 +1304,7 @@ async function updateHappiestCountryToday(){
       return;
     }
 
-    elHappy.textContent = `${best.label} (${best.avg.toFixed(1)})`;
+    elHappy.textContent = best.label;
     elHappy.classList.add("blink");
 
   }catch{
@@ -1323,6 +1312,7 @@ async function updateHappiestCountryToday(){
     elHappy.classList.remove("blink");
   }
 }
+
 function getAnonId(){
   const key = "mood_anon_id";
   let v = localStorage.getItem(key);
