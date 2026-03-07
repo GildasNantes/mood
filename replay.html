@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="fr">
 <head>
@@ -294,6 +295,8 @@
     let lastFlyLngLat = null;
     let lastCameraCount = 0;
 
+    let pauseUntil = 0;
+
     /* =========================================================================
        6) HELPERS
        ========================================================================= */
@@ -343,47 +346,56 @@
     function maybeFlyTo(count) {
       const now = performance.now();
 
-      if (count < 2) return;
-      if (count === lastCameraCount) return;
+      if (count < 2) return false;
+      if (count === lastCameraCount) return false;
 
-      const minInterval = 1400;
-      if (now - lastFlyAt < minInterval) return;
+      // Temps minimum entre deux changements de zone
+      const minInterval = 2600;
+      if (now - lastFlyAt < minInterval) return false;
 
       const r = rows[count - 1];
-      if (!r) return;
+      if (!r) return false;
 
       const target = [Number(r.lon), Number(r.lat)];
 
+      // Évite les micro-déplacements peu visibles
       if (lastFlyLngLat) {
         const d = haversineKm(lastFlyLngLat, target);
-        if (d < 600) return;
+        if (d < 900) return false;
       }
 
       lastFlyAt = now;
       lastFlyLngLat = target;
       lastCameraCount = count;
 
-      const zoomBase = 4.15;
-      const zoomJitter = ((count % 5) * 0.12);
-      const pitch = 35 + ((count % 3) * 4);
-      const bearing = ((count * 23) % 80) - 40;
+      const zoomBase = 3.8;
+      const zoomJitter = ((count % 4) * 0.08);
+      const pitch = 28 + ((count % 3) * 3);
+      const bearing = ((count * 17) % 50) - 25;
+
+      const flyDuration = 2600;
+      const holdDuration = 1600; // pause visible de 1 à 2 secondes
+
+      pauseUntil = now + flyDuration + holdDuration;
 
       map.flyTo({
         center: target,
         zoom: zoomBase + zoomJitter,
         bearing,
         pitch,
-        speed: 0.48,
-        curve: 1.1,
+        duration: flyDuration,
         essential: true,
-        easing: (t) => t * (2 - t)
+        easing: (t) => 1 - Math.pow(1 - t, 3)
       });
+
+      return true;
     }
 
     function resetCameraState() {
       lastFlyAt = 0;
       lastFlyLngLat = null;
       lastCameraCount = 0;
+      pauseUntil = 0;
 
       map.jumpTo({
         center: [0, 20],
@@ -420,11 +432,28 @@
 
       playing = true;
       startedAt = performance.now();
+      let totalPausedMs = 0;
+      let pauseStartedAt = 0;
+      pauseUntil = 0;
 
       function step(now) {
         if (!playing) return;
 
-        const elapsed = (now - startedAt) / 1000;
+        // Pendant la pause, on fige la progression du replay
+        if (pauseUntil > now) {
+          if (!pauseStartedAt) pauseStartedAt = now;
+          raf = requestAnimationFrame(step);
+          return;
+        }
+
+        // À la fin de la pause, on compense le temps gelé
+        if (pauseStartedAt) {
+          totalPausedMs += now - pauseStartedAt;
+          pauseStartedAt = 0;
+          pauseUntil = 0;
+        }
+
+        const elapsed = ((now - startedAt) - totalPausedMs) / 1000;
         const loopProgress = (elapsed / REPLAY_DURATION_SEC) % 1;
 
         renderAtProgress(loopProgress);
