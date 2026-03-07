@@ -1482,11 +1482,10 @@ function updateFeeling(v){
     return;
   }
 
-  if (v === undefined || v === null) {
-    mf.textContent = "I feel...";
-  } else {
-    mf.textContent = "I feel... " + moodPhrase(v).replace(/^I feel\s*/i, "").replace(/\.$/, "");
-  }
+if (v === undefined || v === null) {
+  mf.textContent = "I feel...";
+} else {
+  mf.textContent = moodPhrase(v).replace(/\.$/, "");
 }
 
 function renderMoodButtons(){
