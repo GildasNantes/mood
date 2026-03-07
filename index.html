@@ -427,7 +427,7 @@
   <div id="appView">
     <div class="row moodRow">
       <label>How do you feel right now?</label>
-
+	<div class="small" id="hint">Add your mood to the global map</div>
       <div id="moodButtons" class="moodButtons" role="group" aria-label="Mood from 1 to 10"></div>
 
       <div class="feelBig" id="moodFeeling"></div>
@@ -438,8 +438,6 @@
         Set position manually
       </button>
     </div>
-
-    <div class="small" id="hint">Add your mood to the global map</div>
 
     <div class="row" id="trendBox" style="margin-top:6px;">
       <div class="small" style="opacity:.8; font-weight:650;">Your 7-Day Mood Trend</div>
@@ -1474,6 +1472,7 @@ function moodPhrase(v){
   if (v <= 8) return "I feel good.";
   return "I feel great.";
 }
+
 function updateFeeling(v){
   const mf = el("moodFeeling");
   if (!mf) return;
@@ -1484,9 +1483,9 @@ function updateFeeling(v){
   }
 
   if (v === undefined || v === null) {
-    mf.textContent = "I feel";
+    mf.textContent = "I feel...";
   } else {
-    mf.textContent = "I feel " + moodPhrase(v).replace(/^I feel\s*/i, "").replace(/\.$/, "");
+    mf.textContent = "I feel... " + moodPhrase(v).replace(/^I feel\s*/i, "").replace(/\.$/, "");
   }
 }
 
