@@ -438,13 +438,13 @@
   <div id="dragHandle" title="Drag panel" aria-label="Drag panel"></div>
 
   <div id="appView">
-    <div class="row moodRow">
-      <label>How do you feel right now?</label>
-      <div class="small" id="hint">Add your mood to the global map</div>
-      <div id="moodButtons" class="moodButtons" role="group" aria-label="Mood from 1 to 10"></div>
+   <div class="row moodRow">
+   <label>How do you feel right now?</label>
+   <div class="small" id="hint">Add your mood and compare yourself with the world</div>
+   <div id="moodButtons" class="moodButtons" role="group" aria-label="Mood from 1 to 10"></div>
 
-      <div class="feelBig" id="moodFeeling"></div>
-    </div>
+   <div class="feelBig" id="moodFeeling"></div>
+  </div>
 
     <div class="row">
       <button id="btnManual" class="secondary" type="button" style="display:none;">
@@ -465,17 +465,17 @@
     <div id="appMsg" class="msg"></div>
   </div>
 
-  <div id="compactView">
-    <div class="small" id="compactMsg">✅ Saved.</div>
+<div id="compactView">
+  <div class="small" id="compactMsg">✅ Saved.</div>
 
-    <div class="row" style="margin-top:8px; gap:8px;">
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
-        <button id="btnComments" class="secondary" type="button">Comments?</button>
-        <button id="btnShare" class="secondary" type="button">Share</button>
-      </div>
-      <button id="btnExpand" class="secondary" type="button">Change mood</button>
+  <div class="row" style="margin-top:8px; gap:8px;">
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+      <button id="btnComments" class="secondary" type="button">Send feedback</button>
+      <button id="btnShare" class="secondary" type="button">Share</button>
     </div>
+    <button id="btnExpand" class="secondary" type="button">Change mood</button>
   </div>
+</div>
 
   <section id="about" class="m2k-about" aria-label="About Mood2Know">
     <details class="m2k-details" id="m2kDetails">
@@ -564,12 +564,12 @@
 
 <div id="fbOverlay" aria-hidden="true">
   <div id="fbModal" role="dialog" aria-modal="true">
-    <h4>Send a comment</h4>
-    <div class="small">This message will be stored automatically.</div>
+    <h4>Send feedback</h4>
+    <div class="small">This message is private and helps improve the project.</div>
     <div style="height:10px"></div>
 
     <label class="small" for="fbText">Message</label>
-    <textarea id="fbText" maxlength="5000" placeholder="Write your comment here (max 5000 characters)…"></textarea>
+    <textarea id="fbText" maxlength="5000" placeholder="Optional: tell us why you feel this way…"></textarea>
     <div id="fbCount">0 / 5000 • 0 / 250 words</div>
 
     <div id="fbMsg" class="msg" style="margin-top:8px;"></div>
@@ -1271,6 +1271,26 @@ function fmtInt(n){
   catch { return String(n); }
 }
 
+
+function buildComparisonMessage(userMood){
+  const avgText = document.getElementById("statAvgToday")?.textContent || "—";
+  const avg = Number(avgText);
+
+  if (!Number.isFinite(avg)) {
+    return "✅ Saved. Thank you!";
+  }
+
+  let comparison = "about the same as";
+  if (userMood > avg + 0.3) comparison = "above";
+  else if (userMood < avg - 0.3) comparison = "below";
+
+  if (comparison === "about the same as") {
+    return `✅ Saved. World average today: ${avg.toFixed(1)}/10. Your mood is about the same.`;
+  }
+
+  return `✅ Saved. World average today: ${avg.toFixed(1)}/10. Your mood is ${comparison} average.`;
+}
+
 async function updateTopStats(){
   const elAvg = document.getElementById("statAvgToday");
   const elTodayCount = document.getElementById("statTodayCount");
@@ -1777,10 +1797,10 @@ setIntroBackground(false);
 
 setTimeout(async () => {
   await refreshPoints();
-  updateTopStats();
+  await updateTopStats();
   updateHappiestCountryToday();
   updateTrend();
-  showCompact("✅ Saved. Thank you!");
+  showCompact(buildComparisonMessage(mood));
 }, 250);
 
   return true;
