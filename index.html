@@ -417,20 +417,20 @@
   <h3>Mood2Know</h3>
   <div class="titleSub">the world’s emotional weather</div>
 
-  <div id="topStats" class="topStats" aria-label="Mood stats">
-    <div class="topStatsLine">
-      <span class="topStatsLeft">🌍 Global mood today:</span>
-      <span class="topStatsRight"><b><span id="statAvgToday">—</span> / 10</b></span>
-    </div>
+<div id="topStats" class="topStats" aria-label="Mood stats">
+<div class="topStatsLine">
+  <span class="topStatsLeft" id="statAvgLabel">🌍 Global mood (last 24h):</span>
+  <span class="topStatsRight"><b><span id="statAvgToday">—</span> / 10</b></span>
+</div>
 
-    <div class="topStatsLine">
-      <span class="topStatsLeft">📍 <span id="statTodayCount">—</span> moods from <span id="statCountryCount">—</span> countries</span>
-    </div>
+<div class="topStatsLine">
+  <span class="topStatsLeft" id="statCountLabel">📍 <span id="statTodayCount">—</span> moods from <span id="statCountryCount">—</span> countries</span>
+</div>
 
-    <div class="topStatsLine">
-      <span class="topStatsLeft">😊 Happiest country today:</span>
-      <span class="topStatsRight"><b><span id="statHappiest">—</span></b></span>
-    </div>
+<div class="topStatsLine">
+  <span class="topStatsLeft" id="statHappyLabel">😊 Happiest country (last 24h):</span>
+  <span class="topStatsRight"><b><span id="statHappiest">—</span></b></span>
+</div>
 
     <div class="topStatsNote">🔒 No signup • Anonymous • Approximate location</div>
   </div>
@@ -1272,9 +1272,16 @@ function fmtInt(n){
 }
 
 
+function getStatsPeriodLabel() {
+  const label = document.getElementById("statAvgLabel")?.textContent || "";
+  if (label.includes("last 30 entries")) return "last 30 entries";
+  return "last 24h";
+}
+
 function buildComparisonMessage(userMood){
   const avgText = document.getElementById("statAvgToday")?.textContent || "—";
   const avg = Number(avgText);
+  const period = getStatsPeriodLabel();
 
   if (!Number.isFinite(avg)) {
     return "✅ Saved. Thank you!";
@@ -1285,103 +1292,108 @@ function buildComparisonMessage(userMood){
   else if (userMood < avg - 0.3) comparison = "below";
 
   if (comparison === "about the same as") {
-    return `✅ Saved. World average today: ${avg.toFixed(1)}/10. Your mood is about the same.`;
+    return `✅ Saved. World average (${period}): ${avg.toFixed(1)}/10. Your mood is about the same.`;
   }
 
-  return `✅ Saved. World average today: ${avg.toFixed(1)}/10. Your mood is ${comparison} average.`;
+  return `✅ Saved. World average (${period}): ${avg.toFixed(1)}/10. Your mood is ${comparison} average.`;
 }
 
-async function updateTopStats(){
+
+async function getStatsDataset() {
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+  const { data: recentData, error: recentError } = await sb
+    .from("mood_entries")
+    .select("mood, country, country_name, created_at")
+    .gte("created_at", since)
+    .order("created_at", { ascending: false })
+    .limit(50000);
+
+  if (recentError) throw recentError;
+
+  if (recentData && recentData.length > 0) {
+    return {
+      mode: "24h",
+      data: recentData
+    };
+  }
+
+  const { data: fallbackData, error: fallbackError } = await sb
+    .from("mood_entries")
+    .select("mood, country, country_name, created_at")
+    .order("created_at", { ascending: false })
+    .limit(30);
+
+  if (fallbackError) throw fallbackError;
+
+  return {
+    mode: "last30",
+    data: fallbackData || []
+  };
+}
+
+function applyStatsLabels(mode) {
+  const elAvgLabel = document.getElementById("statAvgLabel");
+  const elHappyLabel = document.getElementById("statHappyLabel");
+
+  if (mode === "last30") {
+    if (elAvgLabel) elAvgLabel.textContent = "🌍 Global mood (last 30 entries):";
+    if (elHappyLabel) elHappyLabel.textContent = "😊 Happiest country (last 30 entries):";
+  } else {
+    if (elAvgLabel) elAvgLabel.textContent = "🌍 Global mood (last 24h):";
+    if (elHappyLabel) elHappyLabel.textContent = "😊 Happiest country (last 24h):";
+  }
+}
+
+async function updateAllStats() {
   const elAvg = document.getElementById("statAvgToday");
   const elTodayCount = document.getElementById("statTodayCount");
   const elCountryCount = document.getElementById("statCountryCount");
+  const elHappy = document.getElementById("statHappiest");
 
-  if (!elAvg || !elTodayCount || !elCountryCount) return;
+  if (!elAvg || !elTodayCount || !elCountryCount || !elHappy) return;
 
-  try{
-    const startUTC = new Date();
-    startUTC.setUTCHours(0,0,0,0);
-    const iso = startUTC.toISOString();
+  try {
+    const { data, mode } = await getStatsDataset();
 
-    const { data, error } = await sb
-      .from("mood_entries")
-      .select("mood")
-      .gte("created_at", iso)
-      .limit(50000);
+    applyStatsLabels(mode);
 
-    if (error || !data || data.length === 0) {
+    if (!data || data.length === 0) {
       elAvg.textContent = "—";
-    } else {
-      let sum = 0;
-      let n = 0;
-
-      for (const r of data){
-        const v = Number(r.mood);
-        if (Number.isFinite(v)) {
-          sum += v;
-          n++;
-        }
-      }
-
-      elAvg.textContent = n ? (sum / n).toFixed(1) : "—";
-    }
-  }catch{
-    elAvg.textContent = "—";
-  }
-
-  try{
-    const { data, error } = await sb
-      .from("mood_entries")
-      .select("country")
-      .limit(50000);
-
-    if (error || !data) {
       elTodayCount.textContent = "—";
       elCountryCount.textContent = "—";
+      elHappy.textContent = "—";
+      elHappy.classList.remove("blink");
       return;
     }
 
-    const countries = new Set();
+    let sum = 0;
+    let count = 0;
 
-    for (const r of data){
+    for (const r of data) {
+      const v = Number(r.mood);
+      if (Number.isFinite(v)) {
+        sum += v;
+        count++;
+      }
+    }
+
+    elAvg.textContent = count ? (sum / count).toFixed(1) : "—";
+
+    const countries = new Set();
+    for (const r of data) {
       if (r.country) countries.add(r.country);
     }
 
     elTodayCount.textContent = fmtInt(data.length);
     elCountryCount.textContent = fmtInt(countries.size);
 
-  }catch{
-    elTodayCount.textContent = "—";
-    elCountryCount.textContent = "—";
-  }
-}
-async function updateHappiestCountryToday(){
-  const elHappy = document.getElementById("statHappiest");
-  if (!elHappy) return;
-
-  try{
-    const startUTC = new Date();
-    startUTC.setUTCHours(0,0,0,0);
-    const iso = startUTC.toISOString();
-
-    const { data, error } = await sb
-      .from("mood_entries")
-      .select("country, country_name, mood, created_at")
-      .not("country", "is", null)
-      .gte("created_at", iso)
-      .limit(50000);
-
-    if (error || !data || data.length === 0){
-      elHappy.textContent = "—";
-      elHappy.classList.remove("blink");
-      return;
-    }
-
     const byCountry = new Map();
 
-    for (const r of data){
+    for (const r of data) {
       const code = r.country;
       const v = Number(r.mood);
+
       if (!code || !Number.isFinite(v)) continue;
 
       const label = (r.country_name && r.country_name.trim())
@@ -1391,31 +1403,40 @@ async function updateHappiestCountryToday(){
       const cur = byCountry.get(code) || { sum: 0, count: 0, label };
       cur.sum += v;
       cur.count += 1;
-      if (r.country_name && r.country_name.trim()) cur.label = r.country_name.trim();
+
+      if (r.country_name && r.country_name.trim()) {
+        cur.label = r.country_name.trim();
+      }
+
       byCountry.set(code, cur);
     }
 
     let best = null;
-    for (const [code, agg] of byCountry.entries()){
+    for (const [code, agg] of byCountry.entries()) {
       if (!agg.count) continue;
+
       const avg = agg.sum / agg.count;
       if (!best || avg > best.avg) {
         best = { code, label: agg.label, avg };
       }
     }
 
-    if (!best){
+    if (best) {
+      elHappy.textContent = best.label;
+      elHappy.classList.add("blink");
+    } else {
       elHappy.textContent = "—";
       elHappy.classList.remove("blink");
-      return;
     }
 
-    elHappy.textContent = best.label;
-    elHappy.classList.add("blink");
-
-  }catch{
+  } catch (e) {
+    elAvg.textContent = "—";
+    elTodayCount.textContent = "—";
+    elCountryCount.textContent = "—";
     elHappy.textContent = "—";
     elHappy.classList.remove("blink");
+    applyStatsLabels("24h");
+    console.warn("STATS error:", e);
   }
 }
 
@@ -1797,8 +1818,7 @@ setIntroBackground(false);
 
 setTimeout(async () => {
   await refreshPoints();
-  await updateTopStats();
-  updateHappiestCountryToday();
+  await updateAllStats();  
   updateTrend();
   showCompact(buildComparisonMessage(mood));
 }, 250);
@@ -2027,8 +2047,7 @@ map.on("load", async () => {
   soundWatchdog();
   if (!isAudioRunning()) showSoundButton(true);
 
-  updateTopStats();
-  updateHappiestCountryToday();
+  updateAllStats();
   updateTrend();
 });
 </script>
