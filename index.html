@@ -34,11 +34,19 @@
   html, body { margin:0; height:100%; font:16px system-ui; }
   :root { --vh: 1vh; }
 
-  #map{
-    position:fixed; inset:0;
-    height: calc(var(--vh) * 100);
-    z-index: 0;
-  }
+#map{
+  position:fixed; inset:0;
+  height: calc(var(--vh) * 100);
+  z-index: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .5s ease, visibility .5s ease;
+}
+
+#map.is-visible{
+  opacity: 1;
+  visibility: visible;
+}
 
   #introBg{
     position: fixed;
@@ -831,6 +839,13 @@ function collapseAbout() {
   if (d) d.open = false;
 }
 
+function setMainMapVisible(visible){
+  const mapEl = document.getElementById("map");
+  if (!mapEl) return;
+  mapEl.classList.toggle("is-visible", !!visible);
+}
+
+
 function showApp(){
   panel.className = "panel-app";
   el("appView").style.display = "block";
@@ -1579,7 +1594,10 @@ function startManualPick() {
   showManualButton(true);
   panel.className = "panel-manual-micro";
 
-  pendingManualCoords = null;
+setMainMapVisible(true);
+setIntroBackground(false);
+  
+pendingManualCoords = null;
   setManualReady(false);
 
   map.stop();
@@ -1625,11 +1643,12 @@ function prepareApproxManualPick(coords, msg){
   showManualButton(true);
   panel.className = "panel-manual-micro";
 
+  setMainMapVisible(true);
+  setIntroBackground(false);
+
   pendingManualCoords = coords;
 
   map.stop();
-
-  // Position fixe immédiate sur l'estimation IP
   map.jumpTo({
     center: [coords.lon, coords.lat],
     zoom: Math.max(map.getZoom(), 8)
@@ -1709,22 +1728,33 @@ async function saveMoodAtCoords(coords) {
 
   saveLastLoc(blurredCoords);
 
-  fadeOutMusic(2.6);
-  revealedThisSession = true;
-  setIntroBackground(false);
+fadeOutMusic(2.6);
+revealedThisSession = true;
 
-  collapseAbout();
+collapseAbout();
 
-  setAppMessage("Thank you! Loading the world’s mood…");
-  map.easeTo({ center: [blurredCoords.lon, blurredCoords.lat], zoom: Math.max(map.getZoom(), 8) });
+setAppMessage("Thank you! Loading the world’s mood…");
 
-  setTimeout(async () => {
-    await refreshPoints();
-    updateTopStats();
-    updateHappiestCountryToday();
-    updateTrend();
-    showCompact("✅ Saved. Thank you!");
-  }, 700);
+// On montre la vraie carte seulement maintenant
+setMainMapVisible(true);
+
+// On place directement la carte sans animation
+map.stop();
+map.jumpTo({
+  center: [blurredCoords.lon, blurredCoords.lat],
+  zoom: Math.max(map.getZoom(), 8)
+});
+
+// Puis on masque l'intro animée
+setIntroBackground(false);
+
+setTimeout(async () => {
+  await refreshPoints();
+  updateTopStats();
+  updateHappiestCountryToday();
+  updateTrend();
+  showCompact("✅ Saved. Thank you!");
+}, 250);
 
   return true;
 }
@@ -1935,6 +1965,7 @@ map.on("load", async () => {
   revealedThisSession = false;
 
   setIntroBackground(true);
+  setMainMapVisible(false);
 
   showApp();
   showManualButton(false);
@@ -1942,8 +1973,6 @@ map.on("load", async () => {
 
   selectedMood = 5;
   currentMood = 5;
-  const mv = el("moodValue");
-  if (mv) mv.textContent = "5";
   updateFeeling();
   renderMoodButtons();
   updateMusicParams();
