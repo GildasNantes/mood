@@ -682,23 +682,31 @@ function moodImageData(level, size=96){
   ctx.fillStyle="rgba(0,0,0,0.75)";
   ctx.fill();
 
-  const browY = eyeY - size*0.08;
-  const browTilt = lerp(0.20, -0.20, t);
-  ctx.lineWidth = Math.max(3, size*0.035);
-  ctx.strokeStyle="rgba(0,0,0,0.55)";
-  ctx.lineCap="round";
+ 
 
-  ctx.beginPath();
-  ctx.moveTo(cx-eyeDX-size*0.06, browY + browTilt*size*0.08);
-  ctx.lineTo(cx-eyeDX+size*0.06, browY - browTilt*size*0.08);
-  ctx.stroke();
+const browY = eyeY - size*0.08;
 
-  ctx.beginPath();
-  ctx.moveTo(cx+eyeDX-size*0.06, browY - browTilt*size*0.08);
-  ctx.lineTo(cx+eyeDX+size*0.06, browY + browTilt*size*0.08);
-  ctx.stroke();
+// low moods: sourcils un peu inclinés vers l'intérieur
+// high moods: presque neutres, très légèrement relevés
+const browTilt = lerp(0.16, -0.04, t);
 
-  const mouthY = cy + size*0.12, mouthW=size*0.26;
+ctx.lineWidth = Math.max(3, size*0.035);
+ctx.strokeStyle = "rgba(0,0,0,0.55)";
+ctx.lineCap = "round";
+
+ctx.beginPath();
+ctx.moveTo(cx-eyeDX-size*0.06, browY + browTilt*size*0.08);
+ctx.lineTo(cx-eyeDX+size*0.06, browY - browTilt*size*0.08);
+ctx.stroke();
+
+ctx.beginPath();
+ctx.moveTo(cx+eyeDX-size*0.06, browY - browTilt*size*0.08);
+ctx.lineTo(cx+eyeDX+size*0.06, browY + browTilt*size*0.08);
+ctx.stroke();
+  
+
+
+const mouthY = cy + size*0.12, mouthW=size*0.26;
   const curvature = lerp(-1, 1, t);
   ctx.beginPath();
   ctx.moveTo(cx-mouthW, mouthY);
