@@ -1645,7 +1645,7 @@ pendingManualCoords = null;
   map.off("click", onManualMapClick);
   map.on("click", onManualMapClick);
 
-  setAppMessage("Move the map if needed, then confirm.");
+  setAppMessage("Move the map/tag if needed, then confirm.");
 }
 
 function onManualMapClick(e) {
@@ -1697,7 +1697,7 @@ function prepareApproxManualPick(coords, msg){
   }
 
   setManualReady(true);
-  setAppMessage("Move the map if needed, then confirm.");
+  setAppMessage("Move the map/tag if needed, then confirm.");
 }
 
 function addPrivacyBlur(coords, maxMeters = 300) {
