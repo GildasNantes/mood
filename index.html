@@ -1176,7 +1176,7 @@ function soundWatchdog(){
 }
 
 const SUPABASE_URL = "https://ugrmxzdhevqrgftlxfnp.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVncm14emRoZXZxcmdmdGx4Zm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyODQ3OTQsImV4cCI6MjA4NDg2MDc5NH0.WgTj-6ADFEMrCgPNxeQZvknBBJI1c9uDY9_8Qlkqu4w";
+const SUPABASE_ANON_KEY = "elkqu4w";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 async function getCountryFromCoords(lat, lon){
@@ -1577,21 +1577,22 @@ function stopManualPick() {
 
 function startManualPick() {
   showManualButton(true);
-
   panel.className = "panel-manual-micro";
 
   pendingManualCoords = null;
   setManualReady(false);
 
-  map.stop(); // stop any animation
+  map.stop();
 
-  const didZoom = zoomToLastLocIfAny(true);
-  if (!didZoom) {
-    map.jumpTo({
-      center: map.getCenter(),
-      zoom: Math.max(map.getZoom(), 3)
-    });
-  }
+  if (manualPickActive) return;
+  manualPickActive = true;
+
+  map.getCanvas().style.cursor = "crosshair";
+  map.off("click", onManualMapClick);
+  map.on("click", onManualMapClick);
+
+  setAppMessage("Click on the map to set your position.");
+}
 
   if (manualPickActive) return;
   manualPickActive = true;
@@ -1627,12 +1628,7 @@ function prepareApproxManualPick(coords, msg){
   pendingManualCoords = coords;
   manualPickActive = true;
 
-  map.stop(); // stop fly animation
-
-  map.jumpTo({
-    center: [coords.lon, coords.lat],
-    zoom: Math.max(map.getZoom(), 7)
-  });
+  map.stop();
 
   map.getCanvas().style.cursor = "crosshair";
   map.off("click", onManualMapClick);
