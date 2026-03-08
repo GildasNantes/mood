@@ -1584,6 +1584,15 @@ function startManualPick() {
 
   map.stop();
 
+  // Se fixer sur l'ancienne position si disponible
+  const last = loadLastLoc();
+  if (last) {
+    map.jumpTo({
+      center: [last.lon, last.lat],
+      zoom: Math.max(map.getZoom(), 8)
+    });
+  }
+
   if (manualPickActive) return;
   manualPickActive = true;
 
@@ -1619,6 +1628,12 @@ function prepareApproxManualPick(coords, msg){
   pendingManualCoords = coords;
 
   map.stop();
+
+  // Position fixe immédiate sur l'estimation IP
+  map.jumpTo({
+    center: [coords.lon, coords.lat],
+    zoom: Math.max(map.getZoom(), 8)
+  });
 
   if (!manualPickActive) {
     manualPickActive = true;
@@ -1972,7 +1987,7 @@ map.on("load", async () => {
       const on = btn.dataset.setLang === lang;
       btn.setAttribute('aria-pressed', on ? 'true' : 'false');
     });
-a
+
     localStorage.setItem('m2k_lang', lang);
   }
 
