@@ -1741,13 +1741,13 @@ function prepareApproxManualPick(coords, msg){
   setAppMessage("Move the map/tag if needed, then confirm.");
 }
 
-function addPrivacyBlur(coords, maxMeters = 300) {
+function addPrivacyBlur(coords, minMeters = 200, maxMeters = 400) {
   const lat = Number(coords.lat);
   const lon = Number(coords.lon);
 
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) return coords;
 
-  const distance = Math.random() * maxMeters;
+  const distance = minMeters + Math.random() * (maxMeters - minMeters);
   const angle = Math.random() * 2 * Math.PI;
 
   const dx = distance * Math.cos(angle);
@@ -1770,7 +1770,7 @@ async function saveMoodAtCoords(coords) {
 
   setAppMessage("Saving your mood…");
 
-  const blurredCoords = addPrivacyBlur(coords, 300);
+  const blurredCoords = addPrivacyBlur(coords);
 
   const c = await getCountryFromCoords(blurredCoords.lat, blurredCoords.lon);
 
