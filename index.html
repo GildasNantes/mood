@@ -1338,10 +1338,10 @@ function applyStatsLabels(mode) {
 
   if (mode === "last30") {
     if (elAvgLabel) elAvgLabel.textContent = "🌍 Global mood (last 30 entries):";
-    if (elHappyLabel) elHappyLabel.textContent = "😊 Happiest country (last 30 entries):";
+    if (elHappyLabel) elHappyLabel.textContent = "😊 Happiest country (last 30 entries, >10 entries):";
   } else {
     if (elAvgLabel) elAvgLabel.textContent = "🌍 Global mood (last 24h):";
-    if (elHappyLabel) elHappyLabel.textContent = "😊 Happiest country (last 24h):";
+    if (elHappyLabel) elHappyLabel.textContent = "😊 Happiest country (last 24h, >10 entries):";
   }
 }
 
@@ -1413,7 +1413,7 @@ async function updateAllStats() {
 
     let best = null;
     for (const [code, agg] of byCountry.entries()) {
-      if (!agg.count) continue;
+      if (!agg.count || agg.count <= 10) continue; // on garde seulement les pays avec plus de 10 entrées
 
       const avg = agg.sum / agg.count;
       if (!best || avg > best.avg) {
