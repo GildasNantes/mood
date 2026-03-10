@@ -434,12 +434,12 @@ ctx.stroke();
        8) LOAD DATA
        ========================================================================= */
     async function loadRows() {
-      const { data, error } = await sb
-        .from("mood_entries")
-        .select("mood, lon, lat, created_at")
-        .gte("created_at", START_FROM_UTC)
-        .order("created_at", { ascending: true })
-        .limit(MAX_POINTS);
+ const { data, error } = await sb
+  .from("mood_public_entries")
+  .select("mood, lon, lat, created_at")
+  .gte("created_at", START_FROM_UTC)
+  .order("created_at", { ascending: true })
+  .limit(MAX_POINTS);
 
       if (error) {
         console.error("DB load failed:", error);
