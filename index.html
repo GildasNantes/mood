@@ -64,6 +64,25 @@
     visibility: hidden;
   }
 
+  #btnStopIntro{
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 25;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,.12);
+  background: rgba(255,255,255,0.96);
+  color: #111;
+  box-shadow: 0 10px 24px rgba(0,0,0,.18);
+  font-weight: 650;
+  cursor: pointer;
+}
+
+#btnStopIntro.is-hidden{
+  display: none;
+}
+
   #introFrame{
     position: absolute;
     inset: 0;
@@ -413,6 +432,10 @@
   <div id="introVeil"></div>
 </div>
 
+<button id="btnStopIntro" type="button" aria-label="Stop intro animation">
+  Stop animation
+</button>
+
 <div id="panel" class="panel-app">
   <h3>Mood2Know</h3>
   <div class="titleSub">the world’s emotional weather</div>
@@ -631,6 +654,22 @@ const map = new maplibregl.Map({
   zoom: 2
 });
 map.addControl(new maplibregl.NavigationControl(), "top-right");
+
+function setStopIntroButtonVisible(visible){
+  const btn = document.getElementById("btnStopIntro");
+  if (!btn) return;
+  btn.classList.toggle("is-hidden", !visible);
+}
+
+function stopIntroAnimationAndShowMap(){
+  map.stop();
+
+  setMainMapVisible(true);
+  setIntroBackground(false);
+  setStopIntroButtonVisible(false);
+
+  startManualPick();
+}
 
 function lerp(a,b,t){ return a + (b - a) * t; }
 function lerpColor(c1,c2,t){
@@ -858,6 +897,10 @@ async function refreshPoints(){
 
 const el = id => document.getElementById(id);
 const panel = el("panel");
+
+el("btnStopIntro").addEventListener("click", () => {
+  stopIntroAnimationAndShowMap();
+});
 
 const isPhone = window.matchMedia("(pointer: coarse)").matches || window.matchMedia("(max-width: 520px)").matches;
 
@@ -1831,6 +1874,7 @@ setAppMessage("Thank you! Loading the world’s mood…");
 
 // On montre la vraie carte seulement maintenant
 setMainMapVisible(true);
+setStopIntroButtonVisible(false);
 
 // On place directement la carte sans animation
 map.stop();
@@ -2052,6 +2096,7 @@ el("btnShare").onclick = async () => {
 };
 
 map.on("load", async () => {
+setStopIntroButtonVisible(true);
   ensureMoodImages();
   initPointsSourceAndLayers();
   clearMarkers();
