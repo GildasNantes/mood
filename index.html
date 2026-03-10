@@ -668,7 +668,9 @@ function stopIntroAnimationAndShowMap(){
   setIntroBackground(false);
   setStopIntroButtonVisible(false);
 
-  startManualPick();
+  showApp();
+  showManualButton(false);
+  setAppMessage("");
 }
 
 function lerp(a,b,t){ return a + (b - a) * t; }
