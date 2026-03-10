@@ -1274,7 +1274,7 @@ function fmtInt(n){
 
 function getStatsPeriodLabel() {
   const label = document.getElementById("statAvgLabel")?.textContent || "";
-  if (label.includes("last 30 entries")) return "last 30 entries";
+  if (label.includes("last 200 entries")) return "last 200 entries";
   return "last 24h";
 }
 
@@ -1311,7 +1311,7 @@ async function getStatsDataset() {
 
   if (recentError) throw recentError;
 
-  if (recentData && recentData.length > 0) {
+  if (recentData && recentData.length > 200) {
     return {
       mode: "24h",
       data: recentData
@@ -1322,12 +1322,12 @@ async function getStatsDataset() {
     .from("mood_public_entries")
     .select("mood, country, country_name, created_at")
     .order("created_at", { ascending: false })
-    .limit(30);
+    .limit(200);
 
   if (fallbackError) throw fallbackError;
 
   return {
-    mode: "last30",
+    mode: "last200",
     data: fallbackData || []
   };
 }
@@ -1336,9 +1336,9 @@ function applyStatsLabels(mode) {
   const elAvgLabel = document.getElementById("statAvgLabel");
   const elHappyLabel = document.getElementById("statHappyLabel");
 
-  if (mode === "last30") {
-    if (elAvgLabel) elAvgLabel.textContent = "🌍 Global mood (last 30 entries):";
-    if (elHappyLabel) elHappyLabel.textContent = "😊 Happiest country (last 30 entries, >10 entries):";
+  if (mode === "last200") {
+    if (elAvgLabel) elAvgLabel.textContent = "🌍 Global mood (last 200 entries):";
+    if (elHappyLabel) elHappyLabel.textContent = "😊 Happiest country (last 200 entries, >10 entries):";
   } else {
     if (elAvgLabel) elAvgLabel.textContent = "🌍 Global mood (last 24h):";
     if (elHappyLabel) elHappyLabel.textContent = "😊 Happiest country (last 24h, >10 entries):";
