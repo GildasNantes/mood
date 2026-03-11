@@ -108,7 +108,7 @@ shareLink.onclick = (function(){
     const startedOnPanel = (event.type === 'click' && clickStartedOnPanel) ||
                           (event.type === 'touchstart' && touchStartedOnPanel);
     
-    if (isOutside && !startedOnPanel) {
+    if (isOutside && !startedOnPanel &&  window.innerWidth < 768) {
       // Petit délai pour éviter les fermetures trop brusques
       setTimeout(() => {
         // Vérifie à nouveau que le panneau est toujours visible
