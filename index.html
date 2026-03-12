@@ -112,7 +112,39 @@
       linear-gradient(to bottom, rgba(255,255,255,0.10), rgba(255,255,255,0.18));
   }
 
-  #panel{
+.panelHeader{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  margin-bottom: 8px;
+}
+
+.panelTitleWrap{
+  min-width: 0;
+  flex: 1;
+}
+
+.panelToggleBtn{
+  background: transparent;
+  color: #111;
+  border: 1px solid rgba(0,0,0,.12);
+  border-radius: 10px;
+  padding: 6px 10px;
+  min-width: 42px;
+  line-height: 1;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.panelToggleBtn:hover{
+  background: rgba(0,0,0,0.04);
+}
+
+#panelBody.is-collapsed{
+  display: none;
+}  
+
+#panel{
     position: fixed;
     z-index: 10;
     background: rgba(255,255,255,0.96);
@@ -445,9 +477,24 @@
   Stop animation
 </button>
 
+
 <div id="panel" class="panel-app">
-  <h3>Mood2Know</h3>
-  <div class="titleSub">the world’s emotional weather</div>
+  <div class="panelHeader">
+    <button
+      id="panelToggle"
+      type="button"
+      class="panelToggleBtn"
+      aria-expanded="true"
+      aria-controls="panelBody"
+      aria-label="Afficher ou masquer le panneau"
+    >...</button>
+    <div class="panelTitleWrap">
+      <h3>Mood2Know</h3>
+      <div class="titleSub">the world’s emotional weather</div>
+    </div>
+  </div>
+
+  <div id="panelBody">
 
 <div id="topStats" class="topStats" aria-label="Mood stats">
 <div class="topStatsLine">
@@ -593,6 +640,8 @@
     </details>
   </section>
 </div>
+</div>
+
 
 <div id="fbOverlay" aria-hidden="true">
   <div id="fbModal" role="dialog" aria-modal="true">
@@ -898,6 +947,24 @@ async function refreshPoints(){
 
 const el = id => document.getElementById(id);
 const panel = el("panel");
+
+const panelBody = el("panelBody");
+const panelToggle = el("panelToggle");
+
+function setPanelCollapsed(collapsed){
+  if (!panelBody || !panelToggle) return;
+
+  panelBody.classList.toggle("is-collapsed", collapsed);
+  panelToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+  panelToggle.textContent = collapsed ? "..." : "×";
+}
+
+if (panelToggle) {
+  panelToggle.addEventListener("click", () => {
+    const isCollapsed = panelBody.classList.contains("is-collapsed");
+    setPanelCollapsed(!isCollapsed);
+  });
+}
 
 el("btnStopIntro").addEventListener("click", async () => {
   await stopIntroAnimationAndShowMap();
