@@ -27,6 +27,7 @@ shareLink.onclick = (function(){
   }
 
   function hidePanel() {
+	toggleBtn.style = 'block';
     panelVisible = false;
     panel.style.display = 'none';
     toggleBtn.classList.add('panel-hidden');
@@ -36,6 +37,7 @@ shareLink.onclick = (function(){
   }
 
   function showPanel() {
+	toggleBtn.style = 'none';
     panelVisible = true;
     panel.style.display = 'block';
     toggleBtn.classList.remove('panel-hidden');
@@ -138,6 +140,7 @@ shareLink.onclick = (function(){
   panel.addEventListener('touchcancel', () => {
     touchStartedOnPanel = false;
   });
+
 
 
 })();
