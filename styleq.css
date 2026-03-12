@@ -61,7 +61,7 @@
 
 .panel-app {
   width: 340px;
-  max-width: calc(75vw - 24px);
+  max-width: calc(100vw - 24px);
 }
 
 

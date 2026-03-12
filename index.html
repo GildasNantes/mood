@@ -1,8 +1,8 @@
-<!doctype html>
-<html lang="en">
-<head>
+<!DOCTYPE html>
+<html lang="en" style="--vh: 9.55px;"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
 <meta charset="utf-8">
-<meta name="google-site-verification" content="GwVBCPhOP2ARcKB4mcqgDfqKZ9LX_cp84PxNzmJgWWI" />
+<meta name="google-site-verification" content="GwVBCPhOP2ARcKB4mcqgDfqKZ9LX_cp84PxNzmJgWWI">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <title>Mood2Know — A live map of the world's mood</title>
@@ -26,9 +26,13 @@
 <meta name="twitter:image" content="https://mood2know.com/og.jpg">
 <meta name="twitter:image:alt" content="Mood2Know — The world’s emotional weather map">
 
-<link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml">
+<link rel="sitemap" type="application/xml" title="Sitemap" href="https://mood2know.com/sitemap.xml">
 <link rel="canonical" href="https://mood2know.com/">
-<link rel="stylesheet" href="./maplibre-gl.css">
+<link rel="stylesheet" href="maplibre-gl.css">
+<link rel="stylesheet" href="styleq.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+
 
 <style>
   html, body { margin:0; height:100%; font:16px system-ui; }
@@ -129,11 +133,6 @@
     overflow-y: auto;
     overscroll-behavior: contain;
     overflow-x: hidden;
-  }
-
-  .panel-app{
-    width: 340px;
-    max-width: calc(100vw - 24px);
   }
 
   .panel-compact{
@@ -399,18 +398,7 @@
     gap:10px;
     margin-top: 10px;
   }
-  .share-grid a{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    text-decoration:none;
-    font:inherit;
-    padding:12px;
-    border-radius:12px;
-    border:1px solid rgba(0,0,0,.15);
-    background:#eee;
-    color:#111;
-  }
+
   .share-grid a:active{ transform: translateY(1px); }
 
   @keyframes m2kBlink {
@@ -425,43 +413,39 @@
 
 <body>
 
+<!-- Bouton pour afficher/cacher le panneau -->
+<button id="main-button">MENU</button>
+
 <h1 class="sr-only">Mood2Know – The world’s emotional weather map</h1>
 
-<div id="map"></div>
+<div id="map" class="maplibregl-map is-visible"><div class="maplibregl-canvas-container maplibregl-interactive maplibregl-touch-drag-pan maplibregl-touch-zoom-rotate"><canvas class="maplibregl-canvas" tabindex="0" aria-label="Map" role="region" width="1920" height="955" style="width: 1920px; height: 955px;"></canvas></div><div class="maplibregl-control-container"><div class="maplibregl-ctrl-top-left "></div><div class="maplibregl-ctrl-top-right "><div class="maplibregl-ctrl maplibregl-ctrl-group"><button class="maplibregl-ctrl-zoom-in" type="button" title="Zoom in" aria-label="Zoom in" aria-disabled="false"><span class="maplibregl-ctrl-icon" aria-hidden="true"></span></button><button class="maplibregl-ctrl-zoom-out" type="button" title="Zoom out" aria-label="Zoom out" aria-disabled="false"><span class="maplibregl-ctrl-icon" aria-hidden="true"></span></button><button class="maplibregl-ctrl-compass" type="button" title="Reset bearing to north" aria-label="Reset bearing to north"><span class="maplibregl-ctrl-icon" aria-hidden="true" style="transform: rotate(0deg);"></span></button></div></div><div class="maplibregl-ctrl-bottom-left "></div><div class="maplibregl-ctrl-bottom-right "><details class="maplibregl-ctrl maplibregl-ctrl-attrib maplibregl-compact" open=""><summary class="maplibregl-ctrl-attrib-button" title="Toggle attribution" aria-label="Toggle attribution"></summary><div class="maplibregl-ctrl-attrib-inner"><a href="https://maplibre.org/" target="_blank">MapLibre</a> | <a href="https://openfreemap.org/" target="_blank">OpenFreeMap</a> <a href="https://www.openmaptiles.org/" target="_blank">© OpenMapTiles</a> Data from <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a></div></details></div></div></div>
 
-<div id="introBg" aria-hidden="true">
-  <iframe
-    id="introFrame"
-    src="/replay.html"
-    title=""
-    tabindex="-1"
-    loading="eager"
-    referrerpolicy="no-referrer"
-  ></iframe>
+<div id="introBg" aria-hidden="true" class="is-hidden">
+  <iframe id="introFrame" src="./replay.html" title="" tabindex="-1" loading="eager" referrerpolicy="no-referrer"></iframe>
   <div id="introVeil"></div>
 </div>
 
-<button id="btnStopIntro" type="button" aria-label="Stop intro animation">
+<button id="btnStopIntro" type="button" aria-label="Stop intro animation" class="is-hidden">
   Stop animation
 </button>
 
-<div id="panel" class="panel-app">
+<div id="panel" class="panel-compact">
   <h3>Mood2Know</h3>
   <div class="titleSub">the world’s emotional weather</div>
 
 <div id="topStats" class="topStats" aria-label="Mood stats">
 <div class="topStatsLine">
-  <span class="topStatsLeft" id="statAvgLabel">🌍 Global mood (last 24h):</span>
-  <span class="topStatsRight"><b><span id="statAvgToday">—</span> / 10</b></span>
+  <span class="topStatsLeft" id="statAvgLabel">🌍 Global mood (last 200 entries):</span>
+  <span class="topStatsRight"><b><span id="statAvgToday">5.8</span> / 10</b></span>
 </div>
 
 <div class="topStatsLine">
-  <span class="topStatsLeft" id="statCountLabel">📍 <span id="statTodayCount">—</span> moods from <span id="statCountryCount">—</span> countries (last 24h)</span>
+  <span class="topStatsLeft" id="statCountLabel">📍 <span id="statTodayCount">200</span> moods from <span id="statCountryCount">38</span> countries (last 24h)</span>
 </div>
 
 <div class="topStatsLine">
-  <span class="topStatsLeft" id="statHappyLabel">😊 Happiest country (last 24h):</span>
-  <span class="topStatsRight"><b><span id="statHappiest">—</span></b></span>
+  <span class="topStatsLeft" id="statHappyLabel">😊 Happiest country (&gt;10 entries):</span>
+  <span class="topStatsRight"><b><span id="statHappiest" class="blink">France</span></b></span>
 </div>
 
     <div class="topStatsNote">🔒 No signup • Anonymous • Approximate location</div>
@@ -469,13 +453,13 @@
 
   <div id="dragHandle" title="Drag panel" aria-label="Drag panel"></div>
 
-  <div id="appView">
+  <div id="appView" style="display: none;">
    <div class="row moodRow">
    <label>How do you feel right now?</label>
    <div class="small" id="hint">Add your mood and compare yourself with the world</div>
-   <div id="moodButtons" class="moodButtons" role="group" aria-label="Mood from 1 to 10"></div>
+   <div id="moodButtons" class="moodButtons" role="group" aria-label="Mood from 1 to 10"><button type="button" class="moodBtn" aria-pressed="false" style="background: rgb(223, 71, 61); color: rgb(255, 255, 255);">1</button><button type="button" class="moodBtn" aria-pressed="false" style="background: rgb(231, 117, 93); color: rgb(255, 255, 255);">2</button><button type="button" class="moodBtn" aria-pressed="false" style="background: rgb(239, 163, 126); color: rgb(17, 17, 17);">3</button><button type="button" class="moodBtn" aria-pressed="false" style="background: rgb(247, 209, 158); color: rgb(17, 17, 17);">4</button><button type="button" class="moodBtn" aria-pressed="true" style="background: rgb(255, 255, 191); color: rgb(17, 17, 17);">5</button><button type="button" class="moodBtn" aria-pressed="false" style="background: rgb(209, 234, 166); color: rgb(17, 17, 17);">6</button><button type="button" class="moodBtn" aria-pressed="false" style="background: rgb(163, 213, 141); color: rgb(17, 17, 17);">7</button><button type="button" class="moodBtn" aria-pressed="false" style="background: rgb(118, 192, 115); color: rgb(17, 17, 17);">8</button><button type="button" class="moodBtn" aria-pressed="false" style="background: rgb(72, 171, 90); color: rgb(17, 17, 17);">9</button><button type="button" class="moodBtn" aria-pressed="false" style="background: rgb(26, 150, 65); color: rgb(255, 255, 255);">10</button></div>
 
-   <div class="feelBig" id="moodFeeling"></div>
+   <div class="feelBig" id="moodFeeling">I feel...</div>
   </div>
 
     <div class="row">
@@ -487,18 +471,18 @@
     <div class="row" id="trendBox" style="margin-top:6px;">
       <div class="small" style="opacity:.8; font-weight:650;">Your 7-Day Mood Trend</div>
       <canvas id="trendCanvas" width="320" height="90" style="width:100%; height:auto; border-radius:14px; border:1px solid rgba(0,0,0,0.08); background: rgba(0,0,0,0.02);"></canvas>
-      <div class="small" id="trendNote" style="opacity:.75;">—</div>
+      <div class="small" id="trendNote" style="opacity:.75;">Not enough data yet. Come back tomorrow 🙂</div>
     </div>
 
-    <div class="row" id="soundRow" style="margin-top:0; display:none;">
+    <div class="row" id="soundRow" style="margin-top: 0px; display: none;">
       <button id="btnSound" class="secondary" type="button">🔊 Enable sound</button>
     </div>
 
-    <div id="appMsg" class="msg"></div>
+    <div id="appMsg" class="msg">Thank you! Loading the world’s mood…</div>
   </div>
 
-<div id="compactView">
-  <div class="small" id="compactMsg">✅ Saved.</div>
+<div id="compactView" style="display: block;">
+  <div class="small" id="compactMsg">✅ Saved. World average (last 200 entries): 5.8/10. Your mood is below average.</div>
 
   <div class="row" style="margin-top:8px; gap:8px;">
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
@@ -517,65 +501,106 @@
       </summary>
 
       <div class="m2k-lang" aria-label="Language">
-        <button type="button" class="m2k-lang-btn" data-set-lang="en">EN</button>
-        <button type="button" class="m2k-lang-btn" data-set-lang="fr">FR</button>
-        <button type="button" class="m2k-lang-btn" data-set-lang="es">ES</button>
-        <button type="button" class="m2k-lang-btn" data-set-lang="it">IT</button>
-        <button type="button" class="m2k-lang-btn" data-set-lang="de">DE</button>
-        <button type="button" class="m2k-lang-btn" data-set-lang="zh">中文</button>
+        <button type="button" class="m2k-lang-btn" data-set-lang="en" aria-pressed="true">EN</button>
+        <button type="button" class="m2k-lang-btn" data-set-lang="fr" aria-pressed="false">FR</button>
+        <button type="button" class="m2k-lang-btn" data-set-lang="es" aria-pressed="false">ES</button>
+        <button type="button" class="m2k-lang-btn" data-set-lang="it" aria-pressed="false">IT</button>
+        <button type="button" class="m2k-lang-btn" data-set-lang="de" aria-pressed="false">DE</button>
+        <button type="button" class="m2k-lang-btn" data-set-lang="zh" aria-pressed="false">中文</button>
       </div>
 
-      <div class="m2k-text" lang="en" data-lang="en">
+      <div class="m2k-text" lang="en" data-lang="en" style="display: block;">
         <p><strong>Mood2Know aims to become the world’s first emotional weather report.</strong></p>
-        <p>Every day, millions of people experience emotions that remain invisible. Mood2Know was created to make this collective mood visible, in a simple and anonymous way.</p>
-        <p>By answering in just one click, you take part in a global experiment. No account, no explanation, no personal data — just a momentary feeling, shared as it is.</p>
-        <p>The goal is to reach <strong>10,000 participants</strong>. Once this threshold is reached, Mood2Know will reveal a unique insight: a snapshot of the world’s emotional state at a given moment.</p>
-        <p>This emotional “weather” evolves constantly. Observing its changes helps put individual feelings into perspective and highlights the diversity of human experiences across places and time.</p>
-        <p>Mood2Know is not about analysis or diagnosis. It is a minimalist, open space designed for participation, curiosity, and awareness.</p>
+        <p>Every day, millions of people experience emotions that remain
+ invisible. Mood2Know was created to make this collective mood visible, 
+in a simple and anonymous way.</p>
+        <p>By answering in just one click, you take part in a global 
+experiment. No account, no explanation, no personal data — just a 
+momentary feeling, shared as it is.</p>
+        <p>The goal is to reach <strong>10,000 participants</strong>. 
+Once this threshold is reached, Mood2Know will reveal a unique insight: a
+ snapshot of the world’s emotional state at a given moment.</p>
+        <p>This emotional “weather” evolves constantly. Observing its 
+changes helps put individual feelings into perspective and highlights 
+the diversity of human experiences across places and time.</p>
+        <p>Mood2Know is not about analysis or diagnosis. It is a 
+minimalist, open space designed for participation, curiosity, and 
+awareness.</p>
         <p><strong>Mood needs you.</strong> Every response matters. The more people take part, the more meaningful this shared emotional picture becomes.</p>
       </div>
 
-      <div class="m2k-text" lang="fr" data-lang="fr">
+      <div class="m2k-text" lang="fr" data-lang="fr" style="display: none;">
         <p><strong>Mood2Know veut devenir la première météo émotionnelle du monde.</strong></p>
-        <p>Chaque jour, des millions de personnes ressentent des émotions qui restent invisibles. Mood2Know est né pour rendre cette humeur collective visible, simplement et anonymement.</p>
-        <p>En répondant en un clic, vous participez à une expérience mondiale. Pas de compte, pas d’explication, pas de données personnelles — juste un ressenti du moment, partagé tel qu’il est.</p>
-        <p>L’objectif est d’atteindre <strong>10 000 participants</strong>. Une fois ce seuil franchi, Mood2Know pourra révéler une information unique : une photographie de l’état émotionnel du monde à un instant donné.</p>
-        <p>Cette “météo” émotionnelle évolue en permanence. Observer ses variations aide à prendre du recul sur ce que l’on ressent et montre la diversité des expériences humaines, selon les lieux et les périodes.</p>
-        <p>Mood2Know n’est pas là pour analyser ou diagnostiquer. Le site se veut minimaliste, ouvert, et pensé pour la participation, la curiosité et la prise de conscience.</p>
+        <p>Chaque jour, des millions de personnes ressentent des 
+émotions qui restent invisibles. Mood2Know est né pour rendre cette 
+humeur collective visible, simplement et anonymement.</p>
+        <p>En répondant en un clic, vous participez à une expérience 
+mondiale. Pas de compte, pas d’explication, pas de données personnelles —
+ juste un ressenti du moment, partagé tel qu’il est.</p>
+        <p>L’objectif est d’atteindre <strong>10 000 participants</strong>.
+ Une fois ce seuil franchi, Mood2Know pourra révéler une information 
+unique : une photographie de l’état émotionnel du monde à un instant 
+donné.</p>
+        <p>Cette “météo” émotionnelle évolue en permanence. Observer ses
+ variations aide à prendre du recul sur ce que l’on ressent et montre la
+ diversité des expériences humaines, selon les lieux et les périodes.</p>
+        <p>Mood2Know n’est pas là pour analyser ou diagnostiquer. Le 
+site se veut minimaliste, ouvert, et pensé pour la participation, la 
+curiosité et la prise de conscience.</p>
         <p><strong>Mood a besoin de vous.</strong> Chaque réponse compte. Plus vous êtes nombreux, plus cette image émotionnelle partagée devient significative.</p>
       </div>
 
-      <div class="m2k-text" lang="es" data-lang="es">
+      <div class="m2k-text" lang="es" data-lang="es" style="display: none;">
         <p><strong>Mood2Know quiere convertirse en el primer clima emocional del mundo.</strong></p>
-        <p>Cada día, millones de personas sienten emociones que permanecen invisibles. Mood2Know nace para hacer visible ese estado emocional colectivo, de forma simple y anónima.</p>
-        <p>Con un solo clic, participas en una experiencia global. Sin cuenta, sin explicación, sin datos personales — solo un sentimiento del momento, compartido tal como es.</p>
-        <p>El objetivo es alcanzar <strong>10.000 participants</strong>. Al llegar a este umbral, Mood2Know revelará una información única: una fotografía del estado emocional del mundo en un instante concreto.</p>
-        <p>Este “clima” emocional cambia constantemente. Observar su evolución ayuda a relativizar lo individual y a mostrar la diversidad de experiencias humanas.</p>
-        <p>Mood2Know no analiza ni diagnostica. Es un espacio minimalista, abierto, pensado para la participación y la conciencia colectiva.</p>
+        <p>Cada día, millones de personas sienten emociones que 
+permanecen invisibles. Mood2Know nace para hacer visible ese estado 
+emocional colectivo, de forma simple y anónima.</p>
+        <p>Con un solo clic, participas en una experiencia global. Sin 
+cuenta, sin explicación, sin datos personales — solo un sentimiento del 
+momento, compartido tal como es.</p>
+        <p>El objetivo es alcanzar <strong>10.000 participants</strong>.
+ Al llegar a este umbral, Mood2Know revelará una información única: una 
+fotografía del estado emocional del mundo en un instante concreto.</p>
+        <p>Este “clima” emocional cambia constantemente. Observar su 
+evolución ayuda a relativizar lo individual y a mostrar la diversidad de
+ experiencias humanas.</p>
+        <p>Mood2Know no analiza ni diagnostica. Es un espacio 
+minimalista, abierto, pensado para la participación y la conciencia 
+colectiva.</p>
         <p><strong>Mood te necesita.</strong> Cada respuesta cuenta.</p>
       </div>
 
-      <div class="m2k-text" lang="it" data-lang="it">
+      <div class="m2k-text" lang="it" data-lang="it" style="display: none;">
         <p><strong>Mood2Know vuole diventare la prima meteo emotiva del mondo.</strong></p>
-        <p>Ogni giorno, milioni di persone provano emozioni che restano invisibili. Mood2Know nasce per rendere visibile questo stato emotivo collettivo, in modo semplice e anonimo.</p>
-        <p>Con un solo clic partecipi a un’esperienza globale. Nessun account, nessuna spiegazione, nessun dato personale — solo un’emozione del momento, condivisa così com’è.</p>
-        <p>L’obiettivo è raggiungere <strong>10.000 partecipanti</strong>. Una volta superata questa soglia, Mood2Know mostrerà un’informazione unica: una fotografia dello stato emotivo del mondo in un dato momento.</p>
+        <p>Ogni giorno, milioni di persone provano emozioni che restano 
+invisibili. Mood2Know nasce per rendere visibile questo stato emotivo 
+collettivo, in modo semplice e anonimo.</p>
+        <p>Con un solo clic partecipi a un’esperienza globale. Nessun 
+account, nessuna spiegazione, nessun dato personale — solo un’emozione 
+del momento, condivisa così com’è.</p>
+        <p>L’obiettivo è raggiungere <strong>10.000 partecipanti</strong>.
+ Una volta superata questa soglia, Mood2Know mostrerà un’informazione 
+unica: una fotografia dello stato emotivo del mondo in un dato momento.</p>
         <p>Questa “meteo” emotiva cambia continuamente. Osservarne le variazioni aiuta a mettere in prospettiva ciò che proviamo.</p>
         <p>Mood2Know non analizza né diagnostica. È uno spazio minimale, aperto e partecipativo.</p>
         <p><strong>Mood ha bisogno di te.</strong> Ogni risposta è importante.</p>
       </div>
 
-      <div class="m2k-text" lang="de" data-lang="de">
+      <div class="m2k-text" lang="de" data-lang="de" style="display: none;">
         <p><strong>Mood2Know möchte der erste emotionale Wetterbericht der Welt werden.</strong></p>
-        <p>Jeden Tag erleben Millionen von Menschen Gefühle, die unsichtbar bleiben. Mood2Know wurde geschaffen, um diese kollektive Stimmung sichtbar zu machen — einfach und anonym.</p>
-        <p>Mit nur einem Klick nimmst du an einem weltweiten Experiment teil. Kein Konto, keine Erklärung, keine persönlichen Daten — nur ein momentanes Gefühl.</p>
+        <p>Jeden Tag erleben Millionen von Menschen Gefühle, die 
+unsichtbar bleiben. Mood2Know wurde geschaffen, um diese kollektive 
+Stimmung sichtbar zu machen — einfach und anonym.</p>
+        <p>Mit nur einem Klick nimmst du an einem weltweiten Experiment 
+teil. Kein Konto, keine Erklärung, keine persönlichen Daten — nur ein 
+momentanes Gefühl.</p>
         <p>Das Ziel sind <strong>10.000 Teilnehmende</strong>. Wird diese Schwelle erreicht, zeigt Mood2Know eine einzigartige Momentaufnahme des emotionalen Zustands der Welt.</p>
         <p>Dieses emotionale „Wetter“ verändert sich ständig. Es zu beobachten hilft, individuelle Gefühle einzuordnen.</p>
         <p>Mood2Know analysiert oder diagnostiziert nicht. Es ist ein minimalistischer, offener Raum für Bewusstsein und Neugier.</p>
         <p><strong>Mood braucht dich.</strong> Jede Teilnahme zählt.</p>
       </div>
 
-      <div class="m2k-text" lang="zh" data-lang="zh">
+      <div class="m2k-text" lang="zh" data-lang="zh" style="display: none;">
         <p><strong>Mood2Know 致力于成为世界上第一份情绪天气报告。</strong></p>
         <p>每天，数百万人体验着难以被看见的情绪。Mood2Know 的诞生，是为了以简单、匿名的方式呈现这种集体情绪。</p>
         <p>只需一次点击，你就能参与一项全球性的实验。无需账号、无需解释、无需个人信息 —— 只是当下的真实感受。</p>
@@ -587,8 +612,8 @@
 
       <p class="small" style="margin-top:12px;">
         Learn more:
-        <a href="/emotional-weather-map">Emotional weather map</a> ·
-        <a href="/world-mood-map">World mood map</a>
+        <a href="https://mood2know.com/emotional-weather-map">Emotional weather map</a> ·
+        <a href="https://mood2know.com/world-mood-map">World mood map</a>
       </p>
     </details>
   </section>
@@ -619,11 +644,15 @@
     <div class="small">Invite others to add one click to the world’s emotional weather.</div>
 
     <div class="share-grid">
-      <a id="shareWhatsApp" href="#" target="_blank" rel="noopener">WhatsApp</a>
-      <a id="shareReddit"   href="#" target="_blank" rel="noopener">Reddit</a>
-      <a id="shareX"        href="#" target="_blank" rel="noopener">X (Twitter)</a>
-      <a id="shareFacebook" href="#" target="_blank" rel="noopener">Facebook</a>
+      <a class="fa fa-whatsapp" id="shareWhatsApp" href="https://wa.me/?text=Mood2Know%20%E2%80%94%20the%20world%E2%80%99s%20emotional%20weather%20in%20one%20click%20https%3A%2F%2Fmood2know.com%2F" target="_blank" rel="noopener"></a>
+      <a class="fa fa-reddit" id="shareReddit" href="https://www.reddit.com/submit?url=https%3A%2F%2Fmood2know.com%2F&amp;title=Mood2Know%20%E2%80%94%20the%20world%E2%80%99s%20emotional%20weather%20in%20one%20click" target="_blank" rel="noopener"></a>
+      <a class="fa fa-twitter" id="shareX" href="https://twitter.com/intent/tweet?text=Mood2Know%20%E2%80%94%20the%20world%E2%80%99s%20emotional%20weather%20in%20one%20click&amp;url=https%3A%2F%2Fmood2know.com%2F" target="_blank" rel="noopener"></a>
+      <a class="fa fa-facebook" id="shareFacebook" href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fmood2know.com%2F" target="_blank" rel="noopener"></a>
+
     </div>
+
+    <div id="shareLink" class="link">https://mood2know.com/</div>
+
 
     <div class="modal-actions" style="margin-top:12px;">
       <button id="btnShareClose" class="secondary" type="button">Close</button>
@@ -631,8 +660,10 @@
   </div>
 </div>
 
-<script src="./maplibre-gl.js"></script>
+<script src="maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="scriptq.js"></script>
+
 
 <script>
 function setVh() {
@@ -1385,7 +1416,7 @@ function applyStatsLabels(mode) {
     if (elHappyLabel) elHappyLabel.textContent = "😊 Happiest country (>10 entries):";
   } else {
     if (elAvgLabel) elAvgLabel.textContent = "🌍 Global mood (last 24h):";
-    if (elHappyLabel) elHappyLabel.textContent = "😊 Happiest country (>10 entries):";
+    if (elHappyLabel) elHappyLabel.textContent = "😊 Happiest country (last 24h, >10 entries):";
   }
 }
 
@@ -2175,5 +2206,7 @@ setStopIntroButtonVisible(true);
 })();
 </script>
 
-</body>
-</html>
+
+
+
+</body></html>
