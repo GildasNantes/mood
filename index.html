@@ -122,6 +122,11 @@
 .panelTitleWrap{
   min-width: 0;
   flex: 1;
+  padding-right: 10px;
+}
+
+.panelTitleWrap h3{
+  overflow-wrap: anywhere;
 }
 
 .panelToggleBtn{
@@ -252,7 +257,22 @@
 
   #appView, #compactView { display:none; }
 
-  @media (max-width: 520px) {
+@media (max-width: 520px) {
+  .panelHeader{
+    gap: 8px;
+  }
+
+  .panelTitleWrap{
+    padding-right: 14px;
+  }
+
+  .panelTitleWrap h3{
+    font-size: 16px;
+    line-height: 1.15;
+  }
+}  
+
+@media (max-width: 520px) {
     .panel-compact{
       width: 150px;
       max-width: 150px;
