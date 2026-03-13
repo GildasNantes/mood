@@ -1192,7 +1192,7 @@
 
     function showCompact(msg="✅ Saved."){
       panel.className = "panel-compact";
-      el("compactMsg").textContent = msg;
+      el("compactMsg").innerHTML = msg;
       el("appView").style.display = "none";
       el("compactView").style.display = "block";
     }
@@ -1611,24 +1611,30 @@
       return "last 24h";
     }
 
-    function buildComparisonMessage(userMood){
-      const avgText = document.getElementById("statAvgToday")?.textContent || "—";
-      const avg = Number(avgText);
-      const period = getStatsPeriodLabel();
 
-      if (!Number.isFinite(avg)) {
-        return "✅ Saved. Thank you!";
-      }
 
-      let comparison = "about the same as";
-      if (userMood > avg + 0.3) comparison = "above";
-      else if (userMood < avg - 0.3) comparison = "below";
+function buildComparisonMessage(userMood){
+  const avgText = document.getElementById("statAvgToday")?.textContent || "—";
+  const avg = Number(avgText);
+  const period = getStatsPeriodLabel();
 
-      if (comparison === "about the same as") {
-        return `✅ Saved. World average (${period}): ${avg.toFixed(1)}/10. Your mood is about the same.`;
-      }
+  if (!Number.isFinite(avg)) {
+    return "✅ Saved. Thank you!";
+  }
 
-      return `✅ Saved. World average (${period}): ${avg.toFixed(1)}/10. Your mood is ${comparison} average.`;
+  let comparison = "about the same as";
+  if (userMood > avg + 0.3) comparison = "above";
+  else if (userMood < avg - 0.3) comparison = "below";
+
+
+
+return `✅ Saved. World average (${period}): ${avg.toFixed(1)}/10.
+<a href="/your-mood.html" style="
+text-decoration:underline;
+font-weight:600;
+color:inherit;
+">Your mood</a> is ${comparison} average.`;
+
     }
 
     async function getStatsDataset() {
