@@ -2436,32 +2436,38 @@ async function updateAllStats() {
     /* =========================
        Map load
     ========================= */
-    map.on("load", async () => {
-      setStopIntroButtonVisible(true);
-      ensureMoodImages();
-      initPointsSourceAndLayers();
-      clearMarkers();
-      revealedThisSession = false;
+  map.on("load", async () => {
+  setStopIntroButtonVisible(true);
+  ensureMoodImages();
+  initPointsSourceAndLayers();
+  clearMarkers();
+  revealedThisSession = false;
 
-      setIntroBackground(true);
-      setMainMapVisible(false);
+  setIntroBackground(true);
+  setMainMapVisible(false);
 
-      showApp();
-      showManualButton(false);
-      setManualReady(false);
+  showApp();
+  showManualButton(false);
+  setManualReady(false);
 
-      selectedMood = 5;
-      currentMood = 5;
-      updateFeeling();
-      renderMoodButtons();
-      updateMusicParams();
+  selectedMood = 5;
+  currentMood = 5;
+  updateFeeling();
+  renderMoodButtons();
+  updateMusicParams();
 
-      soundWatchdog();
-      if (!isAudioRunning()) showSoundButton(true);
+  soundWatchdog();
+  if (!isAudioRunning()) showSoundButton(true);
 
-      updateAllStats();
-      updateTrend();
-    });
+  await updateAllStats();
+  await updateTrend();
+
+  const openedDirectly = await openDirectMapIfRequested();
+  if (!openedDirectly) {
+    setIntroBackground(true);
+    setMainMapVisible(false);
+  }
+});
   </script>
 
   <script>
@@ -2514,5 +2520,41 @@ async function updateAllStats() {
       }
     })();
   </script>
+
+<script>
+  function hasSavedMoodLocally(){
+    try {
+      return !!localStorage.getItem("mood_anon_id");
+    } catch {
+      return false;
+    }
+  }
+
+  async function openDirectMapIfRequested(){
+    const wantsMap =
+      location.search.includes("view=map") ||
+      location.hash === "#map";
+
+    if (!wantsMap) return false;
+    if (!hasSavedMoodLocally()) return false;
+
+    map.stop();
+    revealedThisSession = true;
+
+    setIntroBackground(false);
+    setMainMapVisible(true);
+    setStopIntroButtonVisible(false);
+
+    showCompact('✅ Saved. See your <a href="/your-mood-journal.html" class="blink" style="text-decoration:underline;font-weight:700;color:inherit;">stats</a>.');
+
+    zoomToLastLocIfAny(true);
+    await refreshPoints();
+    await updateAllStats();
+    updateTrend();
+
+    return true;
+  }
+</script>
+
 </body>
 </html>
