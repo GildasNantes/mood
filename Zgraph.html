@@ -1,0 +1,804 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>Mood2Know — Admin Dashboard</title>
+  <style>
+    :root{
+      --bg:#f7f8fb;
+      --card:#ffffff;
+      --text:#111827;
+      --muted:#6b7280;
+      --line:rgba(17,24,39,.10);
+      --line-strong:rgba(17,24,39,.16);
+      --accent:#111827;
+      --accent-soft:#eef2ff;
+      --ok:#065f46;
+      --ok-bg:#ecfdf5;
+      --warn:#92400e;
+      --warn-bg:#fffbeb;
+      --radius:18px;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      padding:24px;
+      font:15px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+
+    .container{
+      max-width:1100px;
+      margin:0 auto;
+    }
+
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:16px;
+      margin-bottom:18px;
+      flex-wrap:wrap;
+    }
+
+    h1{
+      margin:0;
+      font-size:28px;
+      line-height:1.1;
+    }
+
+    .subtitle{
+      margin-top:6px;
+      color:var(--muted);
+      font-size:14px;
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:999px;
+      padding:10px 14px;
+      font-size:13px;
+      color:var(--muted);
+      white-space:nowrap;
+    }
+
+    .dot{
+      width:8px;
+      height:8px;
+      border-radius:999px;
+      background:#10b981;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      padding:16px;
+      box-shadow:0 6px 22px rgba(17,24,39,.04);
+      margin-bottom:14px;
+    }
+
+    .filters{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:end;
+    }
+
+    .field{
+      min-width:180px;
+    }
+
+    .field label{
+      display:block;
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:6px;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+    }
+
+    input, select, button{
+      font:inherit;
+    }
+
+    input[type="datetime-local"], select{
+      width:100%;
+      padding:11px 12px;
+      border-radius:12px;
+      border:1px solid var(--line-strong);
+      background:#fff;
+      color:var(--text);
+      outline:none;
+    }
+
+    button{
+      border:0;
+      border-radius:12px;
+      padding:11px 14px;
+      cursor:pointer;
+      transition:.18s ease;
+    }
+
+    button:hover{transform:translateY(-1px)}
+    button.primary{
+      background:var(--accent);
+      color:#fff;
+    }
+    button.secondary{
+      background:#fff;
+      color:var(--text);
+      border:1px solid var(--line-strong);
+    }
+    button.ghost{
+      background:#f3f4f6;
+      color:var(--text);
+    }
+
+    .quick-range{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    .kpis{
+      display:grid;
+      grid-template-columns:repeat(5,1fr);
+      gap:12px;
+    }
+
+    .kpi{
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:14px;
+      background:linear-gradient(180deg,#fff,#fcfcfd);
+    }
+
+    .kpi .label{
+      font-size:12px;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      margin-bottom:8px;
+    }
+
+    .kpi .value{
+      font-size:24px;
+      font-weight:700;
+      letter-spacing:-.02em;
+    }
+
+    .kpi .sub{
+      margin-top:6px;
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .section-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      margin-bottom:12px;
+      flex-wrap:wrap;
+    }
+
+    .section-head h2{
+      margin:0;
+      font-size:18px;
+    }
+
+    .status{
+      font-size:13px;
+      color:var(--muted);
+      padding:8px 10px;
+      background:#f9fafb;
+      border:1px solid var(--line);
+      border-radius:10px;
+    }
+
+    canvas{
+      width:100%;
+      height:340px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:
+        linear-gradient(to bottom, rgba(17,24,39,.02), rgba(17,24,39,0));
+      display:block;
+    }
+
+    .table-wrap{
+      overflow:auto;
+      border:1px solid var(--line);
+      border-radius:14px;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:560px;
+      background:#fff;
+    }
+
+    th, td{
+      padding:10px 12px;
+      border-bottom:1px solid var(--line);
+      text-align:left;
+      font-size:14px;
+    }
+
+    th{
+      font-size:12px;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      color:var(--muted);
+      background:#fafafa;
+      position:sticky;
+      top:0;
+    }
+
+    tr:hover td{
+      background:#fcfcfd;
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:7px 10px;
+      border-radius:999px;
+      font-size:12px;
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--muted);
+    }
+
+    .pill.ok{
+      background:var(--ok-bg);
+      color:var(--ok);
+      border-color:rgba(6,95,70,.12);
+    }
+
+    .pill.warn{
+      background:var(--warn-bg);
+      color:var(--warn);
+      border-color:rgba(146,64,14,.12);
+    }
+
+    .empty{
+      padding:20px;
+      text-align:center;
+      color:var(--muted);
+    }
+
+    @media (max-width: 980px){
+      .kpis{
+        grid-template-columns:repeat(2,1fr);
+      }
+    }
+
+    @media (max-width: 640px){
+      body{padding:16px}
+      .kpis{
+        grid-template-columns:1fr;
+      }
+      h1{font-size:24px}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <div>
+        <h1>Mood2Know — Admin Dashboard</h1>
+        <div class="subtitle">
+          Private real-time cumulative stats from Supabase. This page is set to <b>noindex</b>; protect it server-side.
+        </div>
+      </div>
+      <div class="badge">
+        <span class="dot"></span>
+        Live admin view
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="filters">
+        <div class="field">
+          <label for="since">From</label>
+          <input id="since" type="datetime-local" />
+        </div>
+
+        <div class="field">
+          <label for="until">Until</label>
+          <input id="until" type="datetime-local" />
+        </div>
+
+        <div class="field" style="min-width:160px">
+          <label for="refreshInterval">Auto-refresh</label>
+          <select id="refreshInterval">
+            <option value="0">Off</option>
+            <option value="15">Every 15 sec</option>
+            <option value="30">Every 30 sec</option>
+            <option value="60">Every 1 min</option>
+          </select>
+        </div>
+
+        <div class="quick-range">
+          <button class="ghost" data-range="24h">Last 24h</button>
+          <button class="ghost" data-range="7d">7 days</button>
+          <button class="ghost" data-range="30d">30 days</button>
+        </div>
+
+        <div style="display:flex; gap:8px; flex-wrap:wrap">
+          <button id="btnLoad" class="primary">Load data</button>
+          <button id="btnExport" class="secondary">Export CSV</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="kpis">
+        <div class="kpi">
+          <div class="label">Total entries</div>
+          <div class="value" id="kpiTotal">—</div>
+          <div class="sub">Within selected period</div>
+        </div>
+
+        <div class="kpi">
+          <div class="label">First entry</div>
+          <div class="value" id="kpiFirst">—</div>
+          <div class="sub">Beginning of visible series</div>
+        </div>
+
+        <div class="kpi">
+          <div class="label">Last entry</div>
+          <div class="value" id="kpiLast">—</div>
+          <div class="sub">Most recent visible record</div>
+        </div>
+
+        <div class="kpi">
+          <div class="label">Avg / hour</div>
+          <div class="value" id="kpiAvgHour">—</div>
+          <div class="sub">Based on selected period</div>
+        </div>
+
+        <div class="kpi">
+          <div class="label">Peak minute</div>
+          <div class="value" id="kpiPeakMinute">—</div>
+          <div class="sub">Highest count in one minute</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-head">
+        <h2>Real-time cumulative chart</h2>
+        <div id="status" class="status">Idle</div>
+      </div>
+      <canvas id="chart" width="1000" height="340"></canvas>
+      <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap">
+        <span class="pill ok" id="rangeInfo">No range loaded</span>
+        <span class="pill" id="countInfo">0 rows</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-head">
+        <h2>Chronological details</h2>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date / time</th>
+              <th>Cumulative</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr><td colspan="2" class="empty">No data loaded yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // === CONFIG ===
+    const SUPABASE_URL = "https://ugrmxzdhevqrgftlxfnp.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVncm14emRoZXZxcmdmdGx4Zm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyODQ3OTQsImV4cCI6MjA4NDg2MDc5NH0.WgTj-6ADFEMrCgPNxeQZvknBBJI1c9uDY9_8Qlkqu4w";
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const $ = (id) => document.getElementById(id);
+    let autoRefreshTimer = null;
+
+    function pad(n){
+      return String(n).padStart(2, "0");
+    }
+
+    function toDatetimeLocalValue(date){
+      return (
+        date.getFullYear() + "-" +
+        pad(date.getMonth() + 1) + "-" +
+        pad(date.getDate()) + "T" +
+        pad(date.getHours()) + ":" +
+        pad(date.getMinutes())
+      );
+    }
+
+    function parseDatetimeInput(v){
+      if(!v) return null;
+      const d = new Date(v);
+      return isNaN(d) ? null : d;
+    }
+
+    function formatDateTimeEN(isoString){
+      const d = new Date(isoString);
+      return d.toLocaleString("en-GB", {
+        timeZone: "Europe/Paris",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+      });
+    }
+
+    function formatShortDateTime(isoString){
+      const d = new Date(isoString);
+      return d.toLocaleString("en-GB", {
+        timeZone: "Europe/Paris",
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
+
+    function setDefaultDates(){
+      applyQuickRange("24h");
+    }
+
+    function applyQuickRange(type){
+      const now = new Date();
+      let since = new Date(now);
+
+      if(type === "24h"){
+        since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      }else if(type === "7d"){
+        since = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      }else if(type === "30d"){
+        since = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      }
+
+      $("since").value = toDatetimeLocalValue(since);
+      $("until").value = toDatetimeLocalValue(now);
+    }
+
+    async function fetchAllCreatedAt(sinceISO, untilISO){
+      const pageSize = 1000;
+      let from = 0;
+      let all = [];
+
+      while(true){
+        const to = from + pageSize - 1;
+        const { data, error } = await sb
+          .from("mood_public_entries")
+          .select("created_at")
+          .gte("created_at", sinceISO)
+          .lt("created_at", untilISO)
+          .order("created_at", { ascending: true })
+          .range(from, to);
+
+        if(error) throw error;
+        if(!data || data.length === 0) break;
+
+        all = all.concat(data);
+
+        if(data.length < pageSize) break;
+        from += pageSize;
+      }
+
+      return all;
+    }
+
+    function buildRealtimeSeries(rows){
+      return rows.map((r, i) => ({
+        ts: r.created_at,
+        label: formatDateTimeEN(r.created_at),
+        cum: i + 1
+      }));
+    }
+
+    function getPeakMinute(rows){
+      if(!rows.length) return { label: "—", count: 0 };
+
+      const counts = new Map();
+
+      for(const r of rows){
+        const d = new Date(r.created_at);
+        const key =
+          d.getUTCFullYear() + "-" +
+          pad(d.getUTCMonth() + 1) + "-" +
+          pad(d.getUTCDate()) + "T" +
+          pad(d.getUTCHours()) + ":" +
+          pad(d.getUTCMinutes());
+
+        counts.set(key, (counts.get(key) || 0) + 1);
+      }
+
+      let bestKey = null;
+      let bestCount = 0;
+
+      for(const [k, c] of counts.entries()){
+        if(c > bestCount){
+          bestKey = k;
+          bestCount = c;
+        }
+      }
+
+      if(!bestKey) return { label: "—", count: 0 };
+
+      const iso = bestKey + ":00Z";
+      return {
+        label: formatShortDateTime(iso),
+        count: bestCount
+      };
+    }
+
+    function setKpis(series, rows, since, until){
+      const total = series.length;
+      const first = total ? formatShortDateTime(series[0].ts) : "—";
+      const last = total ? formatShortDateTime(series[series.length - 1].ts) : "—";
+
+      const hours = Math.max((until - since) / (1000 * 60 * 60), 0.0001);
+      const avgHour = total / hours;
+
+      const peak = getPeakMinute(rows);
+
+      $("kpiTotal").textContent = total.toLocaleString("en-US");
+      $("kpiFirst").textContent = first;
+      $("kpiLast").textContent = last;
+      $("kpiAvgHour").textContent = avgHour.toFixed(avgHour >= 10 ? 0 : 1);
+      $("kpiPeakMinute").textContent = peak.count ? `${peak.count}` : "—";
+      $("kpiPeakMinute").title = peak.count ? `Peak at ${peak.label}` : "";
+    }
+
+    function renderTable(series){
+      const tb = $("tbody");
+      tb.innerHTML = "";
+
+      if(!series.length){
+        tb.innerHTML = `<tr><td colspan="2" class="empty">No entries found for this period.</td></tr>`;
+        return;
+      }
+
+      for(const s of series.slice().reverse()){
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${s.label}</td><td>${s.cum}</td>`;
+        tb.appendChild(tr);
+      }
+    }
+
+    function drawChart(series){
+      const canvas = $("chart");
+      const ctx = canvas.getContext("2d");
+
+      const ratio = window.devicePixelRatio || 1;
+      const cssW = canvas.clientWidth;
+      const cssH = canvas.clientHeight;
+      canvas.width = Math.round(cssW * ratio);
+      canvas.height = Math.round(cssH * ratio);
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      ctx.clearRect(0, 0, cssW, cssH);
+
+      const padL = 58, padR = 18, padT = 18, padB = 36;
+      const w = cssW - padL - padR;
+      const h = cssH - padT - padB;
+
+      // empty state
+      if(!series.length){
+        ctx.font = "14px system-ui";
+        ctx.fillStyle = "#6b7280";
+        ctx.fillText("No data to display for this period.", 24, 40);
+
+        ctx.strokeStyle = "rgba(17,24,39,.12)";
+        ctx.strokeRect(padL, padT, w, h);
+        return;
+      }
+
+      const times = series.map(s => new Date(s.ts).getTime());
+      const minT = Math.min(...times);
+      const maxT = Math.max(...times);
+      const maxY = Math.max(...series.map(s => s.cum), 1);
+
+      // grid
+      ctx.strokeStyle = "rgba(17,24,39,.08)";
+      ctx.lineWidth = 1;
+
+      const ySteps = 4;
+      for(let i = 0; i <= ySteps; i++){
+        const y = padT + (h / ySteps) * i;
+        ctx.beginPath();
+        ctx.moveTo(padL, y);
+        ctx.lineTo(padL + w, y);
+        ctx.stroke();
+      }
+
+      // axes
+      ctx.strokeStyle = "rgba(17,24,39,.18)";
+      ctx.beginPath();
+      ctx.moveTo(padL, padT);
+      ctx.lineTo(padL, padT + h);
+      ctx.lineTo(padL + w, padT + h);
+      ctx.stroke();
+
+      // y labels
+      ctx.fillStyle = "#6b7280";
+      ctx.font = "12px system-ui";
+      for(let i = 0; i <= ySteps; i++){
+        const value = Math.round((maxY / ySteps) * (ySteps - i));
+        const y = padT + (h / ySteps) * i;
+        ctx.fillText(value.toLocaleString("en-US"), 8, y + 4);
+      }
+
+      // area
+      ctx.beginPath();
+      series.forEach((s, i) => {
+        const t = new Date(s.ts).getTime();
+        const x = padL + ((t - minT) / (maxT - minT || 1)) * w;
+        const y = padT + h - (s.cum / maxY) * h;
+        if(i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+
+      const lastX = padL + w;
+      const baseY = padT + h;
+      ctx.lineTo(lastX, baseY);
+      ctx.lineTo(padL, baseY);
+      ctx.closePath();
+
+      const grad = ctx.createLinearGradient(0, padT, 0, padT + h);
+      grad.addColorStop(0, "rgba(17,24,39,.14)");
+      grad.addColorStop(1, "rgba(17,24,39,0)");
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // line
+      ctx.beginPath();
+      series.forEach((s, i) => {
+        const t = new Date(s.ts).getTime();
+        const x = padL + ((t - minT) / (maxT - minT || 1)) * w;
+        const y = padT + h - (s.cum / maxY) * h;
+        if(i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = "#111827";
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // last point
+      const last = series[series.length - 1];
+      const lastT = new Date(last.ts).getTime();
+      const x = padL + ((lastT - minT) / (maxT - minT || 1)) * w;
+      const y = padT + h - (last.cum / maxY) * h;
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = "#111827";
+      ctx.fill();
+
+      // x labels
+      ctx.fillStyle = "#6b7280";
+      ctx.font = "12px system-ui";
+      const firstLabel = formatShortDateTime(new Date(minT).toISOString());
+      const lastLabel = formatShortDateTime(new Date(maxT).toISOString());
+      ctx.fillText(firstLabel, padL, padT + h + 22);
+      const m = ctx.measureText(lastLabel).width;
+      ctx.fillText(lastLabel, padL + w - m, padT + h + 22);
+    }
+
+    function seriesToCsv(series){
+      const header = "datetime,cumulative\n";
+      const lines = series.map(s => `${s.ts},${s.cum}`).join("\n");
+      return header + lines + "\n";
+    }
+
+    function downloadCsv(csv){
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "mood2know_admin_export.csv";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function updateRefreshTimer(){
+      if(autoRefreshTimer){
+        clearInterval(autoRefreshTimer);
+        autoRefreshTimer = null;
+      }
+
+      const secs = Number($("refreshInterval").value || 0);
+      if(secs > 0){
+        autoRefreshTimer = setInterval(() => {
+          load(true);
+        }, secs * 1000);
+      }
+    }
+
+    async function load(isAuto = false){
+      $("status").textContent = isAuto ? "Refreshing…" : "Loading…";
+
+      const since = parseDatetimeInput($("since").value);
+      const until = parseDatetimeInput($("until").value);
+
+      if(!since || !until){
+        $("status").textContent = "Invalid dates.";
+        return;
+      }
+
+      if(until <= since){
+        $("status").textContent = "End date must be after start date.";
+        return;
+      }
+
+      const sinceISO = since.toISOString();
+      const untilISO = until.toISOString();
+
+      try{
+        const rows = await fetchAllCreatedAt(sinceISO, untilISO);
+        const series = buildRealtimeSeries(rows);
+
+        setKpis(series, rows, since, until);
+        drawChart(series);
+        renderTable(series);
+
+        $("status").textContent = `OK — ${rows.length.toLocaleString("en-US")} entries loaded`;
+        $("rangeInfo").textContent = `${formatShortDateTime(sinceISO)} → ${formatShortDateTime(untilISO)}`;
+        $("countInfo").textContent = `${rows.length.toLocaleString("en-US")} rows`;
+
+        window.__series = series;
+      }catch(e){
+        console.warn(e);
+        $("status").textContent = "Error: " + (e.message || "unknown");
+      }
+    }
+
+    $("btnLoad").addEventListener("click", () => load(false));
+
+    $("btnExport").addEventListener("click", () => {
+      const series = window.__series || [];
+      downloadCsv(seriesToCsv(series));
+    });
+
+    document.querySelectorAll("[data-range]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        applyQuickRange(btn.dataset.range);
+        load(false);
+      });
+    });
+
+    $("refreshInterval").addEventListener("change", updateRefreshTimer);
+
+    window.addEventListener("resize", () => {
+      if(window.__series) drawChart(window.__series);
+    });
+
+    setDefaultDates();
+    updateRefreshTimer();
+    load(false);
+  </script>
+</body>
+</html>
