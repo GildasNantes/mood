@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Your Mood — World Mood Journal | Mood2Know</title>
-  <meta name="description" content="Explore a newspaper-style statistical digest of Mood2Know: country rankings, your position, and the top 3 countries day by day.">
+  <meta name="description" content="Explore a newspaper-style statistical digest of Mood2Know: country rankings, your position, local-hour mood patterns, and regional comparisons.">
   <meta name="robots" content="index,follow">
   <meta name="theme-color" content="#f4efe6">
   <style>
@@ -23,56 +23,360 @@
     }
 
     *{box-sizing:border-box}
-    html,body{margin:0;background:linear-gradient(180deg,var(--paper) 0%,#f8f4ed 100%);color:var(--ink);font-family:Georgia,"Times New Roman",serif;}
+    html,body{
+      margin:0;
+      background:linear-gradient(180deg,var(--paper) 0%,#f8f4ed 100%);
+      color:var(--ink);
+      font-family:Georgia,"Times New Roman",serif;
+    }
     a{color:inherit}
     .page{max-width:1180px;margin:0 auto;padding:28px 18px 56px;}
-    .masthead{border-top:4px double var(--line);border-bottom:4px double var(--line);padding:18px 0 12px;text-align:center;margin-bottom:18px;}
-    .masthead-kicker{display:flex;justify-content:space-between;gap:12px;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;}
-    .brand{font-size:clamp(42px,8vw,86px);line-height:.95;letter-spacing:.04em;font-weight:700;text-transform:uppercase;}
-    .subbrand{margin-top:6px;font-size:clamp(16px,2vw,28px);color:var(--muted);font-style:italic;}
-    .hero{display:grid;grid-template-columns:1.15fr .85fr;gap:18px;margin-bottom:18px;}
-    .headline-block,.sidebar-card,.panel,.rank-table,.chart-card,.notes-card,.footer-cta{background:rgba(255,255,255,.28);border:1px solid rgba(116,96,74,.22);border-radius:var(--radius);box-shadow:var(--shadow);backdrop-filter:blur(3px);}
-    .headline-block{padding:28px 26px 24px;min-height:250px;display:flex;flex-direction:column;justify-content:center;}
-    .eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin-bottom:10px;}
-    .headline{font-size:clamp(38px,5vw,68px);line-height:.96;margin:0 0 12px;text-transform:uppercase;}
-    .dek{font-size:clamp(20px,2.2vw,34px);line-height:1.15;color:#3d342c;font-style:italic;margin:0;}
-    .sidebar-card{padding:22px 18px;display:grid;gap:12px;align-content:start;}
-    .stat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
-    .mini-stat{padding:14px 14px 12px;border:1px solid rgba(116,96,74,.18);background:linear-gradient(180deg,rgba(255,255,255,.44),rgba(255,255,255,.18));border-radius:18px;}
-    .mini-stat .label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;}
-    .mini-stat .value{font-size:32px;font-weight:700;line-height:1;}
-    .mini-stat .sub{font-size:14px;color:var(--muted);margin-top:6px;}
-    .layout{display:grid;grid-template-columns:1.1fr .9fr;gap:18px;align-items:start;}
+    .masthead{
+      border-top:4px double var(--line);
+      border-bottom:4px double var(--line);
+      padding:18px 0 12px;
+      text-align:center;
+      margin-bottom:18px;
+    }
+    .masthead-kicker{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      font-size:13px;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      margin-bottom:8px;
+    }
+    .brand{
+      font-size:clamp(42px,8vw,86px);
+      line-height:.95;
+      letter-spacing:.04em;
+      font-weight:700;
+      text-transform:uppercase;
+    }
+    .subbrand{
+      margin-top:6px;
+      font-size:clamp(16px,2vw,28px);
+      color:var(--muted);
+      font-style:italic;
+    }
+
+    .hero{
+      display:grid;
+      grid-template-columns:1.15fr .85fr;
+      gap:18px;
+      margin-bottom:18px;
+    }
+
+    .headline-block,.sidebar-card,.panel,.rank-table,.chart-card,.notes-card,.footer-cta,.info-card{
+      background:rgba(255,255,255,.28);
+      border:1px solid rgba(116,96,74,.22);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      backdrop-filter:blur(3px);
+    }
+
+    .headline-block{
+      padding:28px 26px 24px;
+      min-height:250px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+    }
+
+    .eyebrow{
+      font-size:12px;
+      text-transform:uppercase;
+      letter-spacing:.14em;
+      color:var(--muted);
+      margin-bottom:10px;
+    }
+
+    .headline{
+      font-size:clamp(38px,5vw,68px);
+      line-height:.96;
+      margin:0 0 12px;
+      text-transform:uppercase;
+    }
+
+    .dek{
+      font-size:clamp(20px,2.2vw,34px);
+      line-height:1.15;
+      color:#3d342c;
+      font-style:italic;
+      margin:0;
+    }
+
+    .sidebar-card{
+      padding:22px 18px;
+      display:grid;
+      gap:12px;
+      align-content:start;
+    }
+
+    .stat-grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:12px;
+    }
+
+    .mini-stat{
+      padding:14px 14px 12px;
+      border:1px solid rgba(116,96,74,.18);
+      background:linear-gradient(180deg,rgba(255,255,255,.44),rgba(255,255,255,.18));
+      border-radius:18px;
+    }
+
+    .mini-stat .label{
+      font-size:12px;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      margin-bottom:8px;
+    }
+
+    .mini-stat .value{
+      font-size:32px;
+      font-weight:700;
+      line-height:1;
+    }
+
+    .mini-stat .sub{
+      font-size:14px;
+      color:var(--muted);
+      margin-top:6px;
+    }
+
+    .layout{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:18px;
+      align-items:start;
+    }
+
+    .full-width{grid-column:1/-1;}
+    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
     .left-col,.right-col{display:grid;gap:18px;}
-    .panel,.chart-card,.rank-table,.notes-card,.footer-cta{padding:22px 20px;}
-    h2.section-title{margin:0 0 6px;font-size:clamp(28px,3vw,44px);line-height:1;}
-    .section-sub{color:var(--muted);margin:0 0 18px;font-size:17px;}
-    .user-badge{display:inline-flex;align-items:center;gap:8px;background:#111;color:#fff;border-radius:999px;padding:8px 12px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;}
-    .rank-table table,.daily-table{width:100%;border-collapse:collapse;}
-    .rank-table th,.rank-table td,.daily-table th,.daily-table td{border-top:1px solid rgba(116,96,74,.18);padding:10px 8px;text-align:left;vertical-align:middle;}
-    .rank-table th,.daily-table th{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:700;}
+
+    .panel,.chart-card,.rank-table,.notes-card,.footer-cta,.info-card{
+      padding:22px 20px;
+    }
+
+    h2.section-title{
+      margin:0 0 6px;
+      font-size:clamp(28px,3vw,44px);
+      line-height:1;
+    }
+
+    .section-sub{
+      color:var(--muted);
+      margin:0 0 18px;
+      font-size:17px;
+    }
+
+    .user-badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      background:#111;
+      color:#fff;
+      border-radius:999px;
+      padding:8px 12px;
+      font-size:13px;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+      margin-bottom:10px;
+    }
+
+    .rank-table table,.daily-table{
+      width:100%;
+      border-collapse:collapse;
+    }
+
+    .rank-table th,.rank-table td,.daily-table th,.daily-table td{
+      border-top:1px solid rgba(116,96,74,.18);
+      padding:10px 8px;
+      text-align:left;
+      vertical-align:middle;
+    }
+
+    .rank-table th,.daily-table th{
+      font-size:13px;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      font-weight:700;
+    }
+
     .rank-col{width:54px;font-weight:700;}
     .num{font-variant-numeric:tabular-nums;}
-    .medal{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:999px;font-size:14px;font-weight:700;color:#fff;}
-    .gold{background:var(--gold)} .silver{background:var(--silver)} .bronze{background:var(--bronze)}
-    .pill{display:inline-block;padding:4px 10px;border-radius:999px;border:1px solid rgba(116,96,74,.2);background:rgba(255,255,255,.46);font-size:12px;color:#554c45;}
-    .summary-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}
-    .summary-box{padding:14px;border:1px solid rgba(116,96,74,.16);border-radius:16px;background:linear-gradient(180deg,rgba(255,255,255,.42),rgba(255,255,255,.15));}
-    .summary-box .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;}
-    .summary-box .v{font-size:26px;font-weight:700;line-height:1.05;}
-    .summary-box .d{font-size:14px;color:var(--muted);margin-top:6px;}
-    .legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;color:var(--muted);font-size:13px;}
+
+    .medal{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      width:28px;
+      height:28px;
+      border-radius:999px;
+      font-size:14px;
+      font-weight:700;
+      color:#fff;
+    }
+
+    .gold{background:var(--gold)}
+    .silver{background:var(--silver)}
+    .bronze{background:var(--bronze)}
+
+    .summary-strip{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:12px;
+    }
+
+    .summary-box{
+      padding:14px;
+      border:1px solid rgba(116,96,74,.16);
+      border-radius:16px;
+      background:linear-gradient(180deg,rgba(255,255,255,.42),rgba(255,255,255,.15));
+    }
+
+    .summary-box .k{
+      font-size:12px;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      margin-bottom:6px;
+    }
+
+    .summary-box .v{
+      font-size:26px;
+      font-weight:700;
+      line-height:1.05;
+    }
+
+    .summary-box .d{
+      font-size:14px;
+      color:var(--muted);
+      margin-top:6px;
+    }
+
+    .legend{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:12px;
+      color:var(--muted);
+      font-size:13px;
+    }
+
     .legend span{display:inline-flex;align-items:center;gap:6px;}
     .dot{width:10px;height:10px;border-radius:999px;display:inline-block}
-    .dot-gold{background:var(--gold)} .dot-silver{background:var(--silver)}
-    .notes-list{margin:0;padding-left:20px;display:grid;gap:10px;color:#403730;font-size:17px;}
+    .dot-gold{background:var(--gold)}
+    .dot-silver{background:var(--silver)}
+
+    .notes-list{
+      margin:0;
+      padding-left:20px;
+      display:grid;
+      gap:10px;
+      color:#403730;
+      font-size:17px;
+    }
+
     .muted{color:var(--muted)}
     .loading,.error{text-align:center;padding:50px 18px;color:var(--muted);font-size:18px;}
     .error strong{color:#8e2f2f}
-    .footer-cta{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:18px;flex-wrap:wrap;}
-    .cta-btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 18px;border-radius:999px;background:#111;color:#fff;text-decoration:none;font-weight:700;letter-spacing:.04em;}
-    @media (max-width:920px){.hero,.layout{grid-template-columns:1fr}.summary-strip,.stat-grid{grid-template-columns:1fr 1fr}}
-    @media (max-width:640px){.page{padding:18px 12px 40px}.summary-strip,.stat-grid{grid-template-columns:1fr}.rank-table,.chart-card,.panel,.notes-card,.footer-cta,.headline-block,.sidebar-card{padding:18px 16px;border-radius:18px}.rank-table table,.daily-table{font-size:14px}}
+
+    .footer-cta{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      margin-top:18px;
+      flex-wrap:wrap;
+    }
+
+    .cta-btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:12px 18px;
+      border-radius:999px;
+      background:#111;
+      color:#fff;
+      text-decoration:none;
+      font-weight:700;
+      letter-spacing:.04em;
+    }
+
+    .map-frame{
+      border-radius:18px;
+      overflow:hidden;
+      border:1px solid rgba(116,96,74,.14);
+      background:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,.15));
+      min-height:540px;
+    }
+
+    .map-frame iframe,
+    .map-frame img{
+      display:block;
+      width:100%;
+      height:540px;
+      border:0;
+    }
+
+    .article-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:18px;
+    }
+
+    .clock-hero{
+      display:flex;
+      align-items:center;
+      gap:14px;
+      margin-bottom:12px;
+    }
+
+    .clock-icon{
+      width:58px;
+      height:58px;
+      border-radius:999px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:28px;
+      background:rgba(255,255,255,.55);
+      border:1px solid rgba(116,96,74,.18);
+      flex:0 0 auto;
+    }
+
+    .compare-list{
+      margin:0;
+      padding-left:18px;
+      display:grid;
+      gap:8px;
+      color:#403730;
+      font-size:17px;
+    }
+
+    @media (max-width:920px){
+      .hero,.two-col,.article-grid{grid-template-columns:1fr}
+      .summary-strip,.stat-grid{grid-template-columns:1fr 1fr}
+    }
+
+    @media (max-width:640px){
+      .page{padding:18px 12px 40px}
+      .summary-strip,.stat-grid{grid-template-columns:1fr}
+      .rank-table,.chart-card,.panel,.notes-card,.footer-cta,.headline-block,.sidebar-card,.info-card{
+        padding:18px 16px;
+        border-radius:18px;
+      }
+      .rank-table table,.daily-table{font-size:14px}
+      .map-frame iframe,.map-frame img{height:420px}
+      .map-frame{min-height:420px}
+    }
   </style>
 </head>
 <body>
@@ -87,7 +391,10 @@
     </header>
 
     <div id="loading" class="loading">Loading the statistical edition…</div>
-    <div id="error" class="error" hidden><strong>Unable to load the journal.</strong><div id="errorText"></div></div>
+    <div id="error" class="error" hidden>
+      <strong>Unable to load the journal.</strong>
+      <div id="errorText"></div>
+    </div>
 
     <main id="app" hidden>
       <section class="hero">
@@ -124,89 +431,129 @@
       </section>
 
       <section class="layout">
-        <div class="left-col">
-          <section class="rank-table">
-            <div class="user-badge">Your Mood ranking board</div>
-            <h2 class="section-title">Country ranking</h2>
-            <p class="section-sub" id="rankingSubtitle">Countries with more than 10 entries in the active dataset, compared directly with your latest mood.</p>
-            <div class="summary-strip" style="margin-bottom:16px;">
-              <div class="summary-box">
-                <div class="k">1st place</div>
-                <div class="v" id="topCountry">—</div>
-                <div class="d num" id="topCountryAvg">— / 10</div>
-              </div>
-              <div class="summary-box">
-                <div class="k">Your mood position</div>
-                <div class="v" id="yourRank">—</div>
-                <div class="d" id="yourRankDetail">Waiting for comparison…</div>
-              </div>
-              <div class="summary-box">
-                <div class="k">Gap to leader</div>
-                <div class="v num" id="gapToLeader">—</div>
-                <div class="d">between your mood and #1 country</div>
-              </div>
-            </div>
-            <table>
-              <thead>
-                <tr>
-                  <th class="rank-col">Rank</th>
-                  <th>Country</th>
-                  <th>Entries</th>
-                  <th>Average</th>
-                </tr>
-              </thead>
-              <tbody id="rankingBody"></tbody>
-            </table>
-          </section>
+        <section class="chart-card full-width">
+          <h2 class="section-title">World mood snapshot</h2>
+          <p class="section-sub">The full live map, updated directly from Mood2Know.</p>
 
-          <section class="chart-card">
-            <h2 class="section-title">World mood snapshot</h2>
-            <p class="section-sub">A visual capture of the live world mood map, embedded directly into this statistical edition.</p>
-            <div style="border-radius:18px; overflow:hidden; border:1px solid rgba(116,96,74,.14); background:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,.15));">
-              <img src="/og.jpg" alt="World mood map snapshot" style="display:block; width:100%; height:auto; object-fit:cover;" id="worldSnapshot">
-            </div>
-            <div class="legend">
-              <span><i class="dot dot-gold"></i>live Mood2Know visual</span>
-              <span><i class="dot dot-silver"></i>replace later with a fresher exported screenshot if you want</span>
-            </div>
-          </section>
+          <div class="map-frame">
+            <iframe
+              id="worldSnapshotFrame"
+              src="/?view=map"
+              title="Live world mood map"
+              loading="lazy"
+              referrerpolicy="no-referrer"
+            ></iframe>
+          </div>
+
+          <div class="legend">
+            <span><i class="dot dot-gold"></i>live full map</span>
+            <span><i class="dot dot-silver"></i>same source as the homepage</span>
+          </div>
+        </section>
+
+        <div class="two-col">
+          <div class="left-col">
+            <section class="rank-table">
+              <div class="user-badge">Your Mood ranking board</div>
+              <h2 class="section-title">Country ranking</h2>
+              <p class="section-sub" id="rankingSubtitle">Countries with more than 10 entries in the active dataset, compared directly with your latest mood.</p>
+
+              <div class="summary-strip" style="margin-bottom:16px;">
+                <div class="summary-box">
+                  <div class="k">1st place</div>
+                  <div class="v" id="topCountry">—</div>
+                  <div class="d num" id="topCountryAvg">— / 10</div>
+                </div>
+                <div class="summary-box">
+                  <div class="k">Your mood position</div>
+                  <div class="v" id="yourRank">—</div>
+                  <div class="d" id="yourRankDetail">Waiting for comparison…</div>
+                </div>
+                <div class="summary-box">
+                  <div class="k">Gap to leader</div>
+                  <div class="v num" id="gapToLeader">—</div>
+                  <div class="d">between your mood and #1 country</div>
+                </div>
+              </div>
+
+              <table>
+                <thead>
+                  <tr>
+                    <th class="rank-col">Rank</th>
+                    <th>Country</th>
+                    <th>Entries</th>
+                    <th>Average</th>
+                  </tr>
+                </thead>
+                <tbody id="rankingBody"></tbody>
+              </table>
+            </section>
+
+            <section class="panel">
+              <h2 class="section-title">Your position in the world</h2>
+              <p class="section-sub">Your latest mood is compared directly against country averages.</p>
+              <table class="daily-table">
+                <tbody>
+                  <tr><th>Your latest mood</th><td id="userMoodCell">—</td></tr>
+                  <tr><th>Your latest entry</th><td id="userEntryDateCell">—</td></tr>
+                  <tr><th>Equivalent rank</th><td id="userRankCell">—</td></tr>
+                  <tr><th>Closest country above</th><td id="countryAboveCell">—</td></tr>
+                  <tr><th>Closest country below</th><td id="countryBelowCell">—</td></tr>
+                  <tr><th>Countries beaten</th><td id="countriesBeatenCell">—</td></tr>
+                </tbody>
+              </table>
+            </section>
+          </div>
+
+          <div class="right-col">
+            <section class="panel">
+              <h2 class="section-title">Daily podium notebook</h2>
+              <p class="section-sub">The top three countries for each of the last 7 days.</p>
+              <div id="dailyPodium"></div>
+            </section>
+
+            <section class="notes-card">
+              <h2 class="section-title">Editorial notes</h2>
+              <ul class="notes-list" id="editorialNotes"></ul>
+            </section>
+          </div>
         </div>
 
-        <div class="right-col">
-          <section class="panel">
-            <h2 class="section-title">Your position in the world</h2>
-            <p class="section-sub">Your latest mood is compared directly against country averages, not against your own country.</p>
+        <section class="article-grid full-width">
+          <article class="info-card">
+            <div class="clock-hero">
+              <div class="clock-icon">🕰️</div>
+              <div>
+                <h2 class="section-title" style="margin:0;">The world smiles at <span id="bestHourLocal">—</span></h2>
+                <p class="section-sub" style="margin:6px 0 0;">Local-hour comparison of the happiest and lowest mood moments.</p>
+              </div>
+            </div>
+
             <table class="daily-table">
               <tbody>
-                <tr><th>Your latest mood</th><td id="userMoodCell">—</td></tr>
-                <tr><th>Your latest entry</th><td id="userEntryDateCell">—</td></tr>
-                <tr><th>Equivalent rank</th><td id="userRankCell">—</td></tr>
-                <tr><th>Closest country above</th><td id="countryAboveCell">—</td></tr>
-                <tr><th>Closest country below</th><td id="countryBelowCell">—</td></tr>
-                <tr><th>Countries beaten</th><td id="countriesBeatenCell">—</td></tr>
+                <tr><th>Happiest local hour</th><td id="bestHourRow">—</td></tr>
+                <tr><th>Lowest local hour</th><td id="worstHourRow">—</td></tr>
+                <tr><th>Method</th><td id="hourMethodRow">Local hour derived from country time zones when available.</td></tr>
               </tbody>
             </table>
-          </section>
+          </article>
 
-          <section class="panel">
-            <h2 class="section-title">Daily podium notebook</h2>
-            <p class="section-sub">The top three countries for each of the last 7 days.</p>
-            <div id="dailyPodium"></div>
-          </section>
+          <article class="info-card">
+            <h2 class="section-title">Continents & hemispheres</h2>
+            <p class="section-sub">A broader comparison of the world’s mood by region and latitude.</p>
+            <ul class="compare-list" id="geoComparisons">
+              <li>Loading regional comparisons…</li>
+            </ul>
+          </article>
+        </section>
 
-          <section class="notes-card">
-            <h2 class="section-title">Editorial notes</h2>
-            <ul class="notes-list" id="editorialNotes"></ul>
-          </section>
-        </div>
-      </section>
-
-      <section class="footer-cta">
-        <div>
-          <h2 class="section-title" style="margin-bottom:6px;">Back to the map</h2>
-          <div class="muted">Share one more signal and watch the world mood change.</div>
-        </div>
-        <a class="cta-btn" href="/">Open Mood2Know</a>
+        <section class="footer-cta">
+          <div>
+            <h2 class="section-title" style="margin-bottom:6px;">Back to the map</h2>
+            <div class="muted">Return directly to the live map without going back through voting.</div>
+          </div>
+          <a class="cta-btn" href="/?view=map">Open Mood2Know</a>
+        </section>
       </section>
     </main>
   </div>
@@ -221,42 +568,113 @@
     const DATASET_RECENT_THRESHOLD = 200;
     const LAST_N_FALLBACK = 200;
     const MAX_RECENT_FETCH = 50000;
+
     const APP = document.getElementById("app");
     const LOADING = document.getElementById("loading");
     const ERROR = document.getElementById("error");
+
+    const COUNTRY_UTC_OFFSETS = {
+      FR: 1, ES: 1, DE: 1, IT: 1, GB: 0, IE: 0, PT: 0,
+      US: -5, CA: -5, MX: -6, BR: -3, AR: -3, CL: -4,
+      MA: 1, DZ: 1, TN: 1, EG: 2, ZA: 2, NG: 1, KE: 3,
+      TR: 3, SA: 3, AE: 4, IN: 5.5, PK: 5, BD: 6,
+      TH: 7, VN: 7, CN: 8, HK: 8, SG: 8, JP: 9, KR: 9,
+      AU: 10, NZ: 12
+    };
+
+    const COUNTRY_TO_CONTINENT = {
+      FR:"Europe", ES:"Europe", DE:"Europe", IT:"Europe", GB:"Europe", IE:"Europe", PT:"Europe",
+      US:"North America", CA:"North America", MX:"North America",
+      BR:"South America", AR:"South America", CL:"South America", CO:"South America", PE:"South America",
+      MA:"Africa", DZ:"Africa", TN:"Africa", EG:"Africa", ZA:"Africa", NG:"Africa", KE:"Africa",
+      TR:"Asia", SA:"Asia", AE:"Asia", IN:"Asia", PK:"Asia", BD:"Asia", TH:"Asia", VN:"Asia", CN:"Asia", HK:"Asia", SG:"Asia", JP:"Asia", KR:"Asia",
+      AU:"Oceania", NZ:"Oceania"
+    };
+
+    const COUNTRY_TO_HEMISPHERE = {
+      FR:"Northern", ES:"Northern", DE:"Northern", IT:"Northern", GB:"Northern", IE:"Northern", PT:"Northern",
+      US:"Northern", CA:"Northern", MX:"Northern",
+      BR:"Southern", AR:"Southern", CL:"Southern", CO:"Northern", PE:"Southern",
+      MA:"Northern", DZ:"Northern", TN:"Northern", EG:"Northern", ZA:"Southern", NG:"Northern", KE:"Northern",
+      TR:"Northern", SA:"Northern", AE:"Northern", IN:"Northern", PK:"Northern", BD:"Northern", TH:"Northern", VN:"Northern", CN:"Northern", HK:"Northern", SG:"Northern", JP:"Northern", KR:"Northern",
+      AU:"Southern", NZ:"Southern"
+    };
 
     function fmtDateTime(value){
       if (!value) return "—";
       const d = new Date(value);
       return new Intl.DateTimeFormat(undefined, { dateStyle:"medium", timeStyle:"short" }).format(d);
     }
+
     function fmtDay(value){
       const d = new Date(value + "T12:00:00Z");
-      return new Intl.DateTimeFormat(undefined, { weekday:"short", month:"short", day:"numeric", timeZone:"UTC" }).format(d);
+      return new Intl.DateTimeFormat(undefined, {
+        weekday:"short",
+        month:"short",
+        day:"numeric",
+        timeZone:"UTC"
+      }).format(d);
     }
-    function fmtNum(n, digits = 1){ return Number.isFinite(n) ? n.toFixed(digits) : "—"; }
-    function fmtInt(n){ return Number.isFinite(n) ? new Intl.NumberFormat().format(n) : "—"; }
-    function getAnonId(){ try { return localStorage.getItem("mood_anon_id"); } catch { return null; } }
-    function dayKeyUTC(dateLike){ const d = new Date(dateLike); d.setUTCHours(0,0,0,0); return d.toISOString().slice(0,10); }
-    function setText(id, value){ const el = document.getElementById(id); if (el) el.textContent = value; }
+
+    function fmtNum(n, digits = 1){
+      return Number.isFinite(n) ? n.toFixed(digits) : "—";
+    }
+
+    function fmtInt(n){
+      return Number.isFinite(n) ? new Intl.NumberFormat().format(n) : "—";
+    }
+
+    function getAnonId(){
+      try { return localStorage.getItem("mood_anon_id"); }
+      catch { return null; }
+    }
+
+    function dayKeyUTC(dateLike){
+      const d = new Date(dateLike);
+      d.setUTCHours(0,0,0,0);
+      return d.toISOString().slice(0,10);
+    }
+
+    function setText(id, value){
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
+    }
+
+    function getUtcOffsetForCountry(code){
+      return COUNTRY_UTC_OFFSETS[code] ?? 0;
+    }
+
+    function formatHourLabel(hour){
+      if (!Number.isFinite(hour)) return "—";
+      const suffix = hour >= 12 ? "PM" : "AM";
+      const h12 = hour % 12 === 0 ? 12 : hour % 12;
+      return `${h12} ${suffix}`;
+    }
 
     async function getStatsDataset(){
       const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
       const { data: recentData, error: recentError } = await sb
         .from("mood_public_entries")
         .select("mood,country,country_name,created_at,anon_id")
         .gte("created_at", since)
         .order("created_at", { ascending:false })
         .limit(MAX_RECENT_FETCH);
+
       if (recentError) throw recentError;
-      if ((recentData || []).length > DATASET_RECENT_THRESHOLD) return { mode:"24h", rows: recentData || [] };
+
+      if ((recentData || []).length > DATASET_RECENT_THRESHOLD) {
+        return { mode:"24h", rows: recentData || [] };
+      }
 
       const { data: fallbackData, error: fallbackError } = await sb
         .from("mood_public_entries")
         .select("mood,country,country_name,created_at,anon_id")
         .order("created_at", { ascending:false })
         .limit(LAST_N_FALLBACK);
+
       if (fallbackError) throw fallbackError;
+
       return { mode:"last200", rows: fallbackData || [] };
     }
 
@@ -264,18 +682,21 @@
       const start = new Date();
       start.setUTCDate(start.getUTCDate() - 6);
       start.setUTCHours(0,0,0,0);
+
       const { data, error } = await sb
         .from("mood_public_entries")
         .select("mood,country,country_name,created_at")
         .gte("created_at", start.toISOString())
         .order("created_at", { ascending:true })
         .limit(MAX_RECENT_FETCH);
+
       if (error) throw error;
       return data || [];
     }
 
     async function getLatestUserEntry(anonId){
       if (!anonId) return null;
+
       const { data, error } = await sb
         .from("mood_public_entries")
         .select("mood,country,country_name,created_at")
@@ -283,47 +704,88 @@
         .order("created_at", { ascending:false })
         .limit(1)
         .maybeSingle();
+
       if (error) throw error;
       return data || null;
     }
 
     function buildCountryRanking(rows){
       const agg = new Map();
-      let worldSum = 0, worldCount = 0;
+      let worldSum = 0;
+      let worldCount = 0;
+
       for (const row of rows){
         const mood = Number(row.mood);
         if (!Number.isFinite(mood)) continue;
-        worldSum += mood; worldCount += 1;
+
+        worldSum += mood;
+        worldCount += 1;
+
         if (!row.country) continue;
+
         const key = row.country;
-        const cur = agg.get(key) || { code:key, name:(row.country_name || key).trim(), sum:0, count:0 };
-        cur.sum += mood; cur.count += 1;
-        if (row.country_name && row.country_name.trim()) cur.name = row.country_name.trim();
+        const cur = agg.get(key) || {
+          code:key,
+          name:(row.country_name || key).trim(),
+          sum:0,
+          count:0
+        };
+
+        cur.sum += mood;
+        cur.count += 1;
+
+        if (row.country_name && row.country_name.trim()) {
+          cur.name = row.country_name.trim();
+        }
+
         agg.set(key, cur);
       }
+
       const ranking = Array.from(agg.values())
         .filter(item => item.count >= MIN_COUNTRY_ENTRIES)
         .map(item => ({ ...item, avg:item.sum / item.count }))
         .sort((a,b) => b.avg - a.avg || b.count - a.count || a.name.localeCompare(b.name));
+
       ranking.forEach((item, i) => item.rank = i + 1);
-      return { ranking, worldAverage: worldCount ? worldSum / worldCount : NaN, totalEntries: worldCount };
+
+      return {
+        ranking,
+        worldAverage: worldCount ? worldSum / worldCount : NaN,
+        totalEntries: worldCount
+      };
     }
 
     function buildDailyPodiums(rows){
       const byDay = new Map();
+
       for (const row of rows){
         if (!row.created_at || !row.country) continue;
+
         const mood = Number(row.mood);
         if (!Number.isFinite(mood)) continue;
+
         const day = dayKeyUTC(row.created_at);
         const dayMap = byDay.get(day) || new Map();
-        const cur = dayMap.get(row.country) || { code:row.country, name:(row.country_name || row.country).trim(), sum:0, count:0 };
-        cur.sum += mood; cur.count += 1;
-        if (row.country_name && row.country_name.trim()) cur.name = row.country_name.trim();
+        const cur = dayMap.get(row.country) || {
+          code:row.country,
+          name:(row.country_name || row.country).trim(),
+          sum:0,
+          count:0
+        };
+
+        cur.sum += mood;
+        cur.count += 1;
+
+        if (row.country_name && row.country_name.trim()) {
+          cur.name = row.country_name.trim();
+        }
+
         dayMap.set(row.country, cur);
         byDay.set(day, dayMap);
       }
+
       const orderedDays = Array.from(byDay.keys()).sort();
+
       return orderedDays.map(day => {
         const podium = Array.from(byDay.get(day).values())
           .filter(item => item.count >= MIN_COUNTRY_ENTRIES)
@@ -331,53 +793,164 @@
           .sort((a,b) => b.avg - a.avg || b.count - a.count || a.name.localeCompare(b.name))
           .slice(0,3)
           .map((item, index) => ({ ...item, rank:index + 1 }));
+
         return { day, podium };
       });
     }
 
     function compareUserMoodToCountries(ranking, userMood){
       if (!ranking.length || !Number.isFinite(userMood)) return null;
-      let higherCount = 0, above = null, below = null;
+
+      let higherCount = 0;
+      let above = null;
+      let below = null;
+
       for (const item of ranking){
         if (item.avg > userMood) {
           higherCount += 1;
           if (!above || item.avg < above.avg) above = item;
         }
-        if (item.avg <= userMood) {
+
+        if (item.avg < userMood) {
           if (!below || item.avg > below.avg) below = item;
         }
       }
+
       const equivalentRank = higherCount + 1;
       const beaten = ranking.filter(item => item.avg < userMood).length;
+
       return { equivalentRank, beaten, above, below };
     }
 
-    function buildHeadline(ranking, moodComparison){
-      if (!ranking.length) return { eyebrow:"Early edition", title:"The board is still forming", dek:"No country has yet gathered enough entries to enter the official ranking." };
+    function buildMoodComparisonSentence(userMood, moodComparison){
+      if (!Number.isFinite(userMood) || !moodComparison) {
+        return "Your latest mood could not yet be compared with the current country averages.";
+      }
+
+      if (moodComparison.above) {
+        return `Your latest mood is above the average mood of ${moodComparison.above.name}.`;
+      }
+
+      if (moodComparison.below) {
+        return `Your latest mood is above the average mood of ${moodComparison.below.name}.`;
+      }
+
+      return "Your latest mood is not yet comparable.";
+    }
+
+    function buildHeadline(ranking, moodComparison, userMood){
+      if (!ranking.length) {
+        return {
+          eyebrow:"Early edition",
+          title:"The board is still forming",
+          dek:"No country has yet gathered enough entries to enter the official ranking."
+        };
+      }
+
       const leader = ranking[0];
-      if (moodComparison) {
+
+      if (moodComparison && Number.isFinite(userMood)) {
         return {
           eyebrow:"Your mood vs the world",
           title:`YOUR MOOD WOULD RANK #${moodComparison.equivalentRank}`,
-          dek:`Compared with country averages, your latest mood falls between ${moodComparison.above ? moodComparison.above.name : leader.name} and ${moodComparison.below ? moodComparison.below.name : "the rest of the board"}.`
+          dek: buildMoodComparisonSentence(userMood, moodComparison)
         };
       }
-      return { eyebrow:"World ranking", title:`${leader.name.toUpperCase()} leads today’s mood board`, dek:`The active dataset shows ${ranking.length} ranked countries, with ${leader.name} in first place at ${fmtNum(leader.avg)} / 10.` };
+
+      return {
+        eyebrow:"World ranking",
+        title:`${leader.name.toUpperCase()} leads today’s mood board`,
+        dek:`The active dataset shows ${ranking.length} ranked countries, with ${leader.name} in first place at ${fmtNum(leader.avg)} / 10.`
+      };
+    }
+
+    function buildLocalHourStats(rows){
+      const byHour = Array.from({ length: 24 }, () => ({ sum:0, count:0 }));
+
+      for (const row of rows){
+        const mood = Number(row.mood);
+        if (!Number.isFinite(mood) || !row.created_at) continue;
+
+        const utcDate = new Date(row.created_at);
+        const utcHour = utcDate.getUTCHours();
+        const offset = getUtcOffsetForCountry(row.country);
+        const localHour = Math.floor((utcHour + offset + 24) % 24);
+
+        const cur = byHour[localHour];
+        cur.sum += mood;
+        cur.count += 1;
+      }
+
+      const ranked = byHour
+        .map((item, hour) => ({
+          hour,
+          avg: item.count ? item.sum / item.count : NaN,
+          count: item.count
+        }))
+        .filter(item => item.count >= 5)
+        .sort((a,b) => b.avg - a.avg);
+
+      if (!ranked.length) return null;
+
+      return {
+        best: ranked[0],
+        worst: ranked[ranked.length - 1]
+      };
+    }
+
+    function aggregateNamedGroups(rows, mapper){
+      const agg = new Map();
+
+      for (const row of rows){
+        const mood = Number(row.mood);
+        if (!Number.isFinite(mood)) continue;
+
+        const group = mapper(row.country);
+        if (!group) continue;
+
+        const cur = agg.get(group) || { name:group, sum:0, count:0 };
+        cur.sum += mood;
+        cur.count += 1;
+        agg.set(group, cur);
+      }
+
+      return Array.from(agg.values())
+        .filter(x => x.count >= 5)
+        .map(x => ({ ...x, avg:x.sum / x.count }))
+        .sort((a,b) => b.avg - a.avg || b.count - a.count || a.name.localeCompare(b.name));
+    }
+
+    function buildGeoComparisons(rows){
+      const continents = aggregateNamedGroups(rows, code => COUNTRY_TO_CONTINENT[code] || null);
+      const hemispheres = aggregateNamedGroups(rows, code => COUNTRY_TO_HEMISPHERE[code] || null);
+      return { continents, hemispheres };
     }
 
     function renderRanking(ranking){
       const tbody = document.getElementById("rankingBody");
       tbody.innerHTML = "";
+
       if (!ranking.length) {
         const tr = document.createElement("tr");
         tr.innerHTML = `<td colspan="4">No country has reached ${MIN_COUNTRY_ENTRIES} entries yet.</td>`;
         tbody.appendChild(tr);
         return;
       }
+
       ranking.forEach(item => {
         const tr = document.createElement("tr");
-        const badge = item.rank === 1 ? '<span class="medal gold">1</span>' : item.rank === 2 ? '<span class="medal silver">2</span>' : item.rank === 3 ? '<span class="medal bronze">3</span>' : '#' + item.rank;
-        tr.innerHTML = `<td class="rank-col">${badge}</td><td>${item.name}</td><td class="num">${fmtInt(item.count)}</td><td class="num">${fmtNum(item.avg)}</td>`;
+        const badge =
+          item.rank === 1 ? '<span class="medal gold">1</span>' :
+          item.rank === 2 ? '<span class="medal silver">2</span>' :
+          item.rank === 3 ? '<span class="medal bronze">3</span>' :
+          '#' + item.rank;
+
+        tr.innerHTML = `
+          <td class="rank-col">${badge}</td>
+          <td>${item.name}</td>
+          <td class="num">${fmtInt(item.count)}</td>
+          <td class="num">${fmtNum(item.avg)}</td>
+        `;
         tbody.appendChild(tr);
       });
     }
@@ -385,66 +958,190 @@
     function renderDailyPodiumList(days){
       const root = document.getElementById("dailyPodium");
       root.innerHTML = "";
-      if (!days.length) { root.innerHTML = '<div class="muted">No daily podium yet.</div>'; return; }
+
+      if (!days.length) {
+        root.innerHTML = '<div class="muted">No daily podium yet.</div>';
+        return;
+      }
+
       for (const day of days){
         const block = document.createElement("div");
         block.style.padding = "12px 0";
         block.style.borderTop = "1px solid rgba(116,96,74,.18)";
-        const header = `<div style="font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">${fmtDay(day.day)}</div>`;
-        const body = !day.podium.length ? '<div class="muted">No country reached 11 entries that day.</div>' : day.podium.map(item => `<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;"><div>${item.rank === 1 ? '🥇' : item.rank === 2 ? '🥈' : '🥉'} ${item.name}</div><div class="num">${fmtNum(item.avg)} <span class="muted">(${fmtInt(item.count)})</span></div></div>`).join("");
+
+        const header = `
+          <div style="font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">
+            ${fmtDay(day.day)}
+          </div>
+        `;
+
+        const body = !day.podium.length
+          ? '<div class="muted">No country reached 11 entries that day.</div>'
+          : day.podium.map(item => `
+              <div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;">
+                <div>${item.rank === 1 ? '🥇' : item.rank === 2 ? '🥈' : '🥉'} ${item.name}</div>
+                <div class="num">${fmtNum(item.avg)} <span class="muted">(${fmtInt(item.count)})</span></div>
+              </div>
+            `).join("");
+
         block.innerHTML = header + body;
         root.appendChild(block);
+      }
+    }
+
+    function renderGeoComparisons(stats){
+      const root = document.getElementById("geoComparisons");
+      if (!root) return;
+
+      root.innerHTML = "";
+
+      const { continents, hemispheres } = stats || {};
+
+      if (!continents?.length && !hemispheres?.length) {
+        root.innerHTML = "<li>Not enough regional data yet.</li>";
+        return;
+      }
+
+      if (continents?.length) {
+        const best = continents[0];
+        const worst = continents[continents.length - 1];
+        const li1 = document.createElement("li");
+        li1.textContent = `${best.name} currently leads the continents at ${fmtNum(best.avg)} / 10, ahead of ${worst.name} at ${fmtNum(worst.avg)} / 10.`;
+        root.appendChild(li1);
+      }
+
+      if (hemispheres?.length >= 2) {
+        const best = hemispheres[0];
+        const worst = hemispheres[hemispheres.length - 1];
+        const li2 = document.createElement("li");
+        li2.textContent = `The ${best.name} Hemisphere is currently ahead at ${fmtNum(best.avg)} / 10, compared with ${worst.name} at ${fmtNum(worst.avg)} / 10.`;
+        root.appendChild(li2);
+      }
+
+      if (continents?.length) {
+        const li3 = document.createElement("li");
+        li3.textContent = "Continental averages are calculated from all available country entries in the active dataset.";
+        root.appendChild(li3);
       }
     }
 
     function renderEditorialNotes(ctx){
       const root = document.getElementById("editorialNotes");
       root.innerHTML = "";
+
       const notes = [
-        ctx.mode === "24h" ? `This edition uses the last 24 hours of entries because the period contains more than ${DATASET_RECENT_THRESHOLD} moods.` : `This edition uses the last ${LAST_N_FALLBACK} entries because the last 24 hours did not reach ${DATASET_RECENT_THRESHOLD} moods.`,
+        ctx.mode === "24h"
+          ? `This edition uses the last 24 hours of entries because the period contains more than ${DATASET_RECENT_THRESHOLD} moods.`
+          : `This edition uses the last ${LAST_N_FALLBACK} entries because the last 24 hours did not reach ${DATASET_RECENT_THRESHOLD} moods.`,
         `Only countries with at least ${MIN_COUNTRY_ENTRIES} entries enter the official ranking.`,
-        ctx.moodComparison ? `Your latest mood would rank around #${ctx.moodComparison.equivalentRank} against the current country averages.` : `Your latest mood could not yet be compared with the official table.`,
-        ctx.leader ? `${ctx.leader.name} leads the board with ${fmtNum(ctx.leader.avg)} based on ${fmtInt(ctx.leader.count)} entries.` : `The ranking board is still waiting for a first official leader.`
+        ctx.moodComparison
+          ? buildMoodComparisonSentence(ctx.userMoodValue, ctx.moodComparison)
+          : `Your latest mood could not yet be compared with the official table.`,
+        ctx.leader
+          ? `${ctx.leader.name} leads the board with ${fmtNum(ctx.leader.avg)} based on ${fmtInt(ctx.leader.count)} entries.`
+          : `The ranking board is still waiting for a first official leader.`
       ];
-      notes.forEach(text => { const li = document.createElement("li"); li.textContent = text; root.appendChild(li); });
+
+      notes.forEach(text => {
+        const li = document.createElement("li");
+        li.textContent = text;
+        root.appendChild(li);
+      });
     }
 
     async function init(){
       try {
-        const [dataset, last7Rows, userEntry] = await Promise.all([getStatsDataset(), getLast7DaysRows(), getLatestUserEntry(getAnonId())]);
+        const anonId = getAnonId();
+
+        const [dataset, last7Rows, userEntry] = await Promise.all([
+          getStatsDataset(),
+          getLast7DaysRows(),
+          getLatestUserEntry(anonId)
+        ]);
+
         const { ranking, worldAverage, totalEntries } = buildCountryRanking(dataset.rows);
         const dailyPodiums = buildDailyPodiums(last7Rows);
         const leader = ranking[0] || null;
         const userMoodValue = Number(userEntry?.mood);
         const moodComparison = compareUserMoodToCountries(ranking, userMoodValue);
-        const headline = buildHeadline(ranking, moodComparison);
+        const headline = buildHeadline(ranking, moodComparison, userMoodValue);
+        const localHourStats = buildLocalHourStats(dataset.rows);
+        const geoComparisons = buildGeoComparisons(dataset.rows);
 
-        setText("updatedLabel", `Updated ${new Intl.DateTimeFormat(undefined, { dateStyle:"medium", timeStyle:"short" }).format(new Date())}`);
+        setText(
+          "updatedLabel",
+          `Updated ${new Intl.DateTimeFormat(undefined, { dateStyle:"medium", timeStyle:"short" }).format(new Date())}`
+        );
+
         setText("headlineEyebrow", headline.eyebrow);
         setText("headlineText", headline.title);
         setText("headlineDek", headline.dek);
+
         setText("datasetMode", dataset.mode === "24h" ? "24h" : "Last 200");
         setText("datasetCount", `${fmtInt(totalEntries)} entries`);
         setText("rankedCountries", fmtInt(ranking.length));
         setText("worldAverage", fmtNum(worldAverage));
+
         setText("userCountryName", Number.isFinite(userMoodValue) ? `${fmtNum(userMoodValue)} / 10` : "No mood yet");
         setText("userCountryRankText", moodComparison ? `Equivalent to rank #${moodComparison.equivalentRank}` : "Not comparable yet");
-        setText("rankingSubtitle", dataset.mode === "24h" ? `Official ranking based on the last 24 hours. Countries need at least ${MIN_COUNTRY_ENTRIES} entries.` : `Official ranking based on the last ${LAST_N_FALLBACK} entries. Countries need at least ${MIN_COUNTRY_ENTRIES} entries.`);
+
+        setText(
+          "rankingSubtitle",
+          dataset.mode === "24h"
+            ? `Official ranking based on the last 24 hours. Countries need at least ${MIN_COUNTRY_ENTRIES} entries.`
+            : `Official ranking based on the last ${LAST_N_FALLBACK} entries. Countries need at least ${MIN_COUNTRY_ENTRIES} entries.`
+        );
+
         setText("topCountry", leader ? leader.name : "—");
         setText("topCountryAvg", leader ? `${fmtNum(leader.avg)} / 10` : "—");
         setText("yourRank", moodComparison ? `#${moodComparison.equivalentRank}` : "—");
-        setText("yourRankDetail", moodComparison ? `Your latest mood is compared directly with country averages.` : "Your latest mood is not available yet.");
+        setText(
+          "yourRankDetail",
+          moodComparison
+            ? buildMoodComparisonSentence(userMoodValue, moodComparison)
+            : "Your latest mood is not available yet."
+        );
         setText("gapToLeader", leader && Number.isFinite(userMoodValue) ? fmtNum(leader.avg - userMoodValue) : "—");
+
         setText("userMoodCell", Number.isFinite(userMoodValue) ? `${fmtNum(userMoodValue)} / 10` : "—");
         setText("userEntryDateCell", fmtDateTime(userEntry?.created_at));
         setText("userRankCell", moodComparison ? `#${moodComparison.equivalentRank}` : "Not comparable");
-        setText("countryAboveCell", moodComparison?.above ? `${moodComparison.above.name} (${fmtNum(moodComparison.above.avg)})` : "No country above you");
-        setText("countryBelowCell", moodComparison?.below ? `${moodComparison.below.name} (${fmtNum(moodComparison.below.avg)})` : "No country below you");
-        setText("countriesBeatenCell", moodComparison ? `${fmtInt(moodComparison.beaten)} countries` : "—");
+        setText(
+          "countryAboveCell",
+          moodComparison?.above ? `${moodComparison.above.name} (${fmtNum(moodComparison.above.avg)})` : "No country above you"
+        );
+        setText(
+          "countryBelowCell",
+          moodComparison?.below ? `${moodComparison.below.name} (${fmtNum(moodComparison.below.avg)})` : "No country below you"
+        );
+        setText(
+          "countriesBeatenCell",
+          moodComparison ? `${fmtInt(moodComparison.beaten)} countries` : "—"
+        );
+
+        setText("bestHourLocal", localHourStats ? formatHourLabel(localHourStats.best.hour) : "—");
+        setText(
+          "bestHourRow",
+          localHourStats
+            ? `${formatHourLabel(localHourStats.best.hour)} (${fmtNum(localHourStats.best.avg)} / 10, ${fmtInt(localHourStats.best.count)} entries)`
+            : "Not enough data yet"
+        );
+        setText(
+          "worstHourRow",
+          localHourStats
+            ? `${formatHourLabel(localHourStats.worst.hour)} (${fmtNum(localHourStats.worst.avg)} / 10, ${fmtInt(localHourStats.worst.count)} entries)`
+            : "Not enough data yet"
+        );
 
         renderRanking(ranking);
         renderDailyPodiumList(dailyPodiums);
-        renderEditorialNotes({ mode: dataset.mode, moodComparison, leader });
+        renderGeoComparisons(geoComparisons);
+        renderEditorialNotes({
+          mode: dataset.mode,
+          moodComparison,
+          leader,
+          userMoodValue
+        });
 
         LOADING.hidden = true;
         ERROR.hidden = true;
