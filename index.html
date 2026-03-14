@@ -570,6 +570,37 @@
       animation: m2kBlink 0.9s ease-in-out infinite;
     }
 
+.followXBtn{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-decoration: none;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,.12);
+  background: #fff;
+  color: #111;
+  font: inherit;
+  font-weight: 650;
+  transition: transform .08s ease, background .12s ease, box-shadow .12s ease, border-color .12s ease;
+}
+
+.followXBtn:hover{
+  background: rgba(0,0,0,0.03);
+  border-color: rgba(0,0,0,.2);
+  box-shadow: 0 8px 18px rgba(0,0,0,.08);
+}
+
+.followXBtn:active{
+  transform: translateY(1px);
+}
+
+.followXIcon{
+  font-size: 16px;
+  line-height: 1;
+}
+
     /* =========================
        Mobile
     ========================= */
@@ -619,12 +650,13 @@
         font-size: 17px;
       }
 
-      #btnComments,
-      #btnShare,
-      #btnExpand {
-        padding: 10px 8px;
-        font-size: 13px;
-      }
+	#btnComments,
+	#btnShare,
+	#btnExpand,
+	#btnFollowX {
+  	padding: 10px 8px;
+  	font-size: 13px;
+	}
     }
   </style>
 </head>
@@ -725,17 +757,30 @@
         <div id="appMsg" class="msg"></div>
       </div>
 
-      <div id="compactView">
-        <div class="small" id="compactMsg">✅ Saved.</div>
+	<div id="compactView">
+  	<div class="small" id="compactMsg">✅ Saved.</div>
 
-        <div class="row" style="margin-top:8px; gap:8px;">
-          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
-            <button id="btnComments" class="secondary" type="button">Comments?</button>
-            <button id="btnShare" class="secondary" type="button">Share</button>
-          </div>
-          <button id="btnExpand" class="secondary" type="button">Change mood</button>
-        </div>
-      </div>
+  	<div class="row" style="margin-top:8px; gap:8px;">
+    	<div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+      	<button id="btnComments" class="secondary" type="button">Comments?</button>
+      	<button id="btnShare" class="secondary" type="button">Share</button>
+    </div>
+
+    <a
+      id="btnFollowX"
+      class="followXBtn"
+      href="https://x.com/WorldMoodToday"
+      target="_blank"
+      rel="noopener"
+      aria-label="Follow Mood2Know on X"
+    >
+      <span class="followXIcon" aria-hidden="true">𝕏</span>
+      <span>Follow us on X</span>
+    </a>
+
+    <button id="btnExpand" class="secondary" type="button">Change mood</button>
+  </div>
+</div>
 
       <section id="about" class="m2k-about" aria-label="About Mood2Know">
         <details class="m2k-details" id="m2kDetails">
@@ -813,12 +858,14 @@
             <p><strong>Mood 需要你。</strong> 每一次参与都很重要。</p>
           </div>
 
-          <p class="small" style="margin-top:12px;">
-            Learn more:
-            <a href="/emotional-weather-map">Emotional weather map</a> ·
-            <a href="/world-mood-map">World mood map</a>
-          </p>
-        </details>
+	<p class="small" style="margin-top:12px;">
+  	Learn more:
+  	<a href="/emotional-weather-map">Emotional weather map</a> ·
+  	<a href="/world-mood-map">World mood map</a> ·
+  	<a href="https://x.com/WorldMoodToday" target="_blank" rel="noopener">Follow us on X</a>
+	</p>
+        
+	</details>
       </section>
     </div>
   </div>
