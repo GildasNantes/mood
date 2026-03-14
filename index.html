@@ -276,7 +276,7 @@
     }
 
     .panel-manual-micro .titleSub,
-    .panel-manual-micro #dragHandle,
+   
     .panel-manual-micro #hint,
     .panel-manual-micro #soundRow,
     .panel-manual-micro #about,
@@ -291,15 +291,20 @@
       margin-top: 6px;
     }
 
-    #dragHandle{
-      width: 54px;
-      height: 6px;
-      border-radius: 999px;
-      margin: 6px auto 10px;
-      background: rgba(0,0,0,0.18);
-      cursor: grab;
-      touch-action: none;
-    }
+	#dragHandle{
+  	width: 54px;
+  	height: 6px;
+  	border-radius: 999px;
+  	margin: 8px auto 0;
+  	background: rgba(0,0,0,0.18);
+  	cursor: grab;
+  	touch-action: none;
+	}
+
+	.panel-compact #dragHandle,
+	.panel-manual-micro #dragHandle{
+  	margin-top: 6px;
+	}
 
     #dragHandle:active{
       cursor: grabbing;
@@ -659,6 +664,7 @@
       <div class="panelTitleWrap">
         <h3>Mood2Know</h3>
         <div class="titleSub">the world’s emotional weather</div>
+	<div id="dragHandle" title="Drag panel" aria-label="Drag panel"></div>
       </div>
     </div>
 
@@ -685,7 +691,7 @@
         <div class="topStatsNote">🔒 No signup • Anonymous • Approximate location</div>
       </div>
 
-      <div id="dragHandle" title="Drag panel" aria-label="Drag panel"></div>
+     
 
       <div id="appView">
         <div class="row moodRow">
