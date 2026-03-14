@@ -1630,14 +1630,13 @@ function buildComparisonMessage(userMood){
   if (userMood > avg + 0.3) comparison = "above";
   else if (userMood < avg - 0.3) comparison = "below";
 
-
-
-return `✅ Saved. World average (${period}): ${avg.toFixed(1)}/10.
-Your mood is ${comparison} average. <a href="#topStats" class="blink" style="
+  return `✅ Saved. World average (${period}): ${avg.toFixed(1)}/10.
+Your mood is ${comparison} average. See <a href="/your-mood-journal.html" class="blink" style="
 text-decoration:underline;
 font-weight:700;
 color:inherit;
-">Stats</a>`;
+">stats</a>.`;
+}
 
     }
 
