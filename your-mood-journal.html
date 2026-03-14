@@ -310,21 +310,19 @@
       letter-spacing:.04em;
     }
 
-    .map-frame{
-      border-radius:18px;
-      overflow:hidden;
-      border:1px solid rgba(116,96,74,.14);
-      background:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,.15));
-      min-height:540px;
-    }
+	.map-frame{
+  	border-radius:18px;
+  	overflow:hidden;
+  	border:1px solid rgba(116,96,74,.14);
+  	background:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,.15));
+  	min-height:0;
+	}
 
-    .map-frame iframe,
-    .map-frame img{
-      display:block;
-      width:100%;
-      height:540px;
-      border:0;
-    }
+	.map-frame img{
+  	display:block;
+  	width:100%;
+  	height:auto;
+	}
 
     .article-grid{
       display:grid;
@@ -374,8 +372,7 @@
         border-radius:18px;
       }
       .rank-table table,.daily-table{font-size:14px}
-      .map-frame iframe,.map-frame img{height:420px}
-      .map-frame{min-height:420px}
+	.map-frame{min-height:0}
     }
   </style>
 </head>
@@ -431,25 +428,24 @@
       </section>
 
       <section class="layout">
-        <section class="chart-card full-width">
-          <h2 class="section-title">World mood snapshot</h2>
-          <p class="section-sub">The full live map, updated directly from Mood2Know.</p>
+	<section class="chart-card full-width">
+  	<h2 class="section-title">World mood snapshot</h2>
+  	<p class="section-sub">A static view of the current global mood map.</p>
 
-          <div class="map-frame">
-            <iframe
-              id="worldSnapshotFrame"
-              src="/?view=map"
-              title="Live world mood map"
-              loading="lazy"
-              referrerpolicy="no-referrer"
-            ></iframe>
-          </div>
+ 	 <div class="map-frame">
+    	<img
+      	id="worldSnapshot"
+      	src="/world-snapshot.jpg"
+      	alt="Current world mood map snapshot"
+      	loading="lazy"
+    	>
+  	</div>
 
-          <div class="legend">
-            <span><i class="dot dot-gold"></i>live full map</span>
-            <span><i class="dot dot-silver"></i>same source as the homepage</span>
-          </div>
-        </section>
+  <div class="legend">
+    <span><i class="dot dot-gold"></i>current world mood snapshot</span>
+    <span><i class="dot dot-silver"></i>updated regularly from Mood2Know</span>
+  </div>
+</section>
 
         <div class="two-col">
           <div class="left-col">
@@ -550,7 +546,7 @@
         <section class="footer-cta">
           <div>
             <h2 class="section-title" style="margin-bottom:6px;">Back to the map</h2>
-            <div class="muted">Return directly to the live map without going back through voting.</div>
+            <div class="muted">Open the live map on the main page.</div>
           </div>
           <a class="cta-btn" href="/?view=map">Open Mood2Know</a>
         </section>
