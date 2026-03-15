@@ -483,80 +483,7 @@
       margin: 0 0 10px;
     }
 
-    /* =========================
-       Modals
-    ========================= */
-    #fbOverlay,
-    #shareOverlay{
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.45);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 12px;
-    }
-
-    #fbOverlay{ z-index: 60; }
-    #shareOverlay{ z-index: 70; }
-
-    #fbModal{
-      width: min(720px, 100%);
-      background: rgba(255,255,255,0.98);
-      border-radius: 16px;
-      box-shadow: 0 14px 36px rgba(0,0,0,.25);
-      padding: 16px;
-    }
-
-    #shareModal{
-      width: min(520px, 100%);
-      background: rgba(255,255,255,0.98);
-      border-radius: 16px;
-      box-shadow: 0 14px 36px rgba(0,0,0,.25);
-      padding: 16px;
-    }
-
-    #fbModal h4{
-      margin: 0 0 10px;
-      font-size: 17px;
-    }
-
-    #fbCount{
-      font-size: 12px;
-      opacity: .7;
-      text-align: right;
-      margin-top: 6px;
-    }
-
-    .modal-actions{
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-    }
-
-    .share-grid{
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 10px;
-    }
-
-    .share-grid a{
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-decoration: none;
-      font: inherit;
-      padding: 12px;
-      border-radius: 12px;
-      border: 1px solid rgba(0,0,0,.15);
-      background: #eee;
-      color: #111;
-    }
-
-    .share-grid a:active{
-      transform: translateY(1px);
-    }
+ 
 
     /* =========================
        Animation
@@ -650,13 +577,12 @@
         font-size: 17px;
       }
 
-	#btnComments,
-	#btnShare,
-	#btnExpand,
-	#btnFollowX {
-  	padding: 10px 8px;
-  	font-size: 13px;
-	}
+#btnSeeShareStats,
+#btnExpand,
+#btnFollowX {
+  padding: 10px 8px;
+  font-size: 13px;
+ }
     }
   </style>
 </head>
@@ -761,10 +687,10 @@
   	<div class="small" id="compactMsg">✅ Saved.</div>
 
   	<div class="row" style="margin-top:8px; gap:8px;">
-    	<div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
-      	<button id="btnComments" class="secondary" type="button">Comments?</button>
-      	<button id="btnShare" class="secondary" type="button">Share</button>
-    </div>
+
+<button id="btnSeeShareStats" class="secondary" type="button">
+  See & Share Stats
+</button>
 
     <a
       id="btnFollowX"
@@ -870,42 +796,7 @@
     </div>
   </div>
 
-  <div id="fbOverlay" aria-hidden="true">
-    <div id="fbModal" role="dialog" aria-modal="true">
-      <h4>Send feedback</h4>
-      <div class="small">This message is private and helps improve the project.</div>
-      <div style="height:10px"></div>
 
-      <label class="small" for="fbText">Message</label>
-      <textarea id="fbText" maxlength="5000" placeholder="Optional: tell us why you feel this way…"></textarea>
-      <div id="fbCount">0 / 5000 • 0 / 250 words</div>
-
-      <div id="fbMsg" class="msg" style="margin-top:8px;"></div>
-
-      <div class="modal-actions" style="margin-top:12px;">
-        <button id="btnFbCancel" class="secondary" type="button">Cancel</button>
-        <button id="btnFbSend" type="button">Send</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="shareOverlay" aria-hidden="true">
-    <div id="shareModal" role="dialog" aria-modal="true">
-      <h4>Share Mood2Know</h4>
-      <div class="small">Invite others to add one click to the world’s emotional weather.</div>
-
-      <div class="share-grid">
-        <a id="shareWhatsApp" href="#" target="_blank" rel="noopener">WhatsApp</a>
-        <a id="shareReddit" href="#" target="_blank" rel="noopener">Reddit</a>
-        <a id="shareX" href="#" target="_blank" rel="noopener">X (Twitter)</a>
-        <a id="shareFacebook" href="#" target="_blank" rel="noopener">Facebook</a>
-      </div>
-
-      <div class="modal-actions" style="margin-top:12px;">
-        <button id="btnShareClose" class="secondary" type="button">Close</button>
-      </div>
-    </div>
-  </div>
 
   <script src="./maplibre-gl.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -2345,146 +2236,10 @@ async function updateAllStats() {
       restartMusicIfPossible();
     };
 
-    /* =========================
-       Feedback modal
-    ========================= */
-    const FEEDBACK_MAX_WORDS = 250;
-
-    function countWords(s){
-      return (s.trim().match(/\S+/g) || []).length;
-    }
-
-    const fbOverlay = el("fbOverlay");
-    const fbText = el("fbText");
-    const fbMsg  = el("fbMsg");
-    const fbCount = el("fbCount");
-    const btnFbSend = el("btnFbSend");
-
-    function updateFbCounter(){
-      const chars = fbText.value.length;
-      const words = countWords(fbText.value);
-      fbCount.textContent = `${chars} / 5000 • ${words} / ${FEEDBACK_MAX_WORDS} words`;
-    }
-
-    function openFeedbackModal(){
-      fbMsg.textContent = "";
-      fbText.value = "";
-      fbOverlay.style.display = "flex";
-      fbOverlay.setAttribute("aria-hidden", "false");
-      updateFbCounter();
-      setTimeout(() => fbText.focus(), 50);
-    }
-
-    function closeFeedbackModal(){
-      fbOverlay.style.display = "none";
-      fbOverlay.setAttribute("aria-hidden", "true");
-    }
-
-    fbOverlay.addEventListener("click", (e) => {
-      if (e.target === fbOverlay) closeFeedbackModal();
-    });
-
-    el("btnFbCancel").onclick = closeFeedbackModal;
-    fbText.addEventListener("input", updateFbCounter);
-
-    el("btnComments").onclick = () => openFeedbackModal();
-
-    btnFbSend.onclick = async () => {
-      btnFbSend.disabled = true;
-      fbMsg.textContent = "Sending…";
-
-      const message = fbText.value.trim();
-      if (message.length < 2) {
-        fbMsg.textContent = "Please write a message.";
-        btnFbSend.disabled = false;
-        return;
-      }
-
-      const words = countWords(message);
-      if (words > FEEDBACK_MAX_WORDS) {
-        fbMsg.textContent = `Too many words (${words}). Max is ${FEEDBACK_MAX_WORDS}.`;
-        btnFbSend.disabled = false;
-        return;
-      }
-
-      const { error } = await sb.from("mood_feedback").insert({
-        anon_id: getAnonId(),
-        message
-      });
-
-      if (error) {
-        const raw = (error.message || "") + " " + (error.details || "") + " " + (error.hint || "");
-        const isDuplicate =
-          error.code === "23505" ||
-          raw.includes("duplicate key value") ||
-          raw.toLowerCase().includes("one_per_day");
-
-        fbMsg.textContent = isDuplicate
-          ? "Only one comment per day please!"
-          : "Unable to send comment. Please try again.";
-
-        console.warn("FEEDBACK error:", error);
-        btnFbSend.disabled = false;
-        return;
-      }
-
-      fbMsg.textContent = "✅ Thank you for your feedback!";
-      setTimeout(() => closeFeedbackModal(), 700);
-      btnFbSend.disabled = false;
-    };
-
-    /* =========================
-       Share modal
-    ========================= */
-    const shareOverlay = el("shareOverlay");
-
-    function openShareModal(){
-      shareOverlay.style.display = "flex";
-      shareOverlay.setAttribute("aria-hidden", "false");
-    }
-
-    function closeShareModal(){
-      shareOverlay.style.display = "none";
-      shareOverlay.setAttribute("aria-hidden", "true");
-    }
-
-    shareOverlay.addEventListener("click", (e) => {
-      if (e.target === shareOverlay) closeShareModal();
-    });
-
-    el("btnShareClose").onclick = closeShareModal;
-
-    function buildShareLinks(){
-      const url = "https://mood2know.com/";
-      const text = "Mood2Know — the world’s emotional weather in one click";
-
-      const u = encodeURIComponent(url);
-      const t = encodeURIComponent(text);
-
-      el("shareWhatsApp").href = `https://wa.me/?text=${t}%20${u}`;
-      el("shareReddit").href   = `https://www.reddit.com/submit?url=${u}&title=${t}`;
-      el("shareX").href        = `https://twitter.com/intent/tweet?text=${t}&url=${u}`;
-      el("shareFacebook").href = `https://www.facebook.com/sharer/sharer.php?u=${u}`;
-    }
-
-    async function tryNativeShare(){
-      const url = "https://mood2know.com/";
-      const text = "Mood2Know — the world’s emotional weather in one click";
-
-      if (!navigator.share) return false;
-      try{
-        await navigator.share({ title: "Mood2Know", text, url });
-        return true;
-      }catch(e){
-        return false;
-      }
-    }
-
-    el("btnShare").onclick = async () => {
-      buildShareLinks();
-      const did = await tryNativeShare();
-      if (!did) openShareModal();
-    };
+  
+el("btnSeeShareStats").onclick = () => {
+  window.location.href = "/your-mood-journal.html";
+};
 
     /* =========================
        Map load
