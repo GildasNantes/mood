@@ -7,6 +7,13 @@
   <meta name="description" content="Explore a newspaper-style statistical digest of Mood2Know: country rankings, your position, local-hour mood patterns, and regional comparisons.">
   <meta name="robots" content="index,follow">
   <meta name="theme-color" content="#f4efe6">
+
+  <meta property="og:title" content="Your Mood — World Mood Journal | Mood2Know">
+  <meta property="og:description" content="Discover your mood compared with the world, country rankings, local-hour mood patterns, and a shareable mood page.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://mood2know.com/your-mood-journal.html">
+  <meta property="og:image" content="https://mood2know.com/og.jpg">
+
   <style>
     :root{
       --paper:#f4efe6;
@@ -20,6 +27,7 @@
       --card:#f7f2ea;
       --shadow:0 10px 30px rgba(34,24,16,.08);
       --radius:22px;
+      --black:#111;
     }
 
     *{box-sizing:border-box}
@@ -29,8 +37,19 @@
       color:var(--ink);
       font-family:Georgia,"Times New Roman",serif;
     }
+
     a{color:inherit}
-    .page{max-width:1180px;margin:0 auto;padding:28px 18px 56px;}
+
+    button,input,textarea{
+      font:inherit;
+    }
+
+    .page{
+      max-width:1180px;
+      margin:0 auto;
+      padding:28px 18px 56px;
+    }
+
     .masthead{
       border-top:4px double var(--line);
       border-bottom:4px double var(--line);
@@ -38,6 +57,7 @@
       text-align:center;
       margin-bottom:18px;
     }
+
     .masthead-kicker{
       display:flex;
       justify-content:space-between;
@@ -47,7 +67,9 @@
       text-transform:uppercase;
       letter-spacing:.08em;
       margin-bottom:8px;
+      flex-wrap:wrap;
     }
+
     .brand{
       font-size:clamp(42px,8vw,86px);
       line-height:.95;
@@ -55,6 +77,7 @@
       font-weight:700;
       text-transform:uppercase;
     }
+
     .subbrand{
       margin-top:6px;
       font-size:clamp(16px,2vw,28px);
@@ -64,12 +87,12 @@
 
     .hero{
       display:grid;
-      grid-template-columns:1.15fr .85fr;
+      grid-template-columns:1.1fr .9fr;
       gap:18px;
       margin-bottom:18px;
     }
 
-    .headline-block,.sidebar-card,.panel,.rank-table,.chart-card,.notes-card,.footer-cta,.info-card{
+    .headline-block,.sidebar-card,.panel,.rank-table,.chart-card,.notes-card,.footer-cta,.info-card,.feature-card{
       background:rgba(255,255,255,.28);
       border:1px solid rgba(116,96,74,.22);
       border-radius:var(--radius);
@@ -94,14 +117,14 @@
     }
 
     .headline{
-      font-size:clamp(38px,5vw,68px);
+      font-size:clamp(34px,5vw,66px);
       line-height:.96;
       margin:0 0 12px;
       text-transform:uppercase;
     }
 
     .dek{
-      font-size:clamp(20px,2.2vw,34px);
+      font-size:clamp(19px,2.2vw,32px);
       line-height:1.15;
       color:#3d342c;
       font-style:italic;
@@ -111,8 +134,34 @@
     .sidebar-card{
       padding:22px 18px;
       display:grid;
-      gap:12px;
+      gap:14px;
       align-content:start;
+    }
+
+    .feature-card{
+      padding:16px 16px 14px;
+      background:linear-gradient(180deg,rgba(255,255,255,.48),rgba(255,255,255,.2));
+    }
+
+    .feature-label{
+      font-size:12px;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      margin-bottom:8px;
+    }
+
+    .feature-value{
+      font-size:32px;
+      font-weight:700;
+      line-height:1.02;
+    }
+
+    .feature-sub{
+      font-size:15px;
+      color:var(--muted);
+      margin-top:6px;
+      line-height:1.35;
     }
 
     .stat-grid{
@@ -137,7 +186,7 @@
     }
 
     .mini-stat .value{
-      font-size:32px;
+      font-size:30px;
       font-weight:700;
       line-height:1;
     }
@@ -146,6 +195,47 @@
       font-size:14px;
       color:var(--muted);
       margin-top:6px;
+      line-height:1.35;
+    }
+
+    .action-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:4px;
+    }
+
+    .action-btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:999px;
+      padding:12px 18px;
+      border:1px solid rgba(0,0,0,.12);
+      text-decoration:none;
+      cursor:pointer;
+      font-weight:700;
+      letter-spacing:.03em;
+      transition:transform .08s ease, box-shadow .12s ease, background .12s ease;
+    }
+
+    .action-btn:hover{
+      box-shadow:0 8px 20px rgba(0,0,0,.08);
+    }
+
+    .action-btn:active{
+      transform:translateY(1px);
+    }
+
+    .action-btn.primary{
+      background:#111;
+      color:#fff;
+      border-color:#111;
+    }
+
+    .action-btn.secondary{
+      background:rgba(255,255,255,.55);
+      color:#111;
     }
 
     .layout{
@@ -173,6 +263,7 @@
       color:var(--muted);
       margin:0 0 18px;
       font-size:17px;
+      line-height:1.4;
     }
 
     .user-badge{
@@ -259,6 +350,7 @@
       font-size:14px;
       color:var(--muted);
       margin-top:6px;
+      line-height:1.35;
     }
 
     .legend{
@@ -282,6 +374,17 @@
       gap:10px;
       color:#403730;
       font-size:17px;
+      line-height:1.5;
+    }
+
+    .compare-list{
+      margin:0;
+      padding-left:18px;
+      display:grid;
+      gap:8px;
+      color:#403730;
+      font-size:17px;
+      line-height:1.5;
     }
 
     .muted{color:var(--muted)}
@@ -310,19 +413,19 @@
       letter-spacing:.04em;
     }
 
-	.map-frame{
-  	border-radius:18px;
-  	overflow:hidden;
-  	border:1px solid rgba(116,96,74,.14);
-  	background:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,.15));
-  	min-height:0;
-	}
+    .map-frame{
+      border-radius:18px;
+      overflow:hidden;
+      border:1px solid rgba(116,96,74,.14);
+      background:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,.15));
+      min-height:0;
+    }
 
-	.map-frame img{
-  	display:block;
-  	width:100%;
-  	height:auto;
-	}
+    .map-frame img{
+      display:block;
+      width:100%;
+      height:auto;
+    }
 
     .article-grid{
       display:grid;
@@ -350,13 +453,130 @@
       flex:0 0 auto;
     }
 
-    .compare-list{
-      margin:0;
-      padding-left:18px;
+    .trend-strip{
       display:grid;
-      gap:8px;
-      color:#403730;
+      gap:10px;
+    }
+
+    .trend-canvas-wrap{
+      border:1px solid rgba(116,96,74,.16);
+      border-radius:16px;
+      background:linear-gradient(180deg,rgba(255,255,255,.42),rgba(255,255,255,.15));
+      padding:10px;
+    }
+
+    #trendCanvas{
+      display:block;
+      width:100%;
+      height:auto;
+    }
+
+    .share-note{
+      font-size:14px;
+      color:var(--muted);
+      line-height:1.4;
+    }
+
+    .share-banner{
+      margin-bottom:18px;
+      padding:18px 20px;
+      border-radius:18px;
+      background:linear-gradient(180deg,rgba(255,255,255,.52),rgba(255,255,255,.24));
+      border:1px solid rgba(116,96,74,.22);
+      box-shadow:var(--shadow);
+    }
+
+    .share-banner-title{
+      margin:0 0 8px;
+      font-size:clamp(24px,3vw,38px);
+      line-height:1.05;
+    }
+
+    .share-banner-text{
+      margin:0;
+      color:var(--muted);
       font-size:17px;
+      line-height:1.45;
+    }
+
+    .overlay{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:14px;
+      background:rgba(0,0,0,.38);
+      z-index:100;
+    }
+
+    .overlay.open{
+      display:flex;
+    }
+
+    .modal{
+      width:min(560px,100%);
+      background:#f8f2e9;
+      border-radius:22px;
+      box-shadow:0 18px 42px rgba(0,0,0,.2);
+      border:1px solid rgba(116,96,74,.18);
+      padding:22px 20px;
+    }
+
+    .modal h3{
+      margin:0 0 8px;
+      font-size:30px;
+      line-height:1;
+    }
+
+    .modal p{
+      margin:0 0 16px;
+      color:var(--muted);
+      line-height:1.45;
+      font-size:16px;
+    }
+
+    .field{
+      display:grid;
+      gap:6px;
+      margin-bottom:12px;
+    }
+
+    .field label{
+      font-size:12px;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.08em;
+    }
+
+    .field input,.field textarea{
+      width:100%;
+      padding:12px 14px;
+      border-radius:14px;
+      border:1px solid rgba(0,0,0,.14);
+      background:#fffdfa;
+      color:#111;
+    }
+
+    .field textarea{
+      min-height:100px;
+      resize:vertical;
+    }
+
+    .modal-actions{
+      display:flex;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      gap:10px;
+      margin-top:10px;
+    }
+
+    .modal-msg{
+      margin-top:8px;
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.4;
+      min-height:20px;
     }
 
     @media (max-width:920px){
@@ -367,12 +587,13 @@
     @media (max-width:640px){
       .page{padding:18px 12px 40px}
       .summary-strip,.stat-grid{grid-template-columns:1fr}
-      .rank-table,.chart-card,.panel,.notes-card,.footer-cta,.headline-block,.sidebar-card,.info-card{
+      .rank-table,.chart-card,.panel,.notes-card,.footer-cta,.headline-block,.sidebar-card,.info-card,.feature-card{
         padding:18px 16px;
         border-radius:18px;
       }
       .rank-table table,.daily-table{font-size:14px}
-	.map-frame{min-height:0}
+      .map-frame{min-height:0}
+      .modal{padding:18px 16px}
     }
   </style>
 </head>
@@ -384,8 +605,13 @@
         <span id="updatedLabel">Loading…</span>
       </div>
       <div class="brand">World Mood</div>
-      <div class="subbrand">Your Mood Statistical Bulletin</div>
+      <div class="subbrand" id="subbrandText">Your Mood Statistical Bulletin</div>
     </header>
+
+    <div id="shareBanner" class="share-banner" hidden>
+      <h2 class="share-banner-title" id="shareBannerTitle">Shared Mood Edition</h2>
+      <p class="share-banner-text" id="shareBannerText">This is a shareable mood page generated from Mood2Know.</p>
+    </div>
 
     <div id="loading" class="loading">Loading the statistical edition…</div>
     <div id="error" class="error" hidden>
@@ -402,6 +628,22 @@
         </article>
 
         <aside class="sidebar-card">
+          <div class="feature-card">
+            <div class="feature-label" id="heroUserLabel">Your position in the world</div>
+            <div class="feature-value" id="heroUserRank">—</div>
+            <div class="feature-sub" id="heroUserRankSub">Waiting for comparison…</div>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-label">People comparison</div>
+            <div class="feature-sub" id="peopleComparisonText">Waiting for population comparison…</div>
+          </div>
+
+          <div class="action-row">
+            <button id="btnShareMood" class="action-btn primary" type="button">Share my Mood</button>
+            <a class="action-btn secondary" href="/?view=map">Back to map</a>
+          </div>
+
           <div class="stat-grid">
             <div class="mini-stat">
               <div class="label">Dataset</div>
@@ -428,29 +670,63 @@
       </section>
 
       <section class="layout">
-	<section class="chart-card full-width">
-  	<h2 class="section-title">World mood snapshot</h2>
-  	<p class="section-sub">A static view of the current global mood map.</p>
+        <section class="chart-card full-width">
+          <h2 class="section-title">World mood snapshot</h2>
+          <p class="section-sub">A static view of the current global mood map.</p>
 
- 	 <div class="map-frame">
-    	<img
-      	id="worldSnapshot"
-      	src="/og.jpg"
-      	alt="Current world mood map snapshot"
-      	loading="lazy"
-    	>
-  	</div>
+          <div class="map-frame">
+            <img
+              id="worldSnapshot"
+              src="/og.jpg"
+              alt="Current world mood map snapshot"
+              loading="lazy"
+            >
+          </div>
 
-  <div class="legend">
-    <span><i class="dot dot-gold"></i>current world mood snapshot</span>
-    <span><i class="dot dot-silver"></i>updated regularly from Mood2Know</span>
-  </div>
-</section>
+          <div class="legend">
+            <span><i class="dot dot-gold"></i>current world mood snapshot</span>
+            <span><i class="dot dot-silver"></i>updated regularly from Mood2Know</span>
+          </div>
+        </section>
 
         <div class="two-col">
           <div class="left-col">
-            <section class="rank-table">
+            <section class="panel">
               <div class="user-badge">Your Mood ranking board</div>
+              <h2 class="section-title">Your position in the ranking</h2>
+              <p class="section-sub">Your latest mood is compared directly against the official country averages.</p>
+
+              <div class="summary-strip" style="margin-bottom:16px;">
+                <div class="summary-box">
+                  <div class="k">Equivalent rank</div>
+                  <div class="v" id="yourRank">—</div>
+                  <div class="d" id="yourRankDetail">Waiting for comparison…</div>
+                </div>
+                <div class="summary-box">
+                  <div class="k">People happier than you</div>
+                  <div class="v" id="peopleHappierCount">—</div>
+                  <div class="d" id="peopleHappierText">—</div>
+                </div>
+                <div class="summary-box">
+                  <div class="k">People less happy than you</div>
+                  <div class="v" id="peopleLessHappyCount">—</div>
+                  <div class="d" id="peopleLessHappyText">—</div>
+                </div>
+              </div>
+
+              <table class="daily-table">
+                <tbody>
+                  <tr><th>Your latest mood</th><td id="userMoodCell">—</td></tr>
+                  <tr><th>Your latest entry</th><td id="userEntryDateCell">—</td></tr>
+                  <tr><th>Closest country above</th><td id="countryAboveCell">—</td></tr>
+                  <tr><th>Closest country below</th><td id="countryBelowCell">—</td></tr>
+                  <tr><th>Countries beaten</th><td id="countriesBeatenCell">—</td></tr>
+                  <tr><th>Gap to leader</th><td id="gapToLeaderCell">—</td></tr>
+                </tbody>
+              </table>
+            </section>
+
+            <section class="rank-table">
               <h2 class="section-title">Country ranking</h2>
               <p class="section-sub" id="rankingSubtitle">Countries with more than 10 entries in the active dataset, compared directly with your latest mood.</p>
 
@@ -461,14 +737,14 @@
                   <div class="d num" id="topCountryAvg">— / 10</div>
                 </div>
                 <div class="summary-box">
-                  <div class="k">Your mood position</div>
-                  <div class="v" id="yourRank">—</div>
-                  <div class="d" id="yourRankDetail">Waiting for comparison…</div>
+                  <div class="k">World smiles at</div>
+                  <div class="v" id="bestHourLocalMini">—</div>
+                  <div class="d" id="bestHourMiniSub">—</div>
                 </div>
                 <div class="summary-box">
-                  <div class="k">Gap to leader</div>
-                  <div class="v num" id="gapToLeader">—</div>
-                  <div class="d">between your mood and #1 country</div>
+                  <div class="k">World average</div>
+                  <div class="v num" id="worldAverageMini">—</div>
+                  <div class="d">active dataset</div>
                 </div>
               </div>
 
@@ -484,24 +760,21 @@
                 <tbody id="rankingBody"></tbody>
               </table>
             </section>
-
-            <section class="panel">
-              <h2 class="section-title">Your position in the world</h2>
-              <p class="section-sub">Your latest mood is compared directly against country averages.</p>
-              <table class="daily-table">
-                <tbody>
-                  <tr><th>Your latest mood</th><td id="userMoodCell">—</td></tr>
-                  <tr><th>Your latest entry</th><td id="userEntryDateCell">—</td></tr>
-                  <tr><th>Equivalent rank</th><td id="userRankCell">—</td></tr>
-                  <tr><th>Closest country above</th><td id="countryAboveCell">—</td></tr>
-                  <tr><th>Closest country below</th><td id="countryBelowCell">—</td></tr>
-                  <tr><th>Countries beaten</th><td id="countriesBeatenCell">—</td></tr>
-                </tbody>
-              </table>
-            </section>
           </div>
 
           <div class="right-col">
+            <section class="panel">
+              <h2 class="section-title">Your mood trend</h2>
+              <p class="section-sub">Your latest entries over the last 7 days.</p>
+
+              <div class="trend-strip">
+                <div class="trend-canvas-wrap">
+                  <canvas id="trendCanvas" width="540" height="180" aria-label="Your 7-day mood trend"></canvas>
+                </div>
+                <div class="share-note" id="trendNote">Trend unavailable for now.</div>
+              </div>
+            </section>
+
             <section class="panel">
               <h2 class="section-title">Daily podium notebook</h2>
               <p class="section-sub">The top three countries for each of the last 7 days.</p>
@@ -554,6 +827,30 @@
     </main>
   </div>
 
+  <div id="shareOverlay" class="overlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="shareModalTitle">
+      <h3 id="shareModalTitle">Share my Mood</h3>
+      <p>Create a personal share page with your first name, your mood, your trend, the country ranking, and the happiest hour in the world.</p>
+
+      <div class="field">
+        <label for="shareName">First name</label>
+        <input id="shareName" type="text" maxlength="40" placeholder="e.g. Emma">
+      </div>
+
+      <div class="field">
+        <label for="shareMessage">Optional phrase</label>
+        <textarea id="shareMessage" maxlength="220" placeholder="e.g. Feeling lighter than yesterday."></textarea>
+      </div>
+
+      <div class="modal-actions">
+        <button id="btnShareCancel" class="action-btn secondary" type="button">Cancel</button>
+        <button id="btnShareCreate" class="action-btn primary" type="button">Create share page</button>
+      </div>
+
+      <div id="shareModalMsg" class="modal-msg"></div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const SUPABASE_URL = "https://ugrmxzdhevqrgftlxfnp.supabase.co";
@@ -595,6 +892,8 @@
       TR:"Northern", SA:"Northern", AE:"Northern", IN:"Northern", PK:"Northern", BD:"Northern", TH:"Northern", VN:"Northern", CN:"Northern", HK:"Northern", SG:"Northern", JP:"Northern", KR:"Northern",
       AU:"Southern", NZ:"Southern"
     };
+
+    let APP_CONTEXT = null;
 
     function fmtDateTime(value){
       if (!value) return "—";
@@ -647,6 +946,30 @@
       return `${h12} ${suffix}`;
     }
 
+    function countWords(s){
+      return (String(s || "").trim().match(/\S+/g) || []).length;
+    }
+
+    function getSharePayloadFromUrl(){
+      try {
+        const url = new URL(window.location.href);
+        const raw = url.searchParams.get("share");
+        if (!raw) return null;
+        const json = decodeURIComponent(atob(raw));
+        return JSON.parse(json);
+      } catch {
+        return null;
+      }
+    }
+
+    function buildShareUrl(payload){
+      const json = JSON.stringify(payload);
+      const encoded = btoa(unescape(encodeURIComponent(json)));
+      const url = new URL(window.location.href);
+      url.searchParams.set("share", encoded);
+      return url.toString();
+    }
+
     async function getStatsDataset(){
       const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
@@ -681,7 +1004,7 @@
 
       const { data, error } = await sb
         .from("mood_public_entries")
-        .select("mood,country,country_name,created_at")
+        .select("mood,country,country_name,created_at,anon_id")
         .gte("created_at", start.toISOString())
         .order("created_at", { ascending:true })
         .limit(MAX_RECENT_FETCH);
@@ -818,23 +1141,56 @@
       return { equivalentRank, beaten, above, below };
     }
 
+    function buildPeopleComparison(rows, userMood){
+      if (!Number.isFinite(userMood) || !rows?.length) return null;
+
+      let happier = 0;
+      let lessHappy = 0;
+      let equal = 0;
+
+      for (const row of rows){
+        const mood = Number(row.mood);
+        if (!Number.isFinite(mood)) continue;
+
+        if (mood > userMood) happier += 1;
+        else if (mood < userMood) lessHappy += 1;
+        else equal += 1;
+      }
+
+      return { happier, lessHappy, equal, total: happier + lessHappy + equal };
+    }
+
     function buildMoodComparisonSentence(userMood, moodComparison){
       if (!Number.isFinite(userMood) || !moodComparison) {
         return "Your latest mood could not yet be compared with the current country averages.";
       }
 
+      if (moodComparison.above && moodComparison.below) {
+        return `Your latest mood sits between ${moodComparison.above.name} and ${moodComparison.below.name}.`;
+      }
+
       if (moodComparison.above) {
-        return `Your latest mood is above the average mood of ${moodComparison.above.name}.`;
+        return `Your latest mood is just below ${moodComparison.above.name}.`;
       }
 
       if (moodComparison.below) {
-        return `Your latest mood is above the average mood of ${moodComparison.below.name}.`;
+        return `Your latest mood is already above ${moodComparison.below.name}.`;
       }
 
       return "Your latest mood is not yet comparable.";
     }
 
-    function buildHeadline(ranking, moodComparison, userMood){
+    function buildHeadline(ranking, moodComparison, userMood, sharePayload){
+      if (sharePayload?.name && Number.isFinite(userMood)) {
+        return {
+          eyebrow:"Shared mood page",
+          title:`${sharePayload.name}'S MOOD IS ${fmtNum(userMood)} / 10`,
+          dek: sharePayload.message
+            ? `"${sharePayload.message}"`
+            : "A personal mood snapshot shared from Mood2Know."
+        };
+      }
+
       if (!ranking.length) {
         return {
           eyebrow:"Early edition",
@@ -920,6 +1276,125 @@
       const continents = aggregateNamedGroups(rows, code => COUNTRY_TO_CONTINENT[code] || null);
       const hemispheres = aggregateNamedGroups(rows, code => COUNTRY_TO_HEMISPHERE[code] || null);
       return { continents, hemispheres };
+    }
+
+    function buildTrendSeries(userRows){
+      const now = new Date();
+      const start = new Date(now);
+      start.setUTCDate(start.getUTCDate() - 6);
+      start.setUTCHours(0,0,0,0);
+
+      const labels = [];
+      const dayKeys = [];
+      for(let i=0;i<7;i++){
+        const d = new Date(start);
+        d.setUTCDate(start.getUTCDate() + i);
+        labels.push(d.toISOString().slice(5,10));
+        dayKeys.push(d.toISOString().slice(0,10));
+      }
+
+      const byDay = new Map();
+      for (const r of (userRows || [])){
+        if (!r.created_at) continue;
+        const k = dayKeyUTC(r.created_at);
+        const v = Number(r.mood);
+        if (!Number.isFinite(v)) continue;
+        const cur = byDay.get(k) || { sum:0, count:0 };
+        cur.sum += v;
+        cur.count += 1;
+        byDay.set(k, cur);
+      }
+
+      const values = dayKeys.map(k => {
+        const agg = byDay.get(k);
+        return agg ? (agg.sum / agg.count) : NaN;
+      });
+
+      return { labels, values };
+    }
+
+    function drawTrend(canvasId, labels, values){
+      const c = document.getElementById(canvasId);
+      if (!c) return { enough:false, delta:NaN };
+
+      const ctx = c.getContext("2d");
+      const w = c.width;
+      const h = c.height;
+      ctx.clearRect(0,0,w,h);
+
+      ctx.strokeStyle = "rgba(30,26,23,0.12)";
+      ctx.lineWidth = 1;
+      for(let i=1;i<=4;i++){
+        const y = (h * i) / 5;
+        ctx.beginPath();
+        ctx.moveTo(10,y);
+        ctx.lineTo(w - 10,y);
+        ctx.stroke();
+      }
+
+      const pts = values
+        .map((v,i) => ({ i, v }))
+        .filter(p => Number.isFinite(p.v));
+
+      const padX = 24;
+      const padY = 18;
+      const xStep = (w - padX * 2) / Math.max(1, labels.length - 1);
+      const minV = 1;
+      const maxV = 10;
+
+      const yOf = (v) => {
+        const t = (v - minV) / (maxV - minV);
+        return (h - padY) - t * (h - padY * 2);
+      };
+
+      ctx.fillStyle = "#1e1a17";
+      ctx.font = "12px Georgia";
+      ctx.textAlign = "center";
+      labels.forEach((label, i) => {
+        const x = padX + i * xStep;
+        ctx.fillText(label, x, h - 2);
+      });
+
+      if (pts.length < 2) {
+        return { enough:false, delta:NaN };
+      }
+
+      ctx.strokeStyle = "#1e1a17";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+
+      let started = false;
+      for(let i=0;i<labels.length;i++){
+        const v = values[i];
+        if (!Number.isFinite(v)) {
+          started = false;
+          continue;
+        }
+        const x = padX + i * xStep;
+        const y = yOf(v);
+        if (!started) {
+          ctx.moveTo(x,y);
+          started = true;
+        } else {
+          ctx.lineTo(x,y);
+        }
+      }
+      ctx.stroke();
+
+      ctx.fillStyle = "#1e1a17";
+      for(let i=0;i<labels.length;i++){
+        const v = values[i];
+        if (!Number.isFinite(v)) continue;
+        const x = padX + i * xStep;
+        const y = yOf(v);
+        ctx.beginPath();
+        ctx.arc(x,y,4,0,Math.PI*2);
+        ctx.fill();
+      }
+
+      const first = pts[0].v;
+      const last = pts[pts.length - 1].v;
+      return { enough:true, delta:last - first };
     }
 
     function renderRanking(ranking){
@@ -1033,6 +1508,9 @@
         ctx.moodComparison
           ? buildMoodComparisonSentence(ctx.userMoodValue, ctx.moodComparison)
           : `Your latest mood could not yet be compared with the official table.`,
+        ctx.peopleComparison
+          ? `You are less happy than ${fmtInt(ctx.peopleComparison.happier)} people and happier than ${fmtInt(ctx.peopleComparison.lessHappy)} people in the active dataset.`
+          : `Population-level comparison is not available yet.`,
         ctx.leader
           ? `${ctx.leader.name} leads the board with ${fmtNum(ctx.leader.avg)} based on ${fmtInt(ctx.leader.count)} entries.`
           : `The ranking board is still waiting for a first official leader.`
@@ -1045,9 +1523,81 @@
       });
     }
 
+    function openShareModal(){
+      const overlay = document.getElementById("shareOverlay");
+      overlay.classList.add("open");
+      overlay.setAttribute("aria-hidden", "false");
+      document.getElementById("shareModalMsg").textContent = "";
+      setTimeout(() => document.getElementById("shareName").focus(), 40);
+    }
+
+    function closeShareModal(){
+      const overlay = document.getElementById("shareOverlay");
+      overlay.classList.remove("open");
+      overlay.setAttribute("aria-hidden", "true");
+    }
+
+    function applyShareBanner(payload, ctx){
+      if (!payload) return;
+
+      const banner = document.getElementById("shareBanner");
+      const title = document.getElementById("shareBannerTitle");
+      const text = document.getElementById("shareBannerText");
+      const subbrand = document.getElementById("subbrandText");
+
+      banner.hidden = false;
+      title.textContent = `${payload.name}'s mood is ${fmtNum(ctx.userMoodValue)} / 10`;
+
+      let parts = [];
+      if (payload.message) parts.push(`“${payload.message}”`);
+      if (ctx.moodComparison) parts.push(`Equivalent country rank: #${ctx.moodComparison.equivalentRank}.`);
+      if (ctx.localHourStats) parts.push(`The world smiles at ${formatHourLabel(ctx.localHourStats.best.hour)}.`);
+      text.textContent = parts.join(" ") || "A shared personal mood page generated from Mood2Know.";
+      subbrand.textContent = `${payload.name}'s shared mood edition`;
+
+      document.title = `${payload.name}'s Mood — World Mood Journal | Mood2Know`;
+    }
+
+    async function createSharePage(){
+      const name = String(document.getElementById("shareName").value || "").trim();
+      const message = String(document.getElementById("shareMessage").value || "").trim();
+      const msgEl = document.getElementById("shareModalMsg");
+
+      if (!name) {
+        msgEl.textContent = "Please enter a first name.";
+        return;
+      }
+
+      if (!APP_CONTEXT || !Number.isFinite(APP_CONTEXT.userMoodValue)) {
+        msgEl.textContent = "A latest mood is required before creating a share page.";
+        return;
+      }
+
+      const payload = {
+        name,
+        message,
+        mood: APP_CONTEXT.userMoodValue,
+        createdAt: new Date().toISOString()
+      };
+
+      const shareUrl = buildShareUrl(payload);
+
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        msgEl.textContent = "Share link copied to clipboard.";
+      } catch {
+        msgEl.textContent = shareUrl;
+      }
+
+      setTimeout(() => {
+        window.open(shareUrl, "_blank");
+      }, 120);
+    }
+
     async function init(){
       try {
         const anonId = getAnonId();
+        const sharePayload = getSharePayloadFromUrl();
 
         const [dataset, last7Rows, userEntry] = await Promise.all([
           getStatsDataset(),
@@ -1060,9 +1610,31 @@
         const leader = ranking[0] || null;
         const userMoodValue = Number(userEntry?.mood);
         const moodComparison = compareUserMoodToCountries(ranking, userMoodValue);
-        const headline = buildHeadline(ranking, moodComparison, userMoodValue);
+        const peopleComparison = buildPeopleComparison(dataset.rows, userMoodValue);
+        const headline = buildHeadline(ranking, moodComparison, userMoodValue, sharePayload);
         const localHourStats = buildLocalHourStats(dataset.rows);
         const geoComparisons = buildGeoComparisons(dataset.rows);
+
+        const userRows = last7Rows.filter(r => r.anon_id && anonId && r.anon_id === anonId);
+        const trendSeries = buildTrendSeries(userRows);
+        const trendDraw = drawTrend("trendCanvas", trendSeries.labels, trendSeries.values);
+
+        APP_CONTEXT = {
+          dataset,
+          last7Rows,
+          userEntry,
+          ranking,
+          worldAverage,
+          totalEntries,
+          leader,
+          userMoodValue,
+          moodComparison,
+          peopleComparison,
+          localHourStats,
+          geoComparisons,
+          trendSeries,
+          trendDraw
+        };
 
         setText(
           "updatedLabel",
@@ -1077,9 +1649,35 @@
         setText("datasetCount", `${fmtInt(totalEntries)} entries`);
         setText("rankedCountries", fmtInt(ranking.length));
         setText("worldAverage", fmtNum(worldAverage));
+        setText("worldAverageMini", fmtNum(worldAverage));
 
         setText("userCountryName", Number.isFinite(userMoodValue) ? `${fmtNum(userMoodValue)} / 10` : "No mood yet");
         setText("userCountryRankText", moodComparison ? `Equivalent to rank #${moodComparison.equivalentRank}` : "Not comparable yet");
+
+        setText("heroUserRank", moodComparison ? `#${moodComparison.equivalentRank}` : "—");
+        setText(
+          "heroUserRankSub",
+          moodComparison
+            ? buildMoodComparisonSentence(userMoodValue, moodComparison)
+            : "Your latest mood is not available yet."
+        );
+
+        if (peopleComparison) {
+          setText(
+            "peopleComparisonText",
+            `I am less happy than ${fmtInt(peopleComparison.happier)} people and happier than ${fmtInt(peopleComparison.lessHappy)}.`
+          );
+          setText("peopleHappierCount", fmtInt(peopleComparison.happier));
+          setText("peopleHappierText", "people");
+          setText("peopleLessHappyCount", fmtInt(peopleComparison.lessHappy));
+          setText("peopleLessHappyText", "people");
+        } else {
+          setText("peopleComparisonText", "This comparison will appear after your first mood entry.");
+          setText("peopleHappierCount", "—");
+          setText("peopleHappierText", "—");
+          setText("peopleLessHappyCount", "—");
+          setText("peopleLessHappyText", "—");
+        }
 
         setText(
           "rankingSubtitle",
@@ -1097,11 +1695,9 @@
             ? buildMoodComparisonSentence(userMoodValue, moodComparison)
             : "Your latest mood is not available yet."
         );
-        setText("gapToLeader", leader && Number.isFinite(userMoodValue) ? fmtNum(leader.avg - userMoodValue) : "—");
 
         setText("userMoodCell", Number.isFinite(userMoodValue) ? `${fmtNum(userMoodValue)} / 10` : "—");
         setText("userEntryDateCell", fmtDateTime(userEntry?.created_at));
-        setText("userRankCell", moodComparison ? `#${moodComparison.equivalentRank}` : "Not comparable");
         setText(
           "countryAboveCell",
           moodComparison?.above ? `${moodComparison.above.name} (${fmtNum(moodComparison.above.avg)})` : "No country above you"
@@ -1114,8 +1710,14 @@
           "countriesBeatenCell",
           moodComparison ? `${fmtInt(moodComparison.beaten)} countries` : "—"
         );
+        setText(
+          "gapToLeaderCell",
+          leader && Number.isFinite(userMoodValue) ? `${fmtNum(leader.avg - userMoodValue)} points` : "—"
+        );
 
         setText("bestHourLocal", localHourStats ? formatHourLabel(localHourStats.best.hour) : "—");
+        setText("bestHourLocalMini", localHourStats ? formatHourLabel(localHourStats.best.hour) : "—");
+        setText("bestHourMiniSub", localHourStats ? `${fmtNum(localHourStats.best.avg)} / 10` : "Not enough data yet");
         setText(
           "bestHourRow",
           localHourStats
@@ -1129,6 +1731,13 @@
             : "Not enough data yet"
         );
 
+        if (!trendDraw.enough) {
+          setText("trendNote", "Not enough personal data yet. Come back after a few entries.");
+        } else {
+          const arrow = trendDraw.delta > 0.2 ? "↗" : trendDraw.delta < -0.2 ? "↘" : "→";
+          setText("trendNote", `7-day change: ${fmtNum(trendDraw.delta)} ${arrow}`);
+        }
+
         renderRanking(ranking);
         renderDailyPodiumList(dailyPodiums);
         renderGeoComparisons(geoComparisons);
@@ -1136,8 +1745,13 @@
           mode: dataset.mode,
           moodComparison,
           leader,
+          peopleComparison,
           userMoodValue
         });
+
+        if (sharePayload) {
+          applyShareBanner(sharePayload, APP_CONTEXT);
+        }
 
         LOADING.hidden = true;
         ERROR.hidden = true;
@@ -1149,6 +1763,14 @@
         document.getElementById("errorText").textContent = err?.message || "Unknown error.";
       }
     }
+
+    document.getElementById("btnShareMood").addEventListener("click", openShareModal);
+    document.getElementById("btnShareCancel").addEventListener("click", closeShareModal);
+    document.getElementById("btnShareCreate").addEventListener("click", createSharePage);
+
+    document.getElementById("shareOverlay").addEventListener("click", (e) => {
+      if (e.target === document.getElementById("shareOverlay")) closeShareModal();
+    });
 
     init();
   </script>
